@@ -73,6 +73,7 @@ const App: React.FC = () => {
   const [theme, setTheme] = useState<string>(
     () => document.documentElement.getAttribute('data-theme') || 'light'
   );
+  const [open, setOpen] = useState(false);
   const toggle = () => {
     const next = theme === 'dark' ? 'light' : 'dark';
     setTheme(next);
@@ -86,49 +87,46 @@ const App: React.FC = () => {
   const chipLabel = (t: Tier) => (t === 'A' ? 'A · Prism' : t === 'B' ? 'B · jurni' : 'C · GPT-5.5');
 
   return (
-    <div className="shell">
-      <aside className="panel">
-        <div>
-          <div className="eyebrow mono">
-            <span className="dot" />
-            SKILL.md
-          </div>
-          <h1 className="title">
-            Promo motion, <span className="accent">reverse-engineered.</span>
-          </h1>
-          <div className="lead">
-            <p>
-              Twelve motion primitives for AI/tech product promo videos, extracted frame-by-frame from three
-              reference films and reproduced as live <code>remotion</code> code. Every demo on the right is the
-              actual implementation — scrub it, loop it, steal its timing.
-            </p>
-            <p>
-              The <code>promo-motion-system</code> skill gives your agent tiered storyboard blueprints, a
-              transition catalog, measured easing curves, and a pre-production contract — the specs that usually
-              get lost in vague prompts.
-            </p>
-          </div>
-          <div className="install">
-            <div className="cmd mono">
-              <span className="p">$</span>
-              {CMD}
-            </div>
-            <Copy text={CMD} />
-          </div>
+    <>
+      <aside className="float-card">
+        <div className="eyebrow mono">
+          <span className="dot" />
+          SKILL.md
         </div>
-        <div className="panel-foot">
-          <span>
-            Built by{' '}
-            <a href="https://github.com/Reeray/promo-motion-system" target="_blank" rel="noreferrer">
-              Reeray
-            </a>
-            .
+        <h1>Promo motion</h1>
+        <div className={`lead${open ? ' open' : ''}`}>
+          {/* 2 sentences shown by default */}
+          Twelve motion primitives for AI/tech product promos, reverse-engineered frame-by-frame from three
+          reference films. Every demo here is live <code>remotion</code> code — scrub it, loop it, steal its
+          timing.
+          {/* +3 more on expand (5 sentences total) */}
+          <span className="more">
+            {' '}
+            The <code>promo-motion-system</code> skill routes by effort tier and hands your agent a storyboard
+            blueprint for each. It ships a transition catalog, measured easing curves, and per-tier amplitude
+            budgets. Install it and your agent gets the specs that usually get lost in vague prompts.
           </span>
-          <button className="theme-toggle" onClick={toggle}>
-            {theme === 'dark' ? 'Light' : 'Dark'} theme
-          </button>
+        </div>
+        <button className="morebtn" onClick={() => setOpen((v) => !v)}>
+          {open ? 'Show less' : 'Show more'}
+        </button>
+        <div className="install">
+          <div className="cmd mono">
+            <span className="p">$</span>
+            {CMD}
+          </div>
+          <Copy text={CMD} />
         </div>
       </aside>
+
+      <div className="top-util">
+        <a href="https://github.com/Reeray/promo-motion-system" target="_blank" rel="noreferrer">
+          GitHub
+        </a>
+        <button className="theme-toggle" onClick={toggle}>
+          {theme === 'dark' ? 'Light' : 'Dark'}
+        </button>
+      </div>
 
       <section className="gallery">
         {GROUPS.map((g) => (
@@ -162,7 +160,7 @@ const App: React.FC = () => {
           </React.Fragment>
         ))}
       </section>
-    </div>
+    </>
   );
 };
 
