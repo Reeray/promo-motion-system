@@ -87,46 +87,51 @@ const App: React.FC = () => {
   const chipLabel = (t: Tier) => (t === 'A' ? 'A · Prism' : t === 'B' ? 'B · jurni' : 'C · GPT-5.5');
 
   return (
-    <>
-      <aside className="float-card">
-        <div className="eyebrow mono">
-          <span className="dot" />
-          SKILL.md
-        </div>
-        <h1>Promo motion</h1>
-        <div className={`lead${open ? ' open' : ''}`}>
-          {/* 2 sentences shown by default */}
-          Twelve motion primitives for AI/tech product promos, reverse-engineered frame-by-frame from three
-          reference films. Every demo here is live <code>remotion</code> code — scrub it, loop it, steal its
-          timing.
-          {/* +3 more on expand (5 sentences total) */}
-          <span className="more">
-            {' '}
-            The <code>promo-motion-system</code> skill routes by effort tier and hands your agent a storyboard
-            blueprint for each. It ships a transition catalog, measured easing curves, and per-tier amplitude
-            budgets. Install it and your agent gets the specs that usually get lost in vague prompts.
-          </span>
-        </div>
-        <button className="morebtn" onClick={() => setOpen((v) => !v)}>
-          {open ? 'Show less' : 'Show more'}
-        </button>
-        <div className="install">
-          <div className="cmd mono">
-            <span className="p">$</span>
-            {CMD}
+    <div className="shell">
+      <aside className="panel">
+        <div>
+          <div className="eyebrow mono">
+            <span className="dot" />
+            SKILL.md
           </div>
-          <Copy text={CMD} />
+          <h1 className="title">Promo motion</h1>
+          <div className={`lead${open ? ' open' : ''}`}>
+            {/* 2 sentences shown by default */}
+            Twelve motion primitives for AI/tech product promos, reverse-engineered frame-by-frame from three
+            reference films. Every demo on the right is live <code>remotion</code> code — scrub it, loop it,
+            steal its timing.
+            {/* +3 more on expand (5 sentences total) */}
+            <span className="more">
+              {' '}
+              The <code>promo-motion-system</code> skill routes by effort tier and hands your agent a storyboard
+              blueprint for each. It ships a transition catalog, measured easing curves, and per-tier amplitude
+              budgets. Install it and your agent gets the specs that usually get lost in vague prompts.
+            </span>
+          </div>
+          <button className="morebtn" onClick={() => setOpen((v) => !v)}>
+            {open ? 'Show less' : 'Show more'}
+          </button>
+          <div className="install">
+            <div className="cmd mono">
+              <span className="p">$</span>
+              {CMD}
+            </div>
+            <Copy text={CMD} />
+          </div>
+        </div>
+        <div className="panel-foot">
+          <span>
+            Built by{' '}
+            <a href="https://github.com/Reeray/promo-motion-system" target="_blank" rel="noreferrer">
+              Reeray
+            </a>
+            .
+          </span>
+          <button className="theme-toggle" onClick={toggle}>
+            {theme === 'dark' ? 'Light' : 'Dark'} theme
+          </button>
         </div>
       </aside>
-
-      <div className="top-util">
-        <a href="https://github.com/Reeray/promo-motion-system" target="_blank" rel="noreferrer">
-          GitHub
-        </a>
-        <button className="theme-toggle" onClick={toggle}>
-          {theme === 'dark' ? 'Light' : 'Dark'}
-        </button>
-      </div>
 
       <section className="gallery">
         {GROUPS.map((g) => (
@@ -137,17 +142,18 @@ const App: React.FC = () => {
             </div>
             {g.entries.map((e) => (
               <div className="demo" key={e.name}>
-                <Player
-                  className="player"
-                  component={e.Comp}
-                  durationInFrames={75}
-                  fps={30}
-                  compositionWidth={1280}
-                  compositionHeight={720}
-                  controls
-                  loop
-                  acknowledgeRemotionLicense
-                />
+                <div className="player">
+                  <Player
+                    component={e.Comp}
+                    durationInFrames={75}
+                    fps={30}
+                    compositionWidth={1280}
+                    compositionHeight={720}
+                    controls
+                    loop
+                    acknowledgeRemotionLicense
+                  />
+                </div>
                 <div className="body">
                   <div className="head">
                     <span className="name">{e.name}</span>
@@ -160,7 +166,7 @@ const App: React.FC = () => {
           </React.Fragment>
         ))}
       </section>
-    </>
+    </div>
   );
 };
 
