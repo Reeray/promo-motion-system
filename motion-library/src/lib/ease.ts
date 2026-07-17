@@ -13,6 +13,11 @@ export const EASE = {
   uiEnterSoft: Easing.bezier(0.61, 1, 0.88, 1), // easeOutSine — larger result surfaces
   camera: Easing.bezier(0.2, 0.9, 0.25, 1), // macro push: strong ease-out, settles into hold
   move: Easing.bezier(0.4, 0, 0.2, 1), // material-standard — symmetric on-screen moves
+  // Surface SCALE-IN on enter — measured ~0.90→1.0 (+~9%) + translate, ease-out, NO overshoot.
+  // Use EASE.out / EASE.camera for the scale; this is the calm settle, not a bouncy pop.
+  // Pre-cut PUSH — measured: outgoing surface scales up with an ACCELERATING (ease-in) ramp
+  // that runs straight into a hard cut (composer & exec-summary both do this).
+  preCut: Easing.bezier(0.5, 0, 1, 0.5), // easeIn accelerate — push into a hard cut
 };
 
 export const lerp = (

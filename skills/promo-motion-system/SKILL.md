@@ -394,39 +394,65 @@ promo — they are the calmest, most content-driven of the three tiers.
 **UI component enter / exit**
 - **Enter = ease-out, strongly front-loaded** — `cubic-bezier(.25,.46,.45,.94)` (easeOutQuad;
   easeOutSine a close 2nd). ~50% of the change in the first ~30% of the time.
-- Components **fade + tiny scale** (bbox change ≈ 0–3%) — **not** a scale-pop from 0.9. Calm.
+- **Scale is used a LOT — but by element size, and always as a controlled settle, never a
+  bouncy overshoot** (see *Scale grammar* below). Two magnitudes:
+  - **Inline / feed elements** (chips, log rows, list items): **~0% scale** — they appear at
+    full size and **slide** (translateY ~18px) + fade to rest. *Measured:* a log row's text
+    box is full width/height on frame 1; only its centroid moves (60→42px), decelerating.
+  - **Surfaces / panels / windows** (the set piece that owns the frame): **scale-IN
+    ~0.90→1.0 (≈ +9–10% bbox)** while translating toward its anchor, ease-out, ~0.5–0.7s,
+    **no overshoot**. *Measured:* the log window's chrome span grows 165→181px monotonically.
+    This is the earlier "fade + tiny scale" note corrected — surfaces genuinely scale-pop-in
+    from ~0.9; only the small stuff stays flat.
 - **Duration:** fast core 0.12–0.30s, settle tail to ~0.5–0.85s for larger surfaces.
 - **Hard payoff cut = instant (1 frame)** — reserved for white→dark result reveals (≤2/video).
-- **Staggered groups** (stat tiles): each tile ease-out, staggered ~3–5 frames (50–80ms).
-  (The group's diff-to-final reads back-loaded — that's the stagger, not the per-tile ease.)
+- **Staggered groups** (stat tiles): each tile ease-out + `scale(.95→1)`, staggered ~3–5
+  frames (50–80ms). (The group's diff-to-final reads back-loaded — that's the stagger.)
+
+**Scale grammar** (GPT-5.5's most pervasive transition device — get this right)
+- **Enter → decelerate (ease-out).** Surfaces grow ~0.9→1.0 and *settle*. `EASE.out`/`EASE.camera`.
+- **Exit into a cut → accelerate (ease-in).** Before a hard cut the outgoing surface **scales
+  UP with an accelerating ramp** (a "push" that runs into the cut). *Measured:* composer card
+  822→881px and the exec-summary both ramp their diff up (accelerating) straight into the cut.
+  `EASE.preCut` (`cubic-bezier(.5,0,1,.5)`).
+- **Never overshoots.** Every measured scale approaches its target monotonically — no bounce,
+  no elastic. That restraint is what reads "premium/calm" vs. the bouncy [B] jurni style.
 
 **Camera / viewport zoom**
-- **What & when:** a macro **push-in** to showcase a hero component right before an
-  interaction (e.g. the prompt bar). Small **pull-backs** after a payoff slide. Otherwise the
-  camera holds with a ~2%/s **breathe** during reads.
-- **How much:** ~**1.5–1.8× scale**. **Duration:** ~**0.4–0.6s**.
-- **Easing:** strong **ease-out deceleration** (very front-loaded) — moves fast, settles INTO
-  the hold, never overshoots. `cubic-bezier(.2,.9,.25,1)` (between material-standard and
-  easeOutExpo). **Origin = the pushed component's center.**
+- **Macro push-in (animated):** push in to showcase a hero component right before an
+  interaction (e.g. the prompt bar). ~**1.5–1.8× scale**, ~**0.4–0.6s**, strong **ease-out**
+  that settles INTO the hold, never overshoots. `cubic-bezier(.2,.9,.25,1)` `EASE.camera`.
+  **Origin = the pushed component's center.**
+- **Macro crop (static) — the log-theater framing:** the app window is rendered **larger than
+  the viewport and pinned to the top-left corner** (traffic-lights/toolbar cropped at the frame
+  edges); the camera then **holds dead still** while the agent feed **auto-scrolls inside** it.
+  *Measured:* window chrome is pixel-identical at 20.3s and 30.0s — the "motion" is the content
+  streaming, not the camera. On entry the crop settles with the surface scale-in (0.9→1.0
+  ease-out). Reproduced in `log-theater-zoomed`.
+- **Breathe / pull-back:** otherwise the camera holds with a ~2%/s **breathe**; small
+  **pull-backs** after a payoff slide.
 
 **Ready-to-use curve set** (Remotion `Easing.bezier`, mirrored in `src/lib/ease.ts`)
 ```
 type-on        linear                         constant char rate
 ui.enter       .25, .46, .45, .94   easeOutQuad     EASE.uiEnter
 ui.enter(soft) .61, 1,   .88, 1     easeOutSine     EASE.uiEnterSoft
+surface.scalein (use EASE.out/camera) 0.9→1.0 ease-out, no overshoot
 camera.push    .2,  .9,  .25, 1     strong ease-out EASE.camera
+precut.push    .5,  0,   1,   .5    ease-in accel   EASE.preCut  (scale-up into a hard cut)
 onscreen.move  .4,  0,   .2,  1     material-std    EASE.move
 ```
 
 ## Reference Implementation — live Remotion library
 
-Thirteen signature primitives are reproduced as working Remotion code in this repo's
+Fourteen signature primitives are reproduced as working Remotion code in this repo's
 **`motion-library/`** (clips labeled with primitive name + source on screen). Live scrubbable
 gallery: the GitHub Pages site (`docs/`). 
 - `src/clips/A.tsx` — type-on + highlighter · comet-paint · anchored-grow · ghost-wipe
 - `src/clips/B.tsx` — dot-birth + palette-flood · quantum-bars · swallow-morph ·
   hover-ignite · headline-swap
-- `src/clips/C.tsx` — chip-tokenize · log-theater · dark-payoff cut · **camera macro-push**
+- `src/clips/C.tsx` — chip-tokenize · log-theater · **log-theater-zoomed** (static macro crop)
+  · dark-payoff cut · **camera macro-push**
 - `src/lib/ease.ts` — measured curves incl. the GPT-5.5 set above (`EASE.uiEnter`,
   `EASE.camera`), `qstep` quantized stepper ([B]'s pixel physics), deterministic `rand`.
 

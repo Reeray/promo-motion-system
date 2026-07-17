@@ -4,7 +4,7 @@ import {lerp} from './lib/ease';
 import {Labeled} from './lib/Labeled';
 import {TypeOnHighlighter, CometPaint, AnchoredGrow, GhostWipe} from './clips/A';
 import {DotBirth, QuantumBars, SwallowMorph, HoverIgnite, HeadlineSwap} from './clips/B';
-import {ChipTokenize, LogTheater, DarkPayoffCut, CameraPush} from './clips/C';
+import {ChipTokenize, LogTheater, LogTheaterZoomed, DarkPayoffCut, CameraPush} from './clips/C';
 
 const CLIP = 75; // 2.5s @ 30fps
 
@@ -25,7 +25,7 @@ const Intro: React.FC = () => {
         Promo Motion Reference Library
       </div>
       <div style={{fontSize: 24, color: '#8a8a92', marginTop: 16, opacity: o2}}>
-        12 primitives · sources: [A] Prism promo · [B] jurni launch · [C] GPT-5.5 announce
+        14 primitives · sources: [A] Prism promo · [B] jurni launch · [C] GPT-5.5 announce
       </div>
     </AbsoluteFill>
   );
@@ -70,6 +70,9 @@ const Library: React.FC = () => (
       <Labeled name="log-theater" source="C · GPT-5.5 announce"><LogTheater /></Labeled>
     </Series.Sequence>
     <Series.Sequence durationInFrames={CLIP}>
+      <Labeled name="log-theater · macro crop" source="C · GPT-5.5 announce"><LogTheaterZoomed /></Labeled>
+    </Series.Sequence>
+    <Series.Sequence durationInFrames={CLIP}>
       <Labeled name="dark-payoff cut" source="C · GPT-5.5 announce"><DarkPayoffCut /></Labeled>
     </Series.Sequence>
     <Series.Sequence durationInFrames={CLIP}>
@@ -82,7 +85,7 @@ export const Root: React.FC = () => (
   <Composition
     id="MotionLibrary"
     component={Library}
-    durationInFrames={60 + 13 * CLIP}
+    durationInFrames={60 + 14 * CLIP}
     fps={30}
     width={1280}
     height={720}

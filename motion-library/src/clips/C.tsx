@@ -212,6 +212,126 @@ export const LogTheater: React.FC = () => {
   );
 };
 
+/* C11b — log-theater ZOOMED: the log-theater framed the way GPT-5.5 actually frames it —
+   a static MACRO camera crop. The AcmeCo window is rendered LARGER than the viewport and
+   pinned to the top-left corner (traffic-lights + toolbar cropped at the frame edges); the
+   agent feed streams and auto-scrolls INSIDE it while the camera holds.
+   MEASURED (60fps): the macro settles on entry — window scales ~0.9→1.0 while translating
+   toward its top-left anchor (ease-out, ~0.6s, NO overshoot) — then holds with a ~2%/s
+   breathe. Rows appear at full size and SLIDE up (~18px, ease-out) — no per-row scale. */
+export const LogTheaterZoomed: React.FC = () => {
+  const f = useCurrentFrame();
+  // camera: settle the macro zoom (0.9 -> 1.0, strong ease-out) then breathe on the hold.
+  const settle = lerp(f, [0, 16], [0.9, 1], EASE.camera);
+  const breathe = 1 + Math.max(0, f - 16) * 0.0006;
+  const camScale = settle * breathe;
+
+  const headerSwap = lerp(f, [40, 48], [0, 1], EASE.out); // "Using Slack" -> "Using Github"
+
+  // streaming agent feed — each row appears full-size and slides up (measured: no scale).
+  const feed = [
+    {t: 'Searched channels “alpha-bug-reports”', c: '#e01e5a', at: 6},
+    {t: 'Read messages', c: '#36c5f0', at: 15},
+    {t: 'Opened pull request', c: '#24292f', at: 25},
+    {t: 'Read check-static.js', c: '#8957e5', at: 36},
+    {t: 'Implemented the fix', c: '#2da44e', at: 47},
+    {t: 'Created reply after PR merge', c: '#0969da', at: 58},
+  ];
+  const ROW = 84;
+  const VISIBLE = 4;
+  // auto-scroll: once the feed overflows, glide the list up so the newest rows stay in view.
+  let scroll = 0;
+  feed.forEach((r, i) => {
+    if (i >= VISIBLE) scroll += ROW * lerp(f, [r.at, r.at + 11], [0, 1], EASE.out);
+  });
+
+  return (
+    <AbsoluteFill style={{...WHITE, overflow: 'hidden'}}>
+      {/* CAMERA layer — macro crop anchored to the window's top-left */}
+      <AbsoluteFill style={{transform: `scale(${camScale})`, transformOrigin: '0% 0%'}}>
+        <div
+          style={{
+            position: 'absolute',
+            left: 60,
+            top: 34,
+            width: 1520, // wider than the 1280 frame → the right edge is cropped
+            height: 900,
+            background: '#fff',
+            borderRadius: 22,
+            border: '1px solid rgba(0,0,0,.06)',
+            boxShadow: '0 8px 24px rgba(0,0,0,.06), 0 40px 90px rgba(20,30,60,.14)',
+            overflow: 'hidden',
+          }}
+        >
+          {/* window chrome */}
+          <div style={{display: 'flex', alignItems: 'center', gap: 16, padding: '26px 30px 20px'}}>
+            {['#ff5f57', '#febc2e', '#28c840'].map((c) => (
+              <div key={c} style={{width: 22, height: 22, borderRadius: 11, background: c}} />
+            ))}
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} style={{width: 22, height: 22, borderRadius: 6, border: '2.5px solid #c9ccd1', marginLeft: i === 0 ? 20 : 0}} />
+            ))}
+            <span style={{marginLeft: 26, fontSize: 30, color: '#3a3a40', fontWeight: 500}}>AcmeCo</span>
+          </div>
+          <div style={{height: 1, background: 'rgba(0,0,0,.07)'}} />
+
+          {/* content — the feed scrolls behind the fixed header */}
+          <div style={{position: 'relative', height: 780, padding: '30px 46px', overflow: 'hidden'}}>
+            <div style={{transform: `translateY(${-scroll}px)`}}>
+              <div style={{position: 'relative', height: 60, marginBottom: 22}}>
+                <div style={{position: 'absolute', fontSize: 42, fontWeight: 600, color: '#9a9aa2', opacity: 1 - headerSwap, transform: `translateY(${-headerSwap * 14}px)`}}>
+                  Using Slack
+                </div>
+                <div style={{position: 'absolute', fontSize: 42, fontWeight: 600, color: '#9a9aa2', opacity: headerSwap, transform: `translateY(${(1 - headerSwap) * 14}px)`}}>
+                  Using Github
+                </div>
+              </div>
+              {feed.map((r) => {
+                const p = lerp(f, [r.at, r.at + 9], [0, 1], EASE.out);
+                return (
+                  <div
+                    key={r.t}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 22,
+                      height: ROW - 22,
+                      marginBottom: 22,
+                      opacity: p,
+                      transform: `translateY(${(1 - p) * 18}px)`, // slide-up settle, no scale
+                    }}
+                  >
+                    <div style={{width: 40, height: 40, borderRadius: 10, background: r.c, flexShrink: 0}} />
+                    <span style={{fontSize: 34, color: '#1c1c1f', whiteSpace: 'nowrap'}}>{r.t}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </AbsoluteFill>
+
+      {/* macro-framing readout (stays fixed on the viewport, like camera macro-push) */}
+      <div
+        style={{
+          position: 'absolute',
+          top: 20,
+          right: 24,
+          fontFamily: 'Consolas, monospace',
+          fontSize: 18,
+          fontWeight: 700,
+          color: '#111',
+          background: 'rgba(255,255,255,.82)',
+          borderRadius: 8,
+          padding: '4px 10px',
+        }}
+      >
+        MACRO · window fills frame
+      </div>
+    </AbsoluteFill>
+  );
+};
+
 /* C12 — dark-payoff cut: quiet white workspace → single-frame HARD CUT into a
    full-bleed dark result; stats pop in staggered. Light is grammar: dark = done. */
 export const DarkPayoffCut: React.FC = () => {
