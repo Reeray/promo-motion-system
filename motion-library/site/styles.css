@@ -241,24 +241,6 @@ h1.title {
     grid-template-columns: 1fr;
   }
 }
-.group-label {
-  grid-column: 1 / -1;
-  background: var(--bg);
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-size: 12px;
-  letter-spacing: 0.03em;
-  color: var(--faint);
-  padding: 20px 22px 18px;
-  text-transform: uppercase;
-}
-.group-label .rule {
-  flex: 1;
-  height: 1px;
-  background: var(--border);
-}
-
 .demo {
   background: var(--bg);
   cursor: pointer;
@@ -276,67 +258,23 @@ h1.title {
   padding-bottom: 56.25%;
   overflow: hidden;
 }
-/* fill with the Player root (a <div>) but leave the .hint <span> alone */
-.demo .player > *:not(.hint) {
+.demo .player > * {
   position: absolute !important;
   top: 0;
   left: 0;
   width: 100% !important;
   height: 100% !important;
 }
-.demo .player .hint {
-  position: absolute;
-  right: 9px;
-  bottom: 9px;
-  z-index: 2;
-  font-size: 10.5px;
-  letter-spacing: 0.01em;
-  color: var(--faint);
-  background: var(--hover);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 3px 7px;
-  opacity: 0;
-  transition: opacity 0.18s ease;
-  pointer-events: none;
-}
-.demo:hover .player .hint {
-  opacity: 1;
-}
 .demo .body {
   padding: 14px 18px 18px;
 }
-.demo .head {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-bottom: 7px;
-}
 .demo .name {
+  display: block;
+  margin-bottom: 7px;
   font-family: 'Geist Mono', monospace;
   font-size: 14.5px;
   font-weight: 500;
   letter-spacing: -0.01em;
-}
-.chip {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.2px;
-  border-radius: 6px;
-  padding: 3px 8px;
-  color: #fff;
-  white-space: nowrap;
-}
-.chip.b {
-  background: var(--chipB);
-}
-.chip.a {
-  background: var(--chipA);
-}
-.chip.c {
-  background: var(--chipC-bg);
-  color: var(--chipC-fg);
 }
 .demo p {
   font-size: 13.5px;

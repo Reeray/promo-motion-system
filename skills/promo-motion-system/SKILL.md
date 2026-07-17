@@ -445,21 +445,35 @@ onscreen.move  .4,  0,   .2,  1     material-std    EASE.move
 
 ## Reference Implementation — live Remotion library
 
-Fourteen signature primitives are reproduced as working Remotion code in this repo's
+Signature primitives are reproduced as working Remotion code in this repo's
 **`motion-library/`** (clips labeled with primitive name + source on screen). Live scrubbable
-gallery: the GitHub Pages site (`docs/`). 
-- `src/clips/A.tsx` — type-on + highlighter · comet-paint · anchored-grow · ghost-wipe
-- `src/clips/B.tsx` — dot-birth + palette-flood · quantum-bars · swallow-morph ·
-  hover-ignite · headline-swap
+gallery: the GitHub Pages site (`docs/`). The site + rendered reel now feature a **curated set**
+— the polished text-animation samples plus the GPT-5.5 house-standard UI motions (hover to play,
+click to pause; no tiers/tags). The full per-tier reproductions remain in `A.tsx`/`B.tsx`.
+- `src/clips/text.tsx` — **polished text-animation samples** (animate-text idiom):
+  type-on + highlighter · comet-paint · blur-resolve · word-cascade · gradient-sweep.
 - `src/clips/C.tsx` — chip-tokenize · log-theater · **log-theater-zoomed** (static macro crop)
   · dark-payoff cut · **camera macro-push**
+- `src/clips/A.tsx` / `B.tsx` — the tier-A/B reproductions (anchored-grow, ghost-wipe,
+  dot-birth, quantum-bars, swallow-morph, hover-ignite, headline-swap).
 - `src/lib/ease.ts` — measured curves incl. the GPT-5.5 set above (`EASE.uiEnter`,
-  `EASE.camera`), `qstep` quantized stepper ([B]'s pixel physics), deterministic `rand`.
+  `EASE.camera`, `EASE.preCut`), `qstep` quantized stepper ([B]'s pixel physics), `rand`.
 
-Preview: `npm run studio` (or `npm run site:dev`) in `motion-library/`. Rendered reel:
-`docs/motion-library.mp4`. When building a real promo, START by copying the relevant clip
-components — they encode the measured timings. Renderer gotcha: unicode glyphs (✦ ↑) are
-unreliable in the headless renderer — draw icons with CSS shapes instead.
+**Smoothness recipe** (text.tsx — how to avoid stiff, "snapping" text motion):
+- **Smootherstep, not linear/threshold.** Reveal each element with `t³(t(6t−15)+10)` so it has
+  zero velocity AND acceleration at both ends — no visible on/off snap.
+- **Overlapping windows.** Neighboring words/chars ease in over generous, overlapping ranges so
+  motion is continuous rather than "everything moves then stops."
+- **Interpolate color, never switch it.** `interpolateColors(p,[0,1],[accent,ink])` — the comet's
+  paint reads as a smooth material change, not a hard recolor (the old version's main stiffness).
+- **Velocity-scaled motion blur.** The comet streak length = |Δhead|·k, so it stretches when fast
+  and tightens when slow — the single biggest "smooth" tell for anything that travels.
+- **spring() for organic settles**, near-critically damped (`damping≈26, stiffness≈120`) to keep
+  the GPT-5.5 "no overshoot" feel.
+
+Preview: `npm run studio` (or `npm run site:dev`) in `motion-library/`. When building a real promo,
+START by copying the relevant clip components — they encode the measured timings. Renderer gotcha:
+unicode glyphs (✦ ↑) are unreliable in the headless renderer — draw icons with CSS shapes instead.
 
 ## Production Notes (inferred)
 
