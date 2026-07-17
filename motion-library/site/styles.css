@@ -13,6 +13,7 @@
   --chipB: #e0532f;
   --chipC-bg: #2b2b31;
   --chipC-fg: #ffffff;
+  --hover: #f5f6f8;
   --shadow: 0 1px 2px rgba(16, 24, 40, 0.05), 0 18px 40px -22px rgba(16, 24, 40, 0.18);
 }
 :root[data-theme='dark'] {
@@ -28,6 +29,7 @@
   --code-bg: rgba(255, 255, 255, 0.07);
   --chipC-bg: #e7e7ea;
   --chipC-fg: #17171a;
+  --hover: rgba(255, 255, 255, 0.035);
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 22px 48px -26px rgba(0, 0, 0, 0.7);
 }
 
@@ -213,21 +215,25 @@ h1.title {
   border-color: var(--muted);
 }
 
-/* ---- gallery: two items in a row ---- */
+/* ---- gallery: flat hairline grid (pixelpoint-style) ----
+   1px gap over a border-colored background paints the hairlines between flush cells;
+   each cell carries its own --bg so only the gaps show through. No cards, no shadows. */
 .gallery {
   min-height: 0;
-  padding: 40px 32px 80px;
+  padding: 0;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   grid-auto-rows: max-content;
-  gap: 20px;
+  gap: 1px;
+  background: var(--border);
+  border-top: 1px solid var(--border);
   align-content: start;
 }
 @media (min-width: 960px) {
   .gallery {
     height: 100svh;
     overflow-y: auto;
-    padding: 48px 40px 90px;
+    border-top: 0;
   }
 }
 @media (max-width: 620px) {
@@ -237,17 +243,15 @@ h1.title {
 }
 .group-label {
   grid-column: 1 / -1;
+  background: var(--bg);
   display: flex;
   align-items: center;
   gap: 12px;
-  font-size: 12.5px;
-  letter-spacing: 0.02em;
+  font-size: 12px;
+  letter-spacing: 0.03em;
   color: var(--faint);
-  margin: 24px 0 2px;
+  padding: 20px 22px 18px;
   text-transform: uppercase;
-}
-.group-label:first-child {
-  margin-top: 0;
 }
 .group-label .rule {
   flex: 1;
@@ -256,11 +260,12 @@ h1.title {
 }
 
 .demo {
-  background: var(--card);
-  border: 1px solid var(--card-border);
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: var(--shadow);
+  background: var(--bg);
+  cursor: pointer;
+  transition: background 0.18s ease;
+}
+.demo:hover {
+  background: var(--hover);
 }
 /* padding-bottom aspect box: % padding resolves against the (already-sized) column,
    so the grid row measures correctly — avoids the aspect-ratio-in-grid collapse. */
@@ -270,18 +275,36 @@ h1.title {
   height: 0;
   padding-bottom: 56.25%;
   overflow: hidden;
-  background: #fff;
-  border-bottom: 1px solid var(--card-border);
 }
-.demo .player > * {
+/* fill with the Player root (a <div>) but leave the .hint <span> alone */
+.demo .player > *:not(.hint) {
   position: absolute !important;
   top: 0;
   left: 0;
   width: 100% !important;
   height: 100% !important;
 }
+.demo .player .hint {
+  position: absolute;
+  right: 9px;
+  bottom: 9px;
+  z-index: 2;
+  font-size: 10.5px;
+  letter-spacing: 0.01em;
+  color: var(--faint);
+  background: var(--hover);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 3px 7px;
+  opacity: 0;
+  transition: opacity 0.18s ease;
+  pointer-events: none;
+}
+.demo:hover .player .hint {
+  opacity: 1;
+}
 .demo .body {
-  padding: 15px 18px 18px;
+  padding: 14px 18px 18px;
 }
 .demo .head {
   display: flex;
