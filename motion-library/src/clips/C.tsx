@@ -90,6 +90,66 @@ export const ChipTokenize: React.FC = () => {
   );
 };
 
+/* C-cam — camera macro-push: the viewport pushes IN to showcase a hero component
+   (the prompt bar) right before an interaction. MEASURED from GPT-5.5: ~1.6× scale over
+   ~0.5s with a strong ease-out that decelerates into the hold (EASE.camera). Origin =
+   the component's center. A live readout shows the current zoom factor. */
+export const CameraPush: React.FC = () => {
+  const f = useCurrentFrame();
+  const z = lerp(f, [10, 25], [1, 1.6], EASE.camera); // hold, then 0.5s push @30fps
+  const breathe = 1 + Math.max(0, f - 25) * 0.0006; // ~2%/s breathe during the hold
+  return (
+    <AbsoluteFill style={{...WHITE, overflow: 'hidden'}}>
+      <AbsoluteFill
+        style={{
+          transform: `scale(${z * breathe})`,
+          transformOrigin: '50% 46%',
+          justifyContent: 'center',
+          alignItems: 'center',
+          background: 'linear-gradient(180deg,#fbfbfd,#eef1f6)',
+        }}
+      >
+        <div
+          style={{
+            width: 760,
+            borderRadius: 24,
+            background: '#fff',
+            boxShadow: '0 2px 6px rgba(0,0,0,.05), 0 26px 70px rgba(20,30,60,.14)',
+            border: '1px solid rgba(0,0,0,.05)',
+            padding: '26px 30px 20px',
+          }}
+        >
+          <div style={{fontSize: 26, color: '#9aa0ab'}}>Ask anything…</div>
+          <div style={{marginTop: 22, display: 'flex', alignItems: 'center', gap: 16, color: 'rgba(0,0,0,.42)', fontSize: 16}}>
+            <span>＋</span>
+            <span>🖐 Ask Permissions ▾</span>
+            <span style={{marginLeft: 'auto'}}>5.5 High ▾</span>
+            <span style={{width: 38, height: 38, borderRadius: 19, background: '#111', display: 'grid', placeItems: 'center'}}>
+              <span style={{width: 11, height: 11, borderLeft: '3px solid #fff', borderTop: '3px solid #fff', transform: 'rotate(45deg) translateY(2px)', borderRadius: 2}} />
+            </span>
+          </div>
+        </div>
+      </AbsoluteFill>
+      <div
+        style={{
+          position: 'absolute',
+          top: 22,
+          right: 26,
+          fontFamily: 'Consolas, monospace',
+          fontSize: 20,
+          fontWeight: 700,
+          color: '#111',
+          background: 'rgba(255,255,255,.8)',
+          borderRadius: 8,
+          padding: '4px 10px',
+        }}
+      >
+        {z.toFixed(2)}×
+      </div>
+    </AbsoluteFill>
+  );
+};
+
 /* C11 — log-theater: agent work as an accumulating checklist; the "Using X" header
    swaps as tools change; "Thinking" shimmers. Every motion is caused by the agent. */
 export const LogTheater: React.FC = () => {

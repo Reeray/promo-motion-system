@@ -377,21 +377,63 @@ bloom.hover         full-gradient ignition, ~1s build, sustained while hovered
 10. Agent/AI products: show the checklist completing — progress is the drama.
 11. Verify at 0.25×: word settles, child-follow offsets, no double motion, no naked cuts.
 
+## Measured motion values — GPT-5.5 (medium tier · house standard)
+
+Extracted frame-by-frame at 60fps (diff-to-final progress fitting against a cubic-bezier
+bank + bounding-box tracking). Use these as the DEFAULT values when composing a medium-tier
+promo — they are the calmest, most content-driven of the three tiers.
+
+**Typography**
+- **Type-on = constant rate (≈ linear)**, caret visible. ~35 chars/s for titles, ~28–30 for
+  prompts. Titles at display scale.
+- **Hold ≥ 1.0s** on a settled title before it leaves. **Exit = quick fade ~0.1–0.2s**, no
+  big movement.
+- Medium tier does NOT arrive-color text (unlike A/B) — titles are plain ink; the only
+  accent color is in chips.
+
+**UI component enter / exit**
+- **Enter = ease-out, strongly front-loaded** — `cubic-bezier(.25,.46,.45,.94)` (easeOutQuad;
+  easeOutSine a close 2nd). ~50% of the change in the first ~30% of the time.
+- Components **fade + tiny scale** (bbox change ≈ 0–3%) — **not** a scale-pop from 0.9. Calm.
+- **Duration:** fast core 0.12–0.30s, settle tail to ~0.5–0.85s for larger surfaces.
+- **Hard payoff cut = instant (1 frame)** — reserved for white→dark result reveals (≤2/video).
+- **Staggered groups** (stat tiles): each tile ease-out, staggered ~3–5 frames (50–80ms).
+  (The group's diff-to-final reads back-loaded — that's the stagger, not the per-tile ease.)
+
+**Camera / viewport zoom**
+- **What & when:** a macro **push-in** to showcase a hero component right before an
+  interaction (e.g. the prompt bar). Small **pull-backs** after a payoff slide. Otherwise the
+  camera holds with a ~2%/s **breathe** during reads.
+- **How much:** ~**1.5–1.8× scale**. **Duration:** ~**0.4–0.6s**.
+- **Easing:** strong **ease-out deceleration** (very front-loaded) — moves fast, settles INTO
+  the hold, never overshoots. `cubic-bezier(.2,.9,.25,1)` (between material-standard and
+  easeOutExpo). **Origin = the pushed component's center.**
+
+**Ready-to-use curve set** (Remotion `Easing.bezier`, mirrored in `src/lib/ease.ts`)
+```
+type-on        linear                         constant char rate
+ui.enter       .25, .46, .45, .94   easeOutQuad     EASE.uiEnter
+ui.enter(soft) .61, 1,   .88, 1     easeOutSine     EASE.uiEnterSoft
+camera.push    .2,  .9,  .25, 1     strong ease-out EASE.camera
+onscreen.move  .4,  0,   .2,  1     material-std    EASE.move
+```
+
 ## Reference Implementation — live Remotion library
 
-Twelve signature primitives are reproduced as working Remotion code in
-**`D:\Memofree\motion-library\`** (clips labeled with primitive name + source on screen):
+Thirteen signature primitives are reproduced as working Remotion code in this repo's
+**`motion-library/`** (clips labeled with primitive name + source on screen). Live scrubbable
+gallery: the GitHub Pages site (`docs/`). 
 - `src/clips/A.tsx` — type-on + highlighter · comet-paint · anchored-grow · ghost-wipe
 - `src/clips/B.tsx` — dot-birth + palette-flood · quantum-bars · swallow-morph ·
   hover-ignite · headline-swap
-- `src/clips/C.tsx` — chip-tokenize · log-theater · dark-payoff cut
-- `src/lib/ease.ts` — measured curves (`EASE.outQuart` = [A]'s workhorse), `qstep`
-  quantized stepper ([B]'s pixel physics), deterministic `rand`.
+- `src/clips/C.tsx` — chip-tokenize · log-theater · dark-payoff cut · **camera macro-push**
+- `src/lib/ease.ts` — measured curves incl. the GPT-5.5 set above (`EASE.uiEnter`,
+  `EASE.camera`), `qstep` quantized stepper ([B]'s pixel physics), deterministic `rand`.
 
-Preview: `npm run studio` in that folder · Rendered reel: `out/motion-library.mp4` (32s).
-When building a real promo, START by copying the relevant clip components — they encode
-the measured timings. Renderer gotcha learned here: unicode glyphs (✦ ↑) are unreliable in
-the headless renderer — draw icons with CSS shapes instead.
+Preview: `npm run studio` (or `npm run site:dev`) in `motion-library/`. Rendered reel:
+`docs/motion-library.mp4`. When building a real promo, START by copying the relevant clip
+components — they encode the measured timings. Renderer gotcha: unicode glyphs (✦ ↑) are
+unreliable in the headless renderer — draw icons with CSS shapes instead.
 
 ## Production Notes (inferred)
 

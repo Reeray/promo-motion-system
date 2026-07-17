@@ -4,7 +4,7 @@ import {Player} from '@remotion/player';
 import './styles.css';
 import {TypeOnHighlighter, CometPaint, AnchoredGrow, GhostWipe} from '../src/clips/A';
 import {DotBirth, QuantumBars, SwallowMorph, HoverIgnite, HeadlineSwap} from '../src/clips/B';
-import {ChipTokenize, LogTheater, DarkPayoffCut} from '../src/clips/C';
+import {ChipTokenize, LogTheater, DarkPayoffCut, CameraPush} from '../src/clips/C';
 
 type Tier = 'A' | 'B' | 'C';
 type Entry = {name: string; desc: string; Comp: React.FC};
@@ -17,6 +17,7 @@ const GROUPS: {tier: Tier; label: string; entries: Entry[]}[] = [
       {name: 'chip-tokenize', desc: 'A typed @-mention converts in place into a colored tool chip ~0.1s after the word completes; typing continues around it. Chips are the only accent color.', Comp: ChipTokenize},
       {name: 'log-theater', desc: 'Agent work as an accumulating checklist with app icons; the “Using X” header swaps as tools change; “Thinking” shimmers. Every motion is caused by the agent acting.', Comp: LogTheater},
       {name: 'dark-payoff cut', desc: 'Quiet white workspace → single-frame hard cut into a full-bleed dark result; stat tiles pop in staggered. Light is grammar: white = in progress, dark = done.', Comp: DarkPayoffCut},
+      {name: 'camera macro-push', desc: 'The viewport pushes in to showcase a hero component before an interaction. Measured from the reference: ~1.6× scale over ~0.5s with a strong ease-out that decelerates into the hold — never overshoots.', Comp: CameraPush},
     ],
   },
   {

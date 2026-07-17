@@ -4,7 +4,7 @@ import {lerp} from './lib/ease';
 import {Labeled} from './lib/Labeled';
 import {TypeOnHighlighter, CometPaint, AnchoredGrow, GhostWipe} from './clips/A';
 import {DotBirth, QuantumBars, SwallowMorph, HoverIgnite, HeadlineSwap} from './clips/B';
-import {ChipTokenize, LogTheater, DarkPayoffCut} from './clips/C';
+import {ChipTokenize, LogTheater, DarkPayoffCut, CameraPush} from './clips/C';
 
 const CLIP = 75; // 2.5s @ 30fps
 
@@ -72,6 +72,9 @@ const Library: React.FC = () => (
     <Series.Sequence durationInFrames={CLIP}>
       <Labeled name="dark-payoff cut" source="C · GPT-5.5 announce"><DarkPayoffCut /></Labeled>
     </Series.Sequence>
+    <Series.Sequence durationInFrames={CLIP}>
+      <Labeled name="camera macro-push · 1.6× / 0.5s" source="C · GPT-5.5 announce"><CameraPush /></Labeled>
+    </Series.Sequence>
   </Series>
 );
 
@@ -79,7 +82,7 @@ export const Root: React.FC = () => (
   <Composition
     id="MotionLibrary"
     component={Library}
-    durationInFrames={60 + 12 * CLIP}
+    durationInFrames={60 + 13 * CLIP}
     fps={30}
     width={1280}
     height={720}

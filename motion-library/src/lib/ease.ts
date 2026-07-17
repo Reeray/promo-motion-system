@@ -1,6 +1,6 @@
 import {Easing, interpolate} from 'remotion';
 
-// Curves measured from the three studied references.
+// Curves measured from the three studied references (frame-by-frame, diff-to-final fits).
 export const EASE = {
   out: Easing.bezier(0.16, 1, 0.3, 1), // expo.out — soft confident settle
   outStrong: Easing.bezier(0.22, 1, 0.36, 1),
@@ -8,6 +8,11 @@ export const EASE = {
   inOut: Easing.bezier(0.76, 0, 0.24, 1),
   in: Easing.bezier(0.5, 0, 0.75, 0),
   back: Easing.bezier(0.34, 1.4, 0.5, 1),
+  // [C] GPT-5.5 medium-tier, MEASURED:
+  uiEnter: Easing.bezier(0.25, 0.46, 0.45, 0.94), // easeOutQuad — component fade+enter (rmse .02)
+  uiEnterSoft: Easing.bezier(0.61, 1, 0.88, 1), // easeOutSine — larger result surfaces
+  camera: Easing.bezier(0.2, 0.9, 0.25, 1), // macro push: strong ease-out, settles into hold
+  move: Easing.bezier(0.4, 0, 0.2, 1), // material-standard — symmetric on-screen moves
 };
 
 export const lerp = (
