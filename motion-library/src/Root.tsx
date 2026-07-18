@@ -2,7 +2,7 @@ import React from 'react';
 import {AbsoluteFill, Composition, Series, useCurrentFrame} from 'remotion';
 import {lerp} from './lib/ease';
 import {Labeled} from './lib/Labeled';
-import {TypeOnHighlighter, CometPaint, BlurResolve, WordCascade, GradientSweep} from './clips/text';
+import {BlurResolve, WordCascade} from './clips/text';
 import {ChipTokenize, LogTheater, LogTheaterZoomed, DarkPayoffCut, CameraPush} from './clips/C';
 
 const CLIP = 75; // 2.5s @ 30fps
@@ -31,11 +31,8 @@ const Intro: React.FC = () => {
 };
 
 const CLIPS: {name: string; source: string; Comp: React.FC}[] = [
-  {name: 'type-on + highlighter', source: 'text · animate-text idiom', Comp: TypeOnHighlighter},
-  {name: 'comet-paint', source: 'text · animate-text idiom', Comp: CometPaint},
   {name: 'blur-resolve', source: 'text · focus-pull reveal', Comp: BlurResolve},
   {name: 'word-cascade', source: 'text · staggered spring', Comp: WordCascade},
-  {name: 'gradient-sweep', source: 'text · shimmer accent', Comp: GradientSweep},
   {name: 'chip-tokenize', source: 'UI · GPT-5.5 house standard', Comp: ChipTokenize},
   {name: 'log-theater', source: 'UI · GPT-5.5 house standard', Comp: LogTheater},
   {name: 'log-theater · macro crop', source: 'UI · GPT-5.5 house standard', Comp: LogTheaterZoomed},

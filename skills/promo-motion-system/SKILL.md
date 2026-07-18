@@ -451,7 +451,7 @@ gallery: the GitHub Pages site (`docs/`). The site + rendered reel now feature a
 — the polished text-animation samples plus the GPT-5.5 house-standard UI motions (hover to play,
 click to pause; no tiers/tags). The full per-tier reproductions remain in `A.tsx`/`B.tsx`.
 - `src/clips/text.tsx` — **polished text-animation samples** (animate-text idiom):
-  type-on + highlighter · comet-paint · blur-resolve · word-cascade · gradient-sweep.
+  blur-resolve (spring focus-pull) · word-cascade (staggered spring).
 - `src/clips/C.tsx` — chip-tokenize · log-theater · **log-theater-zoomed** (static macro crop)
   · dark-payoff cut · **camera macro-push**
 - `src/clips/A.tsx` / `B.tsx` — the tier-A/B reproductions (anchored-grow, ghost-wipe,

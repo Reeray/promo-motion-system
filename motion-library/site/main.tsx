@@ -2,18 +2,15 @@ import React, {useRef, useState} from 'react';
 import {createRoot} from 'react-dom/client';
 import {Player, PlayerRef} from '@remotion/player';
 import './styles.css';
-import {TypeOnHighlighter, CometPaint, BlurResolve, WordCascade, GradientSweep} from '../src/clips/text';
+import {BlurResolve, WordCascade} from '../src/clips/text';
 import {ChipTokenize, LogTheater, LogTheaterZoomed, DarkPayoffCut, CameraPush} from '../src/clips/C';
 
 // `poster` = the frame shown while idle (paused) — the settled/representative moment.
 type Entry = {name: string; desc: string; poster: number; Comp: React.FC};
 
 const ENTRIES: Entry[] = [
-  {name: 'type-on + highlighter', poster: 62, desc: 'Each character eases in — fade, rise, de-blur — instead of hard-appearing; once the line lands, a marker highlight sweeps across the key word.', Comp: TypeOnHighlighter},
-  {name: 'comet-paint', poster: 60, desc: 'A shooting-star streak crosses the line with eased velocity and velocity-scaled motion blur; each word is painted as the head passes — accent→ink color, blur→sharp, a brief glow — over a continuous overlapping window.', Comp: CometPaint},
   {name: 'blur-resolve', poster: 60, desc: 'A headline resolves from a soft, slightly-enlarged blur into sharp focus; each word springs in near-critically damped (no overshoot), a few frames apart. The premium focus-pull reveal.', Comp: BlurResolve},
   {name: 'word-cascade', poster: 62, desc: 'Words rise and de-blur in a staggered spring cascade; the motion stays continuous because each word’s spring overlaps the next. The last word settles in accent.', Comp: WordCascade},
-  {name: 'gradient-sweep', poster: 30, desc: 'The settled headline fades in, then an accent shimmer sweeps across it continuously (background-clip:text). A polish accent for a held title.', Comp: GradientSweep},
   {name: 'chip-tokenize', poster: 56, desc: 'A typed @-mention converts in place into a colored tool chip ~0.1s after the word completes; typing continues around it. Chips are the only accent color.', Comp: ChipTokenize},
   {name: 'log-theater', poster: 66, desc: 'Agent work as an accumulating checklist with app icons; the “Using X” header swaps as tools change; “Thinking” shimmers. Every motion is caused by the agent acting.', Comp: LogTheater},
   {name: 'log-theater-zoomed', poster: 70, desc: 'The same log framed as a static macro crop — the app window is bigger than the viewport and pinned to the top-left corner; the feed auto-scrolls inside. The macro settles on entry (window ~0.9→1.0 + translate, ease-out, no overshoot), then holds.', Comp: LogTheaterZoomed},
