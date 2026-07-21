@@ -6,8 +6,6 @@ import {Block} from '../src/blocks/types';
 import {ANIMATE_TEXT_BLOCKS} from '../src/blocks/animate-text';
 import {TRANSITION_BLOCKS} from '../src/blocks/transitions';
 import {ChipTokenize, LogTheater, LogTheaterZoomed, CameraPush} from '../src/clips/C';
-import {HFSpacesAgentsPromo, HF_AGENTS_DURATION} from '../src/promos/HFSpacesAgents';
-import {HFHardwareFilterPromo, HF_HARDWARE_DURATION} from '../src/promos/HFHardwareFilter';
 
 // UI-motion blocks (GPT-5.5 house standard) — same Block shape as the typography set.
 const UI_BLOCKS: Block[] = [
@@ -177,38 +175,8 @@ const FormulaStrip: React.FC = () => (
    NOTE: this is real-time browser playback — it can drop frames on heavy scenes and does
    not exercise the encoder, so the RENDER stays the source of truth for the exposure /
    legibility gates. Use this to iterate, render to verify. */
-const PROMOS: Record<string, {Comp: React.FC; dur: number; fps: number; label: string}> = {
-  agents: {Comp: HFSpacesAgentsPromo, dur: HF_AGENTS_DURATION, fps: 60, label: 'HF · Build Spaces with AI Agents'},
-  hardware: {Comp: HFHardwareFilterPromo, dur: HF_HARDWARE_DURATION, fps: 60, label: 'HF · Filter models by hardware'},
-};
-
-const PromoPreview: React.FC<{id: string}> = ({id}) => {
-  const p = PROMOS[id] ?? PROMOS.agents;
-  return (
-    <div style={{minHeight: '100svh', background: '#0b0e13', color: '#e9ecef', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14, padding: 20, fontFamily: 'Inter, system-ui, sans-serif'}}>
-      <div style={{display: 'flex', gap: 12, alignItems: 'baseline', width: '100%', maxWidth: 1100}}>
-        <strong style={{fontSize: 14}}>{p.label}</strong>
-        <span style={{fontSize: 12, color: '#6b7484', fontFamily: 'Geist Mono, monospace'}}>
-          {p.dur}f · {p.fps}fps · {(p.dur / p.fps).toFixed(1)}s · live preview
-        </span>
-        <a href="./" style={{marginLeft: 'auto', fontSize: 12, color: '#98a2b3'}}>← gallery</a>
-      </div>
-      <div style={{width: '100%', maxWidth: 1100, border: '1px solid rgba(255,255,255,.1)', borderRadius: 10, overflow: 'hidden'}}>
-        <Player
-          component={p.Comp}
-          durationInFrames={p.dur}
-          fps={p.fps}
-          compositionWidth={1280}
-          compositionHeight={720}
-          controls
-          loop
-          acknowledgeRemotionLicense
-          style={{width: '100%'}}
-        />
-      </div>
-    </div>
-  );
-};
+/* This site is the BLOCK LIBRARY only — no finished promos, no rendered MP4s.
+ * Promos are previewed locally (the editor route) and watched via out/watch.html. */
 
 const App: React.FC = () => {
   const [theme, setTheme] = useState<string>(
@@ -296,5 +264,4 @@ const App: React.FC = () => {
   );
 };
 
-const promoId = new URLSearchParams(location.search).get('promo');
-createRoot(document.getElementById('root')!).render(promoId ? <PromoPreview id={promoId} /> : <App />);
+createRoot(document.getElementById('root')!).render(<App />);

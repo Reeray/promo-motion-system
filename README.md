@@ -13,7 +13,7 @@ scrubbable Remotion player.
 |---|---|
 | [`skills/promo-motion-system/SKILL.md`](skills/promo-motion-system/SKILL.md) | The full skill: 3 effort-tier blueprints, 15-transition catalog, 40+ named primitives, measured timing charts, intake questionnaire, pre-production contract |
 | [`motion-library/`](motion-library) | Remotion project reproducing 12 signature primitives with the measured timings |
-| [`docs/`](docs) | Built preview site (GitHub Pages) + rendered 32s reel MP4 |
+| [`docs/`](docs) | Built preview site (GitHub Pages) — the block library, nothing else |
 
 ## The system in one paragraph
 
@@ -40,7 +40,7 @@ cd motion-library
 npm install
 npm run studio       # Remotion Studio — scrub the reel composition
 npm run site:dev     # the preview site with per-primitive players
-npm run render       # render the 32s reel to out/motion-library.mp4
+npm run render       # render the block reel (~12s) to out/motion-library.mp4
 ```
 
 ## Credits
