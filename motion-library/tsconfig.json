@@ -5,6 +5,8 @@
     "moduleResolution": "Bundler",
     "jsx": "react-jsx",
     "strict": true,
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
     "skipLibCheck": true,
     "noEmit": true,
     "lib": ["DOM", "ES2022"]

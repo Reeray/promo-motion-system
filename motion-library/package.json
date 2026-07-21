@@ -2,12 +2,15 @@
   "name": "motion-library",
   "private": true,
   "scripts": {
+    "check": "node scripts/check-render-safety.mjs",
+    "check:render": "python scripts/check-render.py",
     "studio": "remotion studio",
     "render": "remotion render MotionLibrary out/motion-library.mp4",
     "site:dev": "vite",
     "site:build": "vite build"
   },
   "dependencies": {
+    "@remotion/google-fonts": "^4.0.490",
     "@remotion/player": "^4.0.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

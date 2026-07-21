@@ -46,7 +46,7 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 .mono {
-  font-family: 'Geist Mono', ui-monospace, 'Cascadia Code', monospace;
+  font-family: 'IBM Plex Mono', ui-monospace, 'Cascadia Code', monospace;
 }
 a {
   color: inherit;
@@ -113,7 +113,7 @@ h1.title {
   max-width: 42ch;
 }
 .lead code {
-  font-family: 'Geist Mono', monospace;
+  font-family: 'IBM Plex Mono', monospace;
   font-size: 14px;
   background: var(--code-bg);
   padding: 1px 6px;
@@ -207,7 +207,7 @@ h1.title {
   padding: 7px 12px;
   font-size: 12.5px;
   cursor: pointer;
-  font-family: 'Geist Mono', monospace;
+  font-family: 'IBM Plex Mono', monospace;
   transition: color 0.2s, border-color 0.2s;
 }
 .theme-toggle:hover {
@@ -241,6 +241,32 @@ h1.title {
     grid-template-columns: 1fr;
   }
 }
+.group-label {
+  grid-column: 1 / -1;
+  background: var(--bg);
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 22px 22px 16px;
+}
+.group-label .cat {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--fg);
+}
+.group-label .count {
+  font-size: 11.5px;
+  color: var(--faint);
+  letter-spacing: 0.02em;
+}
+.group-label .rule {
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+  align-self: center;
+}
 .demo {
   background: var(--bg);
   cursor: pointer;
@@ -268,17 +294,206 @@ h1.title {
 .demo .body {
   padding: 14px 18px 18px;
 }
-.demo .name {
-  display: block;
+.demo .head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
   margin-bottom: 7px;
-  font-family: 'Geist Mono', monospace;
+}
+.demo .hleft {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.demo .name {
+  font-family: 'IBM Plex Mono', monospace;
   font-size: 14.5px;
   font-weight: 500;
   letter-spacing: -0.01em;
+}
+/* copy-block-name button, sits next to the title */
+.demo .copybtn {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--faint);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.16s ease, color 0.16s ease, background 0.16s ease;
+}
+.demo:hover .copybtn,
+.demo .copybtn:focus-visible {
+  opacity: 1;
+}
+.demo .copybtn:hover {
+  color: var(--fg);
+  background: var(--code-bg);
+}
+/* transition role tag — filled, one colour per type, top-right of the card */
+/* tinted fill, text in the same hue as the background */
+.demo .tag {
+  flex-shrink: 0;
+  font-size: 8.5px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  border-radius: 4px;
+  padding: 2px 5px;
+  line-height: 1.35;
+  color: var(--tag-fg);
+  background: var(--tag-bg);
+}
+.demo .tag.t-outro {
+  --tag-bg: rgba(224, 83, 47, 0.13);
+  --tag-fg: #d8491f;
+}
+.demo .tag.t-intro {
+  --tag-bg: rgba(14, 158, 124, 0.13);
+  --tag-fg: #0b8f70;
+}
+.demo .tag.t-full-tro {
+  --tag-bg: rgba(109, 74, 255, 0.13);
+  --tag-fg: #5f3df0;
+}
+:root[data-theme='dark'] .demo .tag.t-outro {
+  --tag-bg: rgba(255, 122, 82, 0.16);
+  --tag-fg: #ff8a63;
+}
+:root[data-theme='dark'] .demo .tag.t-intro {
+  --tag-bg: rgba(42, 211, 159, 0.16);
+  --tag-fg: #3fdcaa;
+}
+:root[data-theme='dark'] .demo .tag.t-full-tro {
+  --tag-bg: rgba(157, 134, 255, 0.18);
+  --tag-fg: #a996ff;
+}
+/* source moved to the lower right of the card */
+.demo .foot {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 10px;
+}
+.demo .source {
+  flex-shrink: 0;
+  font-size: 11px;
+  color: var(--faint);
+  letter-spacing: 0.01em;
 }
 .demo p {
   font-size: 13.5px;
   line-height: 1.5;
   color: var(--muted);
   text-wrap: pretty;
+}
+
+/* ---- Formula: full-width outline storyboard strip ---- */
+.formula {
+  grid-column: 1 / -1;
+  background: var(--bg);
+  padding: 26px 24px 30px;
+}
+.formula-head {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.formula-head .flabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--fg);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+.formula-head .fsub {
+  font-size: 12px;
+  color: var(--faint);
+  letter-spacing: 0.02em;
+}
+.formula-flow {
+  display: flex;
+  align-items: stretch;
+}
+.phase {
+  flex-basis: 0;
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 15px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: transparent;
+}
+.phase-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+.phase .pnum {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+  letter-spacing: 0.05em;
+}
+.phase .pshare {
+  font-size: 11.5px;
+  color: var(--faint);
+}
+.phase .pname {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--fg);
+  letter-spacing: -0.01em;
+}
+.phase .pjob {
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--muted);
+  text-wrap: pretty;
+}
+.phase .pbeat {
+  font-size: 11px;
+  color: var(--faint);
+  letter-spacing: 0.02em;
+  margin-top: auto;
+  padding-top: 6px;
+}
+.phase-arrow {
+  align-self: center;
+  flex: 0 0 auto;
+  padding: 0 10px;
+  color: var(--faint);
+  font-size: 16px;
+}
+.formula-axis {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 18px;
+  font-size: 11px;
+  color: var(--faint);
+}
+.formula-axis .axis-line {
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+@media (max-width: 620px) {
+  .formula-flow {
+    flex-direction: column;
+  }
+  .phase-arrow {
+    transform: rotate(90deg);
+    padding: 6px 0;
+  }
 }

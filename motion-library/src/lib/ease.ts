@@ -18,6 +18,11 @@ export const EASE = {
   // Pre-cut PUSH — measured: outgoing surface scales up with an ACCELERATING (ease-in) ramp
   // that runs straight into a hard cut (composer & exec-summary both do this).
   preCut: Easing.bezier(0.5, 0, 1, 0.5), // easeIn accelerate — push into a hard cut
+  // SHORT-THROW EXIT — measured @13.45–13.583s: the outgoing surface accelerates through a
+  // tiny displacement (~30px on a 1920 frame = ~1.5% of frame width) and is HARD-CUT at peak
+  // velocity while still fully on screen. ≈easeInQuad with a terminal surge. Never animate the
+  // element all the way off-frame: the eye extrapolates the motion, so the cut reads as a throw.
+  throwOut: Easing.bezier(0.45, 0.02, 0.85, 0.25),
 };
 
 export const lerp = (

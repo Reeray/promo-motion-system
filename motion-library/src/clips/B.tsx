@@ -1,8 +1,9 @@
 import React from 'react';
 import {AbsoluteFill, useCurrentFrame} from 'remotion';
 import {EASE, lerp, qstep, rand} from '../lib/ease';
+import {FONT} from '../lib/palette';
 
-const CREAM: React.CSSProperties = {backgroundColor: '#faf3ed'};
+const CREAM: React.CSSProperties = {backgroundColor: '#faf3ed', fontFamily: FONT.sans};
 const PIX = 26; // pixel quantum
 // jurni-like pixel glyph on a 5×5 grid (1 = filled)
 const GLYPH = [
@@ -129,7 +130,7 @@ export const HoverIgnite: React.FC = () => {
   const lit = lerp(f, [26, 40], [0, 1], (t) => t) * (f < 56 ? 1 : lerp(f, [56, 64], [1, 0]));
   const press = f >= 52 && f < 58 ? 0.94 : 1;
   return (
-    <AbsoluteFill style={{background: 'linear-gradient(160deg,#f6d9c8,#eda282)', justifyContent: 'center', alignItems: 'center'}}>
+    <AbsoluteFill style={{background: 'linear-gradient(160deg,#f6d9c8,#eda282)', fontFamily: FONT.sans, justifyContent: 'center', alignItems: 'center'}}>
       <div
         style={{
           position: 'relative',
@@ -193,7 +194,7 @@ export const HeadlineSwap: React.FC = () => {
   const newW = ['Every', 'Shopping', 'Journey'];
   const starts = [22, 32, 42];
   return (
-    <AbsoluteFill style={{background: 'linear-gradient(150deg,#ded9f5,#f5dbe4,#f7e5d5)', justifyContent: 'center', alignItems: 'center'}}>
+    <AbsoluteFill style={{background: 'linear-gradient(150deg,#ded9f5,#f5dbe4,#f7e5d5)', fontFamily: FONT.sans, justifyContent: 'center', alignItems: 'center'}}>
       <div style={{display: 'flex', gap: 24, fontSize: 54, fontWeight: 700, letterSpacing: -1}}>
         {oldW.map((w, i) => {
           const s = starts[i];

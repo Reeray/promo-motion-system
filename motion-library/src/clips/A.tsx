@@ -1,8 +1,9 @@
 import React from 'react';
 import {AbsoluteFill, useCurrentFrame} from 'remotion';
 import {EASE, lerp} from '../lib/ease';
+import {PX, FONT} from '../lib/palette';
 
-const WHITE: React.CSSProperties = {backgroundColor: '#fff'};
+const WHITE: React.CSSProperties = {backgroundColor: PX.bg, fontFamily: FONT.sans};
 
 /* A1 — type-on + highlighter: chars type with a caret; a soft teal blob rides the
    newest words and fades ~0.6s after the line settles. */
@@ -101,7 +102,7 @@ export const AnchoredGrow: React.FC = () => {
   const g = lerp(f, [10, 26], [0, 1], EASE.outQuart);
   const rows = ['Grok 4.3', 'Opus 4.8', 'ChatGPT 5.5', 'Gemini 3.5'];
   return (
-    <AbsoluteFill style={{background: 'linear-gradient(160deg,#dfe9f5,#c6d8ee)', justifyContent: 'flex-end', alignItems: 'center'}}>
+    <AbsoluteFill style={{background: 'linear-gradient(160deg,#dfe9f5,#c6d8ee)', fontFamily: FONT.sans, justifyContent: 'flex-end', alignItems: 'center'}}>
       <div
         style={{
           marginBottom: 210,

@@ -1,6 +1,6 @@
 ---
 name: promo-motion-system
-description: Reusable motion-design system for AI/tech product promo and brand-launch videos, organized by EFFORT TIER (quick / medium / high) with all three tiers grounded in frame-by-frame studied references — [A] Prism AI tutorial (QUICK feature promo), [C] "Introducing GPT-5.5" OpenAI-school (MEDIUM capability announcement, the house standard), [B] jurni brand launch (HIGH). Three storyboard blueprints, 15-transition catalog, 40+ named motion primitives, typography and chip-emphasis rules, zoom choreography, measured timing charts, per-tier amplitude budgets, and design tokens. On invocation, ASK which tier the user wants, then route. Use when making a product/feature/model release promo, launch video, teaser, brand reveal, motion graphic, kinetic typography piece, or when storyboarding any announcement video. Triggers on "promo video", "launch video", "brand launch", "release announcement", "motion graphics", "storyboard", "kinetic type".
+description: Reusable motion-design system for AI/tech product promo and brand-launch videos, organized by EFFORT TIER (quick / medium / high) with all three tiers grounded in frame-by-frame studied references — [A] Prism AI tutorial (QUICK feature promo), [C] "Introducing GPT-5.5" OpenAI-school (MEDIUM capability announcement, the house standard), [B] jurni brand launch (HIGH). Three storyboard blueprints, 15-transition catalog, 40+ named motion primitives, typography and chip-emphasis rules, zoom choreography, measured timing charts, per-tier amplitude budgets, and design tokens. On invocation, ASK which THEME the user wants — soft light or dark — then route (tier defaults to MEDIUM, the house standard). Use when making a product/feature/model release promo, launch video, teaser, brand reveal, motion graphic, kinetic typography piece, or when storyboarding any announcement video. Triggers on "promo video", "launch video", "brand launch", "release announcement", "motion graphics", "storyboard", "kinetic type".
 ---
 
 # Promo Motion System — "Structure > Visuals"
@@ -11,8 +11,25 @@ narrative, directs the eye, or bridges scenes. Nothing moves just to be pretty.
 
 ## 0 · ROUTING — always do this first
 
-Unless the user already said so, **ask which tier of promo they want**, then apply that
-tier's blueprint, pacing, and production depth:
+Unless the user already said so, **ask which THEME they want: soft light or dark.** That is the
+one routing question — it sets the stage palette for the whole piece:
+
+| Theme | Stage | Ink | Use / feel |
+|---|---|---|---|
+| **Soft light** | `PX` — soft off-white **`#e9ecf1`** (surfaces `#f8fafc` sit slightly brighter on top) | `#14161c` | the OpenAI "white void" school: airy, editorial, calm. **Never pure `#fff`** — see the RENDER EXPOSURE law |
+| **Dark** | `PD` — **`#0b0e13`** (cards `#14181f`, border `rgba(255,255,255,.10)`) | `#e9ecef` | product/terminal feel, lets colour-rich UI and charts glow; matches dark-theme product captures |
+
+**Two rules that follow from the answer:**
+1. **The theme governs the PROMO STAGE** — title cards, interstitials, payoff, CTA. Import `PX`
+   (light) or `PD` (dark); never the theme-aware `P` (see DECLARE, DON'T INHERIT).
+2. **The product UI keeps the theme it was CAPTURED in.** If the real page is dark, the UI mock
+   stays dark even inside a light-stage promo — a screenshot doesn't flip. Getting this backwards is
+   what made a UI block invisible once. Where stage and UI themes differ, let the UI float as a card
+   against the stage (that contrast is a feature, not a bug).
+
+**Tier is no longer asked — it defaults to MEDIUM** (the house standard: calm, content-driven,
+demo-carried). Only revisit tier if the user explicitly asks for a quicker/louder piece, using this
+table:
 
 | Tier | Exemplar | Character | Scope |
 |---|---|---|---|
@@ -30,17 +47,18 @@ B (loudest) > A > C (quietest). Duration ranking: B ≈ C > A.
 
 ## 0.5 · INTAKE — scope the video before designing anything
 
-After tier, collect these (use AskUserQuestion where the choices are enumerable; accept
+After the theme (§0), collect these (use AskUserQuestion where the choices are enumerable; accept
 "decide for me" and apply the noted default). Do not skip intake unless the user has
-already answered these in their brief.
+already answered these in their brief. Tier is not asked — it defaults to MEDIUM (§0).
 
 1. **Subject** — what exactly is being announced (product/feature/model name) and its
    one-line function. *No default; required.*
 2. **The One Claim** — if the viewer remembers a single sentence, what is it? Becomes the
    thesis title ([C]) or the recap kinetic line ([A]). *Required; offer to draft 3 options.*
 3. **Demoable moments** — what can actually be shown? For MEDIUM: candidates for the
-   toy / work / money trilogy. Note for each: real UI available (replicate precisely — use
-   `live-page-replica`) vs mock to design. *Required for any tier with demo acts.*
+   toy / work / money trilogy. For each, record **how the real UI will be obtained** — see
+   §0.6 CAPTURE. Ask now whether surfaces sit behind a login, since that decides the method
+   (Claude in Chrome) and is the most common late blocker. *Required for any tier with demo acts.*
 4. **Brand kit** — logo/mark (its construction seeds the motion physics per §2), palette,
    font. *Default: neutral white-void + ink, chips as accent ([C] tokens).*
 5. **Audience & platform** — who watches, where it ships. *Default: technical audience,
@@ -52,6 +70,177 @@ already answered these in their brief.
    references read perfectly muted).*
 9. **References & no-gos** — anything to emulate or avoid (e.g. "no glassmorphism").
    *Default: none.*
+
+## 0.6 · CAPTURE THE REAL UI — do this before designing any feature shot (gate)
+
+Pairs with §0.8: the **flow names the surfaces**, this step **gets them**. Neither is done until
+both agree. **Do not design or build a feature shot for a surface you have not captured.**
+Inventing UI is the single most common cause of a promo that feels fake and teaches the wrong
+product — and it is nearly invisible in review, because invented UI still *looks* plausible.
+
+### 1 · List the surfaces
+From the flow, write every surface the video must show. For each: *do I have the real thing?*
+
+### 2 · Capture, by access type
+
+| Situation | Method |
+|---|---|
+| **Auth-walled** (dashboards, create/settings pages, anything behind login) | **Claude in Chrome** — drives the user's own logged-in browser. The only method that gets past a login wall. |
+| Public page | `live-page-replica` skill (real DOM + compiled CSS), or Chrome |
+| Design not yet shipped | Figma + `figma-to-code` |
+| User has it locally | ask for a **screenshot** — fastest path, zero setup |
+| Genuinely unavailable | STOP. Record a blocker (§4). Do not invent. |
+
+**Claude in Chrome procedure:** `tabs_context_mcp` → `navigate` to the page → `computer
+{action:"screenshot"}` for layout → `get_page_text` for **exact strings**. Read only; never
+submit forms, create records, or click destructive controls on a live account.
+
+### 3 · Extract — verbatim, into constants
+Pull and record, word for word:
+- every **label, button, heading, placeholder, command, URL** that will appear on screen
+- the **control type** (a two-way toggle is not a row of chips — getting this wrong rewrites the story).
+  **Operate it to confirm — never infer behaviour from the tag/href.** A "category card" that looks
+  like an `<a href="/models">` link may actually be the graph's *filter*; the only way to know is to
+  click it and watch. (This bit once: cards were called nav links from their href, but clicking them
+  recoloured the donut and reshaped the 3D chart by repo type.)
+- **states** the flow needs (before/after, empty/filled, default/selected) — capture the **real
+  data for each**, e.g. the actual result rows for *every* option the demo clicks (§3b), not one
+- the **theme** as the user actually sees it (light/dark), and the real accent colour
+
+### 3b · MEASURE the styles — do not eyeball the screenshot
+
+**UI fidelity is measured, exactly like motion fidelity.** Reading pixels off a screenshot drifts
+— the first hardware-filter mock got the body font, chip radius, chip padding, row fill, heading
+weight and background colour all wrong, and none of it was obvious in review. Screenshots tell you
+*layout*; only the live source tells you *values*.
+
+Use **`live-page-replica`** (real DOM + compiled CSS) or, in Chrome, read the real computed styles:
+
+```js
+// per hero element (a chip, a result row, the header): pull the values, don't guess them
+getComputedStyle(el).getPropertyValue('font-family' | 'font-size' | 'font-weight' |
+  'border-radius' | 'padding' | 'background-color' | 'color' | 'border')
+```
+
+Record the exact values as tokens: the **product's real font** (load it via `@remotion/google-fonts`
+too — e.g. HF is *Source Sans Pro*, not Inter), radii (a pill is `9999px`, not `18px`), whether a
+row is a filled card or **transparent with a 1px border**, real hex/rgb colours (convert oklch/oklab
+→ rgb). Build the simplified mock from these tokens — the *look* is measured, the *layout* is simplified.
+
+Put copy AND the measured style tokens in named constants at the top of the promo file, so both are
+auditable against the capture and never drift. Then **simplify** the layout per the CAPTURE, THEN
+SIMPLIFY law (§0.8) — keep the control being operated, the carried object, and the state that
+changes; cut the rest. Simplify *structure*, never *values*.
+
+### 3c · EXTRACT THE COMPONENT, NOT THE VIBE — the deepest fidelity fix
+
+Measuring tokens (§3b) fixes the *paint* but not the *structure*. You can load the right font and
+still rebuild a component from your mental model — and the mental model is where fidelity dies: it
+invents the icon, drops the avatar, flattens the meta row, guesses the selected state. That is still
+eyeballing, one level up. Symptom seen twice: "the extraction is still far from close" even after
+the colours were right.
+
+**Fix: replicate the component, don't re-imagine it.** For each hero element (a chip, a card, the
+header), capture the real thing and copy it:
+
+```js
+el.outerHTML                       // the real node structure — avatar, meta row, every child
+getComputedStyle(el)               // per node (see §3b)
+// BOTH states of any control you'll operate — grab a selected AND an unselected instance that
+// already exist on the page (or toggle it), never guess the difference:
+document.querySelector('.tag-selected'); document.querySelector('.inactive')
+await fetch(iconUrl).then(r => r.text())   // pull SVG assets to inline verbatim
+```
+
+Then **simplify by DELETING nodes** — remove secondary nav, legal text, columns you don't need.
+Never restyle or re-draw the nodes you keep. Simplification is subtraction, not reinterpretation.
+Promote the reusable atoms into a block (e.g. `blocks/ui/<product>-*.tsx`) built *from the capture*,
+so the next video reuses the real component instead of re-inventing it.
+
+### ⚑ LAW — SIMPLIFY BY SUBTRACTION, KEEP THE SKELETON
+
+Deleting nodes is safe; **moving them is not**. The moment you relocate an element to a new region,
+the mock stops being *that product* and becomes a generic diagram — the exact "shifted away from the
+realness" failure. Simplification removes content within the real skeleton; it never re-flows it.
+
+- **Preserve the page's spatial structure.** If the real page is a **two-panel layout** (left filter
+  rail · right results panel), keep those two panels. Cut the *facet groups you don't demo* from the
+  left rail (Tasks, Parameters, Libraries…), but the Hardware control stays where it really is, and
+  the rail stays a rail.
+- **Every element keeps its real region and alignment.** The results count ("Models 2,924,567") lives
+  in the **right panel header, left-aligned above the card list** — it is a property of the results,
+  not a page title. Do not hoist it into a full-width banner across the top. Same for sort controls,
+  search, tabs: they sit where the product puts them.
+- **Test:** overlay your layout boxes on the real screenshot. Each kept element should land in the
+  same region and alignment as the original. If it moved, you reinterpreted instead of subtracting.
+
+Reducing to "the most meaningful components" means **choosing which real regions to show**, at their
+real positions — not redrawing a cleaner page of your own.
+
+### ⚑ LAW — COPY ICONS, NEVER DRAW THEM
+
+Logos, device marks, task glyphs, avatars are the **#1 tell** that a mock is fake — a hand-drawn
+"four coloured squares" HF logo reads as wrong instantly, even to someone who can't say why.
+- **Copy the site's own SVG** — inline the real `<path d="…">` / asset, verbatim. Never approximate
+  a brand mark with shapes.
+- **Use the site's real image assets** — author/org **avatars**, product screenshots, raster logos are
+  right there in the DOM (`<img src>`). Capture the real URLs and **embed them** (download into the
+  project's `public/`, or inline as a `data:` URI so the headless render has no network dependency).
+  A real avatar reads as real; a coloured monogram square reads as a mock.
+- **Monogram/neutral placeholder is the LAST resort** — only when the asset is genuinely uncapturable
+  (auth-gated, hotlink-blocked). It must read as an obvious placeholder + get a blocker note, never a
+  lookalike of a real mark.
+
+### 3d · FIDELITY DIFF — the capture gate (do before building motion)
+
+Render the static replica of the hero surface and put it **beside the real screenshot**. Walk this
+checklist; every "no" means you are still inventing:
+- [ ] **Region & alignment** — every kept element is in its REAL panel/position (count above the list
+      in the right panel, filter in the left rail), not relocated into a banner or re-flowed?
+- [ ] **Icons & images** — logos/device marks copied as SVG; avatars are the site's REAL images, not monograms?
+- [ ] **Card/row structure** matches (avatar · name · full meta row: task • size • updated • ↓dl • ♡likes)?
+- [ ] **Selected vs unselected** state matches the real classes (fill, border, the × affordance)?
+- [ ] **Layout** (two-panel skeleton, borderless rows vs boxed cards, one column vs grid) is a *deletion* of the real one?
+- [ ] Font, radii, colours are the measured values (§3b)?
+
+Only when the replica passes the eye-test against the screenshot do you add motion.
+
+### 3e · PIXEL-PERFECT CHARTS & VISUALS — extract the vector, don't eyeball the projection
+
+A donut, a 3D bar landscape, a treemap, a sparkline — these look impossible to copy, so the reflex
+is to eyeball a rebuild. **Don't.** Almost every web chart is one of three things, and all three are
+extractable exactly. Inspect first (`el.tagName`, `elementFromPoint`, walk the ancestry):
+
+| Chart is rendered as | How to copy it 100% |
+|---|---|
+| **SVG** (`<polygon>`/`<path>`/`<line>`/`<rect>`) — the common case | Pull every primitive's geometry + fill from the DOM: `[...svg.querySelectorAll('polygon')].map(p=>({pts:p.getAttribute('points'), f:getComputedStyle(p).fill}))`, same for lines/paths. Then **inline verbatim** (static) OR extract the projection constants + per-element data and **regenerate with the same math** (animatable — preferred for promos). |
+| **Canvas 2D / WebGL** | No DOM to read. Capture the exact frame as an image and trace it, or reverse the data + redraw. If neither is feasible, that's a blocker (§4). |
+| **HTML/CSS** (divs with `clip-path`, transforms) | Read each node's `getComputedStyle` transform/clip-path/background and reproduce the boxes. |
+
+**The HF storage 3D landscape, worked example:** it was a single `<svg>` = 28 `<line>` (grid) +
+123 `<polygon>` (bar faces). We extracted each bar's `[baseX, topY, height, kind]` and the exact
+iso projection (tileW 28, tileH 14) + the site's exact face colours (`rgb(169,171,247)` top /
+`rgb(122,125,243)` left / `rgb(84,87,205)` right per category), then reproduced the polygons with
+the same formula. Result: byte-for-byte geometry, real colours — **and** the heights animate (bars
+rise, reshape per filter) because it's parametric, not a frozen screenshot.
+
+**Rules:**
+- **Never eyeball a chart's projection or palette.** The iso angle, the tile ratio, the shading
+  triple, the grid spacing — all are in the SVG. Read them.
+- **Prefer parametric-from-real-data over inlined-static** for anything that must animate (rise,
+  count-up, reshape). Inlined raw SVG is pixel-perfect but frozen.
+- **Capture every state you'll show.** If the chart reshapes on a filter (All/Public/Private…),
+  extract the geometry for each state — the data is real per state, never interpolated-from-guess.
+- Tooling note: browser eval truncates long returns — compact on the page (palette-index colours,
+  round coords, or extract a compact per-element spec) so the data comes back whole.
+
+### 4 · Blocker list
+Anything uncapturable gets written down and shown to the user, e.g. *"exact command string is
+behind login — rendered redacted"*. A redacted or abstracted treatment is honest. A plausible
+invented string is not, and it will be repeated by viewers as if it were real.
+
+**Gate:** feature shots may not be built until every surface is captured or explicitly accepted
+as a blocker — and its static replica passes the §3d fidelity diff.
 
 ## 0.75 · PRE-PRODUCTION CONTRACT — the treatment comes before any build
 
@@ -70,6 +259,112 @@ approved. The treatment must contain:
 
 Only after the user approves the treatment: hand off to the `feature-promo-animation`
 skill (Remotion architecture, still-verification loop, render).
+
+## 0.8 · STORYBOARD — get the user's journey BEFORE the shots (HARD GATE)
+
+*(Formerly "Feature Flow." Renamed to STORYBOARD because that is what it is — the user's
+click-by-click journey, agreed before anything is captured or built.)*
+
+The most common failure in a feature act is **boring and confusing**: a series of disconnected
+cards with nothing to follow. That happens when shots are storyboarded before the flow is known.
+Run this before designing a single feature shot.
+
+### 0 · ASK THE USER FOR THE STORYBOARD FIRST — a STOP, not a suggestion
+
+**STOP after intake. Do not capture UI, write a treatment, or open an editor until the storyboard
+is settled with the user.** This step got skipped once — here is exactly how, so it doesn't recur:
+
+> **Why it was skipped (post-mortem):** the step was worded as guidance ("ask the user"), and the
+> agent "satisfied" it by putting its OWN derived flow into an AskUserQuestion as the options. The
+> user picked one — but was never actually asked to author their journey. Offering the user a menu
+> of flows *you* wrote is not asking; it's confirming your idea. The failure was treating a soft
+> nudge as done when the user's own voice never entered.
+
+**The rule, unambiguous:**
+- **Ask in the user's open words first**, not as multiple-choice: *"Walk me through the exact steps
+  you'd show — what the user does, click by click, and what the screen does back. Or say 'you decide'
+  and I'll draft one and show it back for your edits."*
+- **A derived flow is a fallback.** You may draft one ONLY after the user says "you decide" — and
+  then you must **show it back and get an explicit yes before capturing or building.**
+- **Multiple-choice ≠ asking.** Do not encode your own flow as the options of an AskUserQuestion and
+  call the gate satisfied. The gate is satisfied only when the storyboard came from the user, or the
+  user explicitly approved your draft shown back to them.
+- Record it verbatim so the beat sheet can be audited against what they asked for.
+
+**Gate check before capture/build:** *Did the user's own words define or explicitly approve this
+storyboard?* If no, you have not passed §0.8.0 — go back and ask.
+
+1. **Job line.** One sentence — what the *user* accomplishes. Not what the feature is.
+2. **Literal steps.** 3–5 max, each one screen-recordable: `[who] [does what] → [system responds]`.
+   If a step can't be filmed, it isn't a step — it's a claim, and claims go in interstitials.
+3. **UI state per step.** Surface · what's on it · **what changed**. *The delta is the shot.*
+4. **Hero surface + carried object.** One surface persists. When the flow genuinely changes
+   surface, pick an **object that travels across the cut** — it becomes the thread AND the
+   transition vehicle (see object permanence, §2). A flow with no carried object reads as a
+   slideshow.
+5. **Cause every cut.** Nothing appears unless a user or agent action caused it.
+6. **Reduce to 3 beats.** Kill any step with no visible delta. Merge steps that look alike.
+7. **Payoff last.** The final beat shows a *result the viewer wants*, never UI chrome.
+
+**Gates — all three must pass:**
+- **Recall:** a viewer who has never seen the product can name the 3 steps after one watch.
+- **Delta:** every shot shows a change; two similar-looking shots must merge.
+- **Fidelity:** list surfaces needing real capture. **Never invent product UI** (see below).
+
+### ⚑ LAW — DEMONSTRATE BY EXERCISING THE OPTIONS (a feature is a verb)
+
+A feature demo that touches the control **once** and stops is boring, because it shows a *state*,
+not a *capability*. The viewer learns what the feature *is*, not what it *does*. To show a feature
+works, **exercise its options** — click two or three, and let the result change each time. The
+repetition is the proof: cause → effect, cause → different effect.
+
+- For a **filter / selector / toggle**: click option A → list changes; click option B → list changes
+  *differently*. The contrast between the two results *is* the demonstration. (Hardware filter:
+  click *Apple M4 Max* → 183,651, big models present; click *Apple M1* → 111,230, big models gone.
+  One click is a screenshot; two clicks is the feature.)
+- **Pick options whose results genuinely differ** — a weak single delta (M4 Max alone drops only
+  ~1k) becomes a strong story the moment it's contrasted with a device that filters hard (M1).
+- Each click still obeys the rules: real cursor arrives before the action (§5 cursor-as-narrator),
+  the control shows its selected state, the result animates the delta, **the data is real for every
+  option shown** (§0.6.3 — capture each option's actual result set, never invent the second state).
+- Cap it at 2–3 options; more is a spec sheet, not a promo. The last one is the one that lands the
+  point (end on the most relatable device, or the strongest delta).
+
+### ⚑ LAW — BLOCK CONTENT ADAPTS, BLOCK MOTION DOES NOT
+
+Every block splits into two halves. Getting them confused is the most common way a block
+looks wrong in a new video.
+
+| | Locked | Free |
+|---|---|---|
+| **What** | timing, easing, stagger, travel distance, camera settle, hold | copy, labels, **icons**, colours, row content, titles |
+| **Why** | measured from reference — changing it breaks the feel | it must match the product and story being shown |
+
+**Icons and markers are CONTENT — always adapt them to context:**
+- `log-theater` rows: coloured app/tool squares when the story is *"which tool is it using"*
+  (Slack, GitHub, Gmail — the reference case).
+- Same rows: **green check marks** when the story is *"steps completing"* (an agent building,
+  a task list finishing). `MacroCropLog` takes `icon="square" | "check"` for exactly this.
+- Never keep a block's demo icons just because they shipped with it. Ask what the row *means*
+  in this video, then pick the marker that says it.
+
+Blocks must expose their content as parameters. If you find yourself copying a block to change
+its icons or copy, parameterise the block instead — that is the bug.
+
+### ⚑ LAW — CAPTURE, THEN SIMPLIFY (never invent UI)
+
+Invented UI is the other half of "confusing" — viewers feel the fake even when they can't name it,
+and invented labels teach the wrong product.
+
+- **Capture first.** Get the real screen: Claude in Chrome (drives the user's logged-in browser —
+  the only way past auth walls), a user screenshot, or the `live-page-replica` skill for public
+  pages. Exact strings, labels, and control names come from the capture, verbatim.
+- **Then simplify — hard.** A promo UI is a **diagram of the product, not a screenshot**.
+  - KEEP: the control being operated · the carried object · the state that changes · exact copy.
+  - CUT: boilerplate descriptions, secondary nav, legal text, anything unread in 4 seconds.
+  - The viewer must be able to read the hero element at a glance. If they can't, cut more.
+- **Never fabricate a label, command, or value.** If it can't be captured, flag it as a blocker —
+  a redacted/placeholder treatment is honest; an invented string is not.
 
 ## 1 · Storyboard Blueprints
 
@@ -137,6 +432,75 @@ picker's bouncing ball becomes the comet that flies through a hard cut. [B]: the
 pill swallows its own text and collapses into the app icon; the birth animation returns as
 the outro. A persistent caret narrates [A]'s three scenes.
 
+## 2.5 · COMPOSITION MODEL — three layers, never overlapping
+
+A video is assembled from blocks. Blocks live in exactly one layer. **Do not merge layers** —
+a transition that also animates words is a bug, not a feature.
+
+| Layer | What it is | Owns | Never touches |
+|---|---|---|---|
+| **OBJECT** | a text block or a UI block | what is on screen | how scenes hand off |
+| **TEXT ANIMATION** | how the glyphs of a text object move | per-character / per-word / per-line motion | object position, scene handoff |
+| **TRANSITION** | object-to-object handoff | outro of A + intro of B, applied to the object as a whole | content, copy, glyph motion |
+
+**How to compose:**
+1. Pick the **object** (text or UI).
+2. If it is text, pick a **text-animation** block for it (`src/blocks/animate-text`).
+3. Pick the **transition** for the handoff into/out of it (`src/blocks/transitions`).
+
+```tsx
+<ScaleUpCut start={sceneEnd - 6}>        {/* transition: outro   */}
+  <GlideIn>                              {/* transition: intro   */}
+    <SpecText spec={perWordCrossfade}    {/* text animation      */}
+              sample="Your copy here" /> {/* content = context   */}
+  </GlideIn>
+</ScaleUpCut>
+```
+
+**Locked vs free:**
+- **LOCKED — do not tweak unless explicitly asked:** every timing, easing, stagger and
+  amplitude in the text-animation and transition layers. They are measured, not taste.
+- **FREE — set from context every time:** the text **copy**, and which object/UI is shown.
+
+Transitions are tagged **`outro`**, **`intro`**, or **`full-tro`** (an outro+intro pair).
+Pick a matching pair or a single `full-tro`; alternate the axis (X / Z) between scenes so
+consecutive handoffs do not repeat.
+
+### ⚑ LAW — VARY THE TRANSITIONS (don't ship the same handoff every time)
+
+The catalog (§3) has 17 measured transitions. Defaulting to the same one or two every video makes
+the work look like a template and wastes the range. This has already happened — several promos in a
+row opened with `scale-up-cut` → `scale-pop-in` (Z-axis) and closed with the same glide. Stop that.
+
+- **Across videos:** do not reuse the previous promo's primary handoff. If the last one was Z-axis
+  (`scale-up-cut`/`scale-pop-in`, T17), make this one X-axis (`push-off-left`/`glide-in`, T16) — or
+  reach for an unused catalog entry (defocus, lens-blob, window scale-glide, gradient flood…).
+- **Within a video:** alternate the axis between consecutive handoffs (X → Z → X); never the same
+  transition twice in a row.
+- **Keep a note of what shipped.** Record the last video's transitions (e.g. in the promo file
+  header) so the next build can deliberately pick different ones. "Which did I use last?" should
+  have an answer, not a guess.
+- Locked timings/easings still apply — *vary which transition, never how it's tuned* (§2.5).
+
+### ⚑ LAW — VARY THE TEXT ANIMATIONS (≥2 distinct per video, never the same twice)
+
+The text-animation catalog (`src/blocks/animate-text/specs/`, 20+ effects) is there to be used. A
+title and a payoff that share the same effect read as a template — the same trap as reusing one
+transition.
+
+- **Every promo uses at least TWO distinct text-animation specs.** A one-effect video fails this.
+- **Never reuse a spec across scenes** in the same video (title, interstitials, payoff, CTA each get
+  their own), and **don't default to the same spec across videos.** `soft-blur-in` has been leaned on
+  — reach into the catalog: `focus-blur-resolve`, `per-word-crossfade`, `mask-reveal-up`,
+  `line-by-line-slide`, `per-character-rise`, `stagger-from-center`, `shared-axis-y`, `typewriter`,
+  `spring-scale-in`, `shimmer-sweep`…
+- **Match the effect to the moment** — calm keynote → `per-word-crossfade` / `focus-blur-resolve`;
+  punchy → `spring-scale-in` / `stagger-*`; type-driven → `typewriter` — but the ≥2-distinct rule is
+  absolute regardless of taste.
+- This is CONTENT-layer variety: which spec is FREE, the timing/easing INSIDE each spec stays LOCKED
+  (§2.5). Avoid the 3 not-yet-implemented layout-aware renderers (`kinetic-center-build`,
+  `short-slide-right`, `short-slide-down`) until built.
+
 ## 3 · Transition Catalog (measured)
 
 | # | Name | Src | Mechanics | Duration | Easing | Use when |
@@ -156,6 +520,35 @@ the outro. A persistent caret narrates [A]'s three scenes.
 | T13 | **Dark-payoff cut** | C | hard cut from white workspace into a full-bleed DARK result close-up (Slack thread, exec slide); the only violent moments in the piece | 1 frame | n/a | the payoff/result beat — max 2 per video |
 | T14 | **Window scale-glide** | C | result window scales up from ~55% over the fading previous context, settles centered | ~0.5s | ease-out | introducing a result surface mid-flow |
 | T15 | **Typed-title swap** | C | centered title types on (~25 chars/s), holds ≥1s, crossfades to next typed line | type 0.4s + hold | soft fade between | chapter dividers / claim interstitials |
+| T16 | **Axis handoff** (`push-off-left` → `glide-in-build`) | C | one continuous leftward axis: outgoing surface is **thrown a short distance and cut mid-flight**; incoming line **decelerates** onto the same axis (~120px) while its words reveal ~85ms apart | exit **150ms** · enter ~**0.9s** | exit **ease-IN** (`EASE.throwOut`) · enter **strong ease-OUT** (`EASE.out`) | demo → claim-interstitial boundary; any scene→line handoff |
+
+| T17 | **Depth handoff** (`scale-up-cut` → `scale-pop-in`) | C | the same cut-at-peak law on the **Z axis**: outgoing element **swells ~6% and is cut mid-swell**; incoming surface **pops from 0.76 scale** and decelerates into place | exit **100ms** · enter ~**430ms** | exit **ease-IN** (`EASE.throwOut`) · enter **strong ease-OUT** (`EASE.camera`), no overshoot | title → product-surface reveal; any depth/context change |
+
+**T17 measured** (GPT-5.5 @3.90–4.45s, bbox tracking): the title's width goes 1158 → 1163 → 1170 → 1178 → 1190 → 1206 → **1230** (+6.2%), accelerating (+5, +7, +8, +12, +16, **+24** px/frame), then cut on the next frame. The incoming surface enters at **0.76** scale and decelerates 0.76 → 0.909 → 0.969 → 0.990 → 1.0 (**62% of the change in the first 83ms**), monotonic — **no overshoot**. Ink density held flat (0.0456 → 0.0473), so there is **no fade**: it enters at full opacity and lets scale alone carry the entrance.
+
+### ⚑ LAW — "short throw, cut at peak" (applies to EVERY exit, not just T16)
+
+**Outgoing elements never animate off-screen.** They accelerate through a *tiny* displacement and
+are **hard-cut at peak velocity while still fully on screen**. The eye extrapolates the motion, so
+the cut reads as a throw — and it costs a fraction of the time a real exit would.
+
+*Measured* (GPT-5.5 @13.45–13.60s, per-frame edge tracking): the window's left edge goes
+110 → 109 → 108 → 106 → 103 → 102 → 99 → 94 → 90 → **80**, then the frame is empty on the next
+frame. That is **30px total — ~1.5% of frame width — over 150ms**, accelerating throughout
+(−1 → −5 → **−10** px/frame) and cut at its fastest moment. Card width holds 1701→1702px, so it is
+**pure translation, no scale**. The same economy governs the other exits: the composer card scales
+822→881px then cuts (5.6s); the exec-summary ramps then cuts (50.1s).
+
+**Do not** ease an exit out to opacity 0 over half a second, and **do not** translate it off-frame.
+Throw it ~1.5% of frame width, accelerating, then cut. `EASE.throwOut` encodes the curve.
+
+*Enter half, measured* (13.60–14.5s): left edge 325 → 205 = **120px** with velocity decaying
+−29 → −12 → −8 → −4 → −2 → −1 → 0 (~0.9s long-tailed settle); words reveal ~85ms apart. Both halves
+travel the **same direction**, which is what sells the continuity (Material's "shared axis X").
+
+Reproduced as three tagged blocks in `src/blocks/transitions.tsx` — `push-off-left` **[outro]**,
+`glide-in-build` **[intro]**, `axis-handoff` **[full-tro]** — rendered at 60fps so the 150ms throw
+reads as motion rather than a cut.
 
 ## 4 · Zoom Choreography (B's defining camera craft)
 
@@ -293,7 +686,7 @@ hold.state          600–900ms   hold.end-card 5–6.5s
 [B-flavor]   ground #FAF3ED cream · ink #000 · gradient field (coral↔violet↔orange, always
              drifting) · pixel quantum = the mark's pixel size; stepped motion, no easing
              on brand elements · soft glow shadows under floating chips/pills
-[C-flavor]   ground #FFF white void · ink #000 grotesk · NO decorative accent — color
+[C-flavor]   ground = soft off-white #e9ecf1 (NEVER #fff — see Render Exposure) · ink #000 grotesk · NO decorative accent — color
              lives only in chips (tool pills), app icons, diff greens/reds, and product
              content · UI floats as rounded shadowed cards · dark full-bleed reserved
              for results (max 2 moments) · fades 0.3–0.5s, scale drift 2–5% ·
@@ -303,6 +696,84 @@ zoom.macro          UI element fills 60–90% of frame height
 zoom.glide          0.4–0.7s strong ease-out (95% distance in first third)
 bloom.hover         full-gradient ignition, ~1s build, sustained while hovered
 ```
+
+### ⚑ LAW — DECLARE, DON'T INHERIT (the gallery lies; the render tells the truth)
+
+**The single highest-frequency bug class in this system.** The gallery renders compositions
+inside a normal page, so they inherit font, colour and background from the site CSS. **A
+headless render has no page CSS.** Anything a component *inherits* rather than *declares*
+silently differs between the two: it looks perfect in the gallery and is wrong in the MP4.
+
+It has shipped three separate times:
+
+| # | Inherited | Gallery | Render |
+|---|---|---|---|
+| 1 | background — `var(--bg, #ffffff)` | correct theme | **pure white, 252/255 mean** (blinding) |
+| 2 | colour — theme-aware `P.fg` on a fixed dark stage | correct | **dark-on-dark, invisible** |
+| 3 | font — no `fontFamily` at all | Inter (from page CSS) | **serif** |
+
+**Rule:** a stage owns its `fontFamily`, `background` and `color`. Never rely on a parent, a
+theme variable, or the page. Fixed-palette work (promos, product-UI mockups) uses `PX`/`PD`,
+never the theme-aware `P`.
+
+**Fonts are worse than "declare" — they must be LOADED.** Declaring `fontFamily: 'Inter'` is
+not enough: a render only has the fonts registered with the browser Font Loading API. The
+gallery's `<link>` to Google Fonts does nothing in a headless render, so a declared-but-unloaded
+family falls back silently (Inter → serif; IBM Plex Mono was never a Google font at all, so it
+never loaded anywhere). **Load via `@remotion/google-fonts`** in one module (`src/lib/fonts.ts`)
+and use its returned `FONT.sans` / `FONT.mono` everywhere — never a literal family string. Scope
+`loadFont` to the weights/subsets you use, or it fetches all of them (35–70 requests/render).
+Sans = **Inter**, mono = **IBM Plex Mono**. The `check` gate rejects any hardcoded family name.
+
+**This law is enforced mechanically — a written rule was not enough, it failed three times:**
+
+```bash
+npm run check                        # BEFORE render: static gate
+npm run check:render out/<file>.mp4  # AFTER render: pixel gate
+```
+
+- `check` — flags any stage declaring a background without a font, pure-white stages, and
+  theme-var leakage into fixed-palette files. It found 4 further instances the moment it was
+  written, including one in a promo that had already been reviewed and shipped.
+- `check:render` — measures the actual MP4: exposure (mean luminance, blown pixels),
+  legibility (contrast present = text actually rendered), and frame variance (not a dead shot).
+  The live preview never touches the encoder, so it cannot catch any of these.
+
+Both must pass. A render that fails either does not ship.
+
+### ⚑ LAW — RENDER EXPOSURE (never ship a blinding video)
+
+Blocks use CSS vars so the gallery can follow the site theme. **A headless render has no
+`:root` theme, so the var FALLBACK is what ships in the MP4.** A `#ffffff` fallback on a
+full-frame stage measured **252.1/255 mean luminance with 93.5% of pixels ≥ 250** — a white
+screen for the whole runtime. Painful to watch, and broadcast-unsafe.
+
+**Rule:** large flats never sit on pure white.
+- stage `#e9ecf1` · surfaces `#f8fafc` sit *slightly brighter* on top for depth · ink `#14161c`
+- Import from `src/lib/palette.ts` (`P.bg`, `P.card`, `P.fg`, `P.border`). **Never hardcode
+  `#fff` as a stage background**, and never rely on a `var(--bg, #ffffff)` fallback.
+
+**Verify every render — this is a gate, not a nicety:**
+```
+mean luminance  < ~245 / 255
+pixels >= 250   < ~40%
+```
+Measured on the fixed HF promo: **234.8 mean, 0.8% ≥250, corner 233,235,241.** Before the fix:
+252.1 / 93.5% / 255,255,255. Same grammar, same white-void look — just not blinding.
+
+The reference itself is not pure white either; "white void" means *low-contrast bright ground*,
+not maximum luminance.
+
+**Corollary — theme-aware vs FIXED (getting this wrong makes blocks unreadable):**
+
+| Block kind | Palette | Why |
+|---|---|---|
+| pure typography | `P` — theme-aware (`var(--bg)`, `var(--fg)`) | stage and text flip **together**, so contrast always holds |
+| **product-UI mockups**, rendered promos | `PX` — **fixed** soft light | their ink text is baked dark; if the surface follows a dark theme the text stays dark and the block goes **invisible** |
+
+A mockup of a light app must not invert with the site theme — a screenshot doesn't flip.
+Symptom to watch for: a UI block that looks fine in light mode and turns into an empty card in
+dark mode. Verify a render actually contains ink: pixels < 120 should be **> 0.3%** of frame.
 
 ## 10 · Motion Vocabulary (named primitives)
 
@@ -365,6 +836,9 @@ bloom.hover         full-gradient ignition, ~1s build, sustained while hovered
 
 ## 12 · Production Checklist
 
+0. **Capture the real UI (§0.6) before designing any feature shot.** Every on-screen string
+   verbatim from the capture; every uncapturable surface written into a blocker list. No
+   invented labels, commands, or control types.
 1. Pick blueprint (feature vs brand). Write acts + one claim line per beat.
 2. Derive the motion language from the brand mark's construction (pixels/strokes/orbits).
 3. Design the signature energy motif family (≤4 forms of one organism).
@@ -376,6 +850,12 @@ bloom.hover         full-gradient ignition, ~1s build, sustained while hovered
 9. Text: arrive-colored→ink; keywords via color or weight; media-in-text for claims.
 10. Agent/AI products: show the checklist completing — progress is the drama.
 11. Verify at 0.25×: word settles, child-follow offsets, no double motion, no naked cuts.
+12. **Run both gates — not optional, and not replaceable by watching the preview:**
+    - `npm run check` **before** rendering (declare-don't-inherit: font/background/colour,
+      no pure-white stage, no theme vars in fixed-palette files).
+    - `npm run check:render out/<file>.mp4` **after** rendering (exposure, legibility, motion).
+    The live `?promo=` preview is for iterating; it never runs the encoder and cannot catch
+    exposure, invisible text, or serif fallback. Iterate live, **verify by render**.
 
 ## Measured motion values — GPT-5.5 (medium tier · house standard)
 
@@ -445,21 +925,26 @@ onscreen.move  .4,  0,   .2,  1     material-std    EASE.move
 
 ## Reference Implementation — live Remotion library
 
-Signature primitives are reproduced as working Remotion code in this repo's
-**`motion-library/`** (clips labeled with primitive name + source on screen). Live scrubbable
-gallery: the GitHub Pages site (`docs/`). The site + rendered reel now feature a **curated set**
-— the polished text-animation samples plus the GPT-5.5 house-standard UI motions (hover to play,
-click to pause; no tiers/tags). The full per-tier reproductions remain in `A.tsx`/`B.tsx`.
-- `src/clips/text.tsx` — **polished text-animation samples** (animate-text idiom):
-  blur-resolve (spring focus-pull) · word-cascade (staggered spring).
-- `src/clips/C.tsx` — chip-tokenize · log-theater · **log-theater-zoomed** (static macro crop)
-  · dark-payoff cut · **camera macro-push**
+The library is organised as composable **blocks** (category + source), assembled like Lego to
+build a promo. Live gallery: the GitHub Pages site (`docs/`) — hover to play, click to pause.
+Categories: **Formula** (storyboard blueprint strip) · **Typography** · **UI motion**.
+- `src/blocks/animate-text/` — **typography blocks**, duplicated faithfully from the
+  `pixel-point/animate-text` skill. `specs/*.json` are that skill's portable motion contracts
+  copied verbatim; `SpecText.tsx` is a data-driven renderer that *executes* those specs
+  (target split, from→to keyframes, durations, staggers, easing) under the website-default
+  runtime. 17 generic effects live; the 3 layout-aware kinetic renderers
+  (`kinetic-center-build`, `short-slide-right`, `short-slide-down`) are still to do.
+- `src/clips/C.tsx` — **UI-motion blocks**: chip-tokenize · log-theater ·
+  **log-theater-zoomed** (static macro crop) · **camera macro-push**
 - `src/clips/A.tsx` / `B.tsx` — the tier-A/B reproductions (anchored-grow, ghost-wipe,
   dot-birth, quantum-bars, swallow-morph, hover-ignite, headline-swap).
 - `src/lib/ease.ts` — measured curves incl. the GPT-5.5 set above (`EASE.uiEnter`,
   `EASE.camera`, `EASE.preCut`), `qstep` quantized stepper ([B]'s pixel physics), `rand`.
 
-**Smoothness recipe** (text.tsx — how to avoid stiff, "snapping" text motion):
+Note: the **dark-payoff cut** demo block was removed from the library. The transition itself
+(T13) and the "light is grammar" principle remain documented above as measured design rules.
+
+**Smoothness recipe** (how to avoid stiff, "snapping" text motion):
 - **Smootherstep, not linear/threshold.** Reveal each element with `t³(t(6t−15)+10)` so it has
   zero velocity AND acceleration at both ends — no visible on/off snap.
 - **Overlapping windows.** Neighboring words/chars ease in over generous, overlapping ranges so
