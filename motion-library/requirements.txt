@@ -1,0 +1,12 @@
+# Dependencies for the post-render pixel gate (scripts/check-render.py).
+#
+# Separate toolchain from npm on purpose: the gate measures the encoded MP4, which Node
+# cannot do without pulling a much heavier dependency. Install once:
+#
+#   pip install -r motion-library/requirements.txt
+#
+# Note the pip package for `import cv2` is opencv-python-HEADLESS, not "cv2". The headless
+# build matters: plain opencv-python links libGL, which is absent on CI and in most
+# containers — exactly where a headless render runs.
+opencv-python-headless>=4.9
+numpy>=1.26

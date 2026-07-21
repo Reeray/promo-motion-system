@@ -5,6 +5,22 @@ description: Reusable motion-design system for AI/tech product promo and brand-l
 
 # Promo Motion System — "Structure > Visuals"
 
+> ## REQUIRES — read before starting
+>
+> **This skill is the design layer only.** It contains no renderer. Before promising a video,
+> confirm the build layer exists; if it doesn't, say so up front rather than reaching §0.75 and
+> stalling.
+>
+> | Need | What for | If missing |
+> |---|---|---|
+> | **`motion-library/`** (this repo) | every `src/…` path below, both gates, the blocks | `git clone https://github.com/Reeray/promo-motion-system && cd promo-motion-system/motion-library && npm install` |
+> | **`feature-promo-animation` skill** | the Remotion build/render layer §0.75 hands off to | build directly against `motion-library/` and say you are doing so |
+> | Node 20+, and Python 3 + `pip install -r motion-library/requirements.txt` | the two gates the laws below call non-optional | a gate you cannot run is a gate you must not claim passed |
+> | A browser you can drive, **or** the user's devtools | §0.6 capture | use the Tier-2 snippet in §0.6.2 |
+>
+> Every `src/…` reference in this file means **`motion-library/src/…`**.
+> Optional: `live-page-replica` (public-page capture), `figma-to-code` (unshipped designs).
+
 Extracted frame-by-frame (with per-frame motion-energy profiling to fingerprint easing) from
 reference videos. Core thesis: **motion sells the story** — every animation advances the
 narrative, directs the eye, or bridges scenes. Nothing moves just to be pretty.
@@ -47,9 +63,14 @@ B (loudest) > A > C (quietest). Duration ranking: B ≈ C > A.
 
 ## 0.5 · INTAKE — scope the video before designing anything
 
-After the theme (§0), collect these (use AskUserQuestion where the choices are enumerable; accept
-"decide for me" and apply the noted default). Do not skip intake unless the user has
-already answered these in their brief. Tier is not asked — it defaults to MEDIUM (§0).
+After the theme (§0), collect these. Where the choices are enumerable, use a **structured question
+UI if the agent has one** (in Claude: AskUserQuestion); otherwise **emit a numbered markdown list
+and wait for a reply** — every agent can do that, and the gate is satisfied either way. Accept
+"decide for me" and apply the noted default. Do not skip intake unless the user has already
+answered these in their brief. Tier is not asked — it defaults to MEDIUM (§0).
+
+⚠️ A structured picker is a convenience, never a substitute for asking. See §0.8.0: putting your
+own derived answer into the options and having the user pick it does **not** satisfy a gate.
 
 1. **Subject** — what exactly is being announced (product/feature/model name) and its
    one-line function. *No default; required.*
@@ -58,7 +79,7 @@ already answered these in their brief. Tier is not asked — it defaults to MEDI
 3. **Demoable moments** — what can actually be shown? For MEDIUM: candidates for the
    toy / work / money trilogy. For each, record **how the real UI will be obtained** — see
    §0.6 CAPTURE. Ask now whether surfaces sit behind a login, since that decides the method
-   (Claude in Chrome) and is the most common late blocker. *Required for any tier with demo acts.*
+   (see the §0.6.2 capability tiers) and is the most common late blocker. *Required for any tier with demo acts.*
 4. **Brand kit** — logo/mark (its construction seeds the motion physics per §2), palette,
    font. *Default: neutral white-void + ink, chips as accent ([C] tokens).*
 5. **Audience & platform** — who watches, where it ships. *Default: technical audience,
@@ -83,17 +104,38 @@ From the flow, write every surface the video must show. For each: *do I have the
 
 ### 2 · Capture, by access type
 
-| Situation | Method |
-|---|---|
-| **Auth-walled** (dashboards, create/settings pages, anything behind login) | **Claude in Chrome** — drives the user's own logged-in browser. The only method that gets past a login wall. |
-| Public page | `live-page-replica` skill (real DOM + compiled CSS), or Chrome |
-| Design not yet shipped | Figma + `figma-to-code` |
-| User has it locally | ask for a **screenshot** — fastest path, zero setup |
-| Genuinely unavailable | STOP. Record a blocker (§4). Do not invent. |
+**Stated as CAPABILITIES, not tool names** — this skill runs in many agents. Use the best tier you
+actually have, and say out loud which one you used, because it determines which §3d checks you can
+meet. Never silently skip a tier.
 
-**Claude in Chrome procedure:** `tabs_context_mcp` → `navigate` to the page → `computer
-{action:"screenshot"}` for layout → `get_page_text` for **exact strings**. Read only; never
-submit forms, create records, or click destructive controls on a live account.
+| Situation | Capability needed | Tier 1 (best) | Tier 2 (fallback) | Tier 3 |
+|---|---|---|---|---|
+| **Auth-walled** (dashboards, settings, anything behind login) | drive a browser already logged in as the user | agent-driven logged-in browser (in Claude: *Claude in Chrome* — `tabs_context_mcp` → `navigate` → `computer{screenshot}` → `get_page_text`) | **user runs the capture snippet below in their own devtools and pastes the JSON** | STOP → blocker (§4) |
+| Public page | fetch real DOM + computed CSS | `live-page-replica` skill, or any browser tool | same devtools snippet | user saves the page (Ctrl-S) |
+| Design not yet shipped | read the design source | Figma MCP + `figma-to-code` | user exports PNG + pastes the inspect-panel values | STOP → blocker |
+| User has it locally | an image | ask for a **screenshot** — fastest path, zero setup | — | — |
+| Genuinely unavailable | — | STOP. Record a blocker (§4). Do not invent. | | |
+
+**Read-only always.** Never submit forms, create records, or click destructive controls on a live
+account. Filtering, tab-switching and toggling a view are fine — they are how you capture states.
+
+**Tier-2 devtools snippet** (works in every agent, no MCP needed — the user runs it in the console
+on the page and pastes the result back):
+
+```js
+// select the element in the Elements panel first, then run:
+copy(JSON.stringify({
+  html: $0.outerHTML.slice(0, 4000),
+  style: Object.fromEntries(['font-family','font-size','font-weight','line-height','color',
+    'background-color','border','border-radius','padding','margin','display','gap']
+    .map(k => [k, getComputedStyle($0).getPropertyValue(k)])),
+  text: $0.innerText.slice(0, 1500),
+}, null, 1))
+```
+
+Same values as Tier 1 — it is the *automation* that is missing, not the data. What Tier 2 cannot
+do cheaply: capture **many states** (each filter/toggle result) and **pixel-perfect chart vectors**
+(§3e), because both need repeated scripted extraction. Say so explicitly rather than eyeballing.
 
 ### 3 · Extract — verbatim, into constants
 Pull and record, word for word:
@@ -356,9 +398,9 @@ its icons or copy, parameterise the block instead — that is the bug.
 Invented UI is the other half of "confusing" — viewers feel the fake even when they can't name it,
 and invented labels teach the wrong product.
 
-- **Capture first.** Get the real screen: Claude in Chrome (drives the user's logged-in browser —
-  the only way past auth walls), a user screenshot, or the `live-page-replica` skill for public
-  pages. Exact strings, labels, and control names come from the capture, verbatim.
+- **Capture first.** Get the real screen using the best tier you have (§0.6.2): an agent-driven
+  logged-in browser, else the devtools snippet the user runs and pastes, else a screenshot. Exact
+  strings, labels, and control names come from the capture, verbatim — whichever tier produced it.
 - **Then simplify — hard.** A promo UI is a **diagram of the product, not a screenshot**.
   - KEEP: the control being operated · the carried object · the state that changes · exact copy.
   - CUT: boilerplate descriptions, secondary nav, legal text, anything unread in 4 seconds.
@@ -481,6 +523,32 @@ row opened with `scale-up-cut` → `scale-pop-in` (Z-axis) and closed with the s
   header) so the next build can deliberately pick different ones. "Which did I use last?" should
   have an answer, not a guess.
 - Locked timings/easings still apply — *vary which transition, never how it's tuned* (§2.5).
+
+### ⚑ LAW — NEVER DRIVE A HOVER PREVIEW WITH `play()`
+
+For any gallery, block picker, or editor that previews motion **on hover**: drive the frames
+yourself with `seekTo()` inside a `requestAnimationFrame` loop. Do **not** call `Player.play()`.
+
+**Why** (this shipped and cost an afternoon): browsers gate media playback behind *user
+activation*, and per spec only `pointerdown` / `click` / `keydown` grant it — **`mouseenter` never
+does**. So on a freshly loaded page every hover-triggered `play()` is silently rejected and the
+card sits frozen on its poster frame. Then the user clicks anything at all — in our case the
+unrelated "copy" button — the document becomes activated, and every later hover works. The
+signature to recognise: *"it sticks on first load, but works after I click something."*
+
+```tsx
+// hover → advance frames manually; no activation required, deterministic from a cold page
+const t0 = performance.now();
+const tick = (now: number) => {
+  player.seekTo(Math.floor(((now - t0) / 1000) * fps) % durationInFrames);
+  raf = requestAnimationFrame(tick);
+};
+```
+
+Two corollaries: **hover state must be state, not an imperative call** (a hover landing before the
+player is ready is otherwise dropped for good — `mouseenter` does not re-fire while the pointer
+rests); and if you lazy-mount players, always ship a timeout fallback, because a hidden tab or a
+non-compositing webview never fires `IntersectionObserver` and the gallery would render blank.
 
 ### ⚑ LAW — VARY THE TEXT ANIMATIONS (≥2 distinct per video, never the same twice)
 

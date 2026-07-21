@@ -1,5 +1,6 @@
 import React from 'react';
 import {AbsoluteFill} from 'remotion';
+import {FONT} from './fonts';
 
 const TINT: Record<string, string> = {
   'A · Prism promo': '#0e9e7c',
@@ -29,7 +30,7 @@ export const Labeled: React.FC<{
     >
       <span
         style={{
-          fontFamily: 'Consolas, monospace',
+          fontFamily: FONT.mono,
           fontSize: 17,
           fontWeight: 700,
           color: '#fff',

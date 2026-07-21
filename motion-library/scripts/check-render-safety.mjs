@@ -23,8 +23,12 @@
  */
 import {readFileSync, readdirSync, statSync} from 'fs';
 import {join, relative} from 'path';
+import {fileURLToPath} from 'url';
 
-const ROOT = new URL('..', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1');
+// fileURLToPath, not .pathname: the latter stays percent-encoded, so any checkout under a path
+// with a space or non-ASCII character ("~/Documents/My Projects", iCloud, OneDrive) threw ENOENT
+// on '...My%20Projects/src' before this. The old drive-letter patch only ever fixed Windows.
+const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const SRC = join(ROOT, 'src');
 const failures = [];
 
@@ -62,12 +66,22 @@ for (const file of walk(SRC)) {
   const rel = relative(ROOT, file).replace(/\\/g, '/');
   const src = readFileSync(file, 'utf8');
   const consts = styleConsts(src);
-  const inRenderPath = /\/(promos|clips)\//.test('/' + rel);
+  // Two scopes, because the two rules have different truths.
+  //
+  // R4 (hardcoded font) applies to ANYTHING under src/: a literal family name is never safe in code
+  // that can end up in a render, and the old /(promos|clips)/ allowlist hid a real one in src/lib/.
+  //
+  // R2 (theme-aware `P`) applies only to STAGE files — the ones that own a full-frame surface.
+  // Shared blocks legitimately import P: they render in the theme-aware gallery AND take an explicit
+  // color prop when a promo uses them. The stage list is deliberately wider than our own naming so a
+  // stranger's src/promo/, src/scenes/ or src/video/ is covered too.
+  const inSrc = /(^|\/)src\//.test('/' + rel);
+  const isStageFile = /(^|\/)src\/(promos?|clips?|scenes?|shots?|video)\//.test('/' + rel);
 
   // R4 — no hardcoded font-family string in the render path. Fonts must come from the
   // loader (src/lib/fonts.ts / FONT.*), or the render names a font it never loaded — which
   // is exactly how every render was silently serif / Segoe UI until the loader existed.
-  if (inRenderPath || rel.includes('blocks/')) {
+  if (inSrc) {
     for (const m of src.matchAll(/fontFamily\s*:\s*(['"`])([^'"`]*)\1/g)) {
       const val = m[2];
       if (/\b(Inter|Geist|IBM Plex|Consolas|Arial|Helvetica)\b/.test(val)) {
@@ -79,7 +93,7 @@ for (const file of walk(SRC)) {
   }
 
   // R2 — fixed-palette areas must not use the theme-aware palette
-  if (inRenderPath) {
+  if (isStageFile) {
     const imp = src.match(/import\s*\{([^}]*)\}\s*from\s*'[^']*lib\/palette'/);
     if (imp && /\bP\b/.test(imp[1])) {
       failures.push(`${rel}: imports theme-aware \`P\` — promos/clips must use PX (light) or PD (dark). ` +
