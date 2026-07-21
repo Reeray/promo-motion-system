@@ -13,13 +13,29 @@ description: Reusable motion-design system for AI/tech product promo and brand-l
 >
 > | Need | What for | If missing |
 > |---|---|---|
-> | **`motion-library/`** (this repo) | every `src/…` path below, both gates, the blocks | `git clone https://github.com/Reeray/promo-motion-system && cd promo-motion-system/motion-library && npm install` |
+> | **`motion-library/`** (this repo) | every `src/…` path below, both gates, the blocks | `npx degit Reeray/promo-motion-system/motion-library motion-library && cd motion-library && npm install` |
 > | **`feature-promo-animation` skill** | the Remotion build/render layer §0.75 hands off to | build directly against `motion-library/` and say you are doing so |
 > | Node 20+, and Python 3 + `pip install -r motion-library/requirements.txt` | the two gates the laws below call non-optional | a gate you cannot run is a gate you must not claim passed |
 > | A browser you can drive, **or** the user's devtools | §0.6 capture | use the Tier-2 snippet in §0.6.2 |
 >
 > Every `src/…` reference in this file means **`motion-library/src/…`**.
 > Optional: `live-page-replica` (public-page capture), `figma-to-code` (unshipped designs).
+>
+> ### ⚑ THE BLOCK LIST LIVES IN `motion-library/BLOCKS.md`, NOT IN THIS FILE
+>
+> **Read it before choosing any block.** It is generated from the registries by `npm run blocks`,
+> so it is always what is actually implemented — 27 blocks today, with tag, real duration and the
+> measured description for each.
+>
+> The catalogs further down this file (§3 transitions, §10 vocabulary) are **explanation, not
+> inventory**: they teach what a `full-tro` is and what each measured law means. Never treat them
+> as the list of what you can use. That distinction exists because they *did* drift — a VARY law
+> here once recommended transitions that had never been built, and 7 spec files sat unregistered.
+> Generated inventory cannot drift; prose can.
+>
+> Adding a block (for maintainers): write it → register it in its own `src/blocks/` file →
+> `npm run blocks`. `npm run check` fails on any unregistered spec, stale manifest, or skill copy
+> that has drifted from source.
 
 Extracted frame-by-frame (with per-frame motion-energy profiling to fingerprint easing) from
 reference videos. Core thesis: **motion sells the story** — every animation advances the

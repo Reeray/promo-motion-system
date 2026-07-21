@@ -2,12 +2,14 @@
   "name": "motion-library",
   "private": true,
   "scripts": {
-    "check": "node scripts/check-render-safety.mjs",
+    "check": "node scripts/check-render-safety.mjs && node scripts/check-blocks.mjs",
     "check:render": "python scripts/check-render.py",
     "studio": "remotion studio",
     "render": "remotion render MotionLibrary out/motion-library.mp4",
     "site:dev": "vite",
-    "site:build": "vite build"
+    "site:build": "vite build",
+    "blocks": "node scripts/gen-blocks.mjs && npm run skill:sync",
+    "skill:sync": "node scripts/sync-skill.mjs"
   },
   "dependencies": {
     "@remotion/google-fonts": "^4.0.490",
@@ -22,5 +24,8 @@
     "@vitejs/plugin-react": "^4.3.0",
     "typescript": "^5.5.0",
     "vite": "^6.0.0"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }

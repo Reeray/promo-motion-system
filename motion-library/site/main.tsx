@@ -2,24 +2,11 @@ import React, {useEffect, useRef, useState} from 'react';
 import {createRoot} from 'react-dom/client';
 import {Player, PlayerRef} from '@remotion/player';
 import './styles.css';
-import {Block} from '../src/blocks/types';
-import {ANIMATE_TEXT_BLOCKS} from '../src/blocks/animate-text';
-import {TRANSITION_BLOCKS} from '../src/blocks/transitions';
-import {ChipTokenize, LogTheater, LogTheaterZoomed, CameraPush} from '../src/clips/C';
+// The library owns the catalog; this site just renders it. Add a block in src/blocks/ and it
+// appears here automatically — no edit to the website.
+import {Block, BLOCK_GROUPS} from '../src/blocks';
 
-// UI-motion blocks (GPT-5.5 house standard) — same Block shape as the typography set.
-const UI_BLOCKS: Block[] = [
-  {name: 'chip-tokenize', category: 'ui', source: 'C · GPT-5.5', poster: 56, desc: 'A typed @-mention converts in place into a colored tool chip ~0.1s after the word completes; typing continues around it.', Comp: ChipTokenize},
-  {name: 'log-theater', category: 'ui', source: 'C · GPT-5.5', poster: 66, desc: 'Agent work as an accumulating checklist with app icons; the “Using X” header swaps as tools change; “Thinking” shimmers.', Comp: LogTheater},
-  {name: 'log-theater-zoomed', category: 'ui', source: 'C · GPT-5.5', poster: 70, desc: 'The same log framed as a static macro crop — the window is bigger than the viewport, pinned to the top-left; the feed auto-scrolls inside.', Comp: LogTheaterZoomed},
-  {name: 'camera macro-push', category: 'ui', source: 'C · GPT-5.5', poster: 50, desc: 'The viewport pushes in ~1.6× over ~0.5s to showcase a hero component — strong ease-out that decelerates into the hold, no overshoot.', Comp: CameraPush},
-];
 
-const GROUPS: {label: string; note: string; blocks: Block[]}[] = [
-  {label: 'Transition', note: 'scene-to-scene glue', blocks: TRANSITION_BLOCKS},
-  {label: 'Typography', note: 'pixel-point/animate-text', blocks: ANIMATE_TEXT_BLOCKS},
-  {label: 'UI motion', note: 'GPT-5.5 house standard', blocks: UI_BLOCKS},
-];
 
 const Copy: React.FC<{text: string}> = ({text}) => {
   const [ok, setOk] = useState(false);
@@ -310,7 +297,7 @@ const App: React.FC = () => {
           <span className="rule" />
         </div>
         <FormulaStrip />
-        {GROUPS.map((g) => (
+        {BLOCK_GROUPS.map((g) => (
           <React.Fragment key={g.label}>
             <div className="group-label mono">
               <span className="cat">{g.label}</span>

@@ -1,0 +1,296 @@
+{
+  "generated": "npm run blocks",
+  "total": 27,
+  "orphanSpecs": [
+    "depth-parallax-words",
+    "kinetic-center-build",
+    "shared-axis-x",
+    "short-slide-down",
+    "short-slide-right",
+    "stagger-from-center",
+    "stagger-from-edges"
+  ],
+  "groups": [
+    {
+      "label": "Transition",
+      "category": "transition",
+      "note": "scene-to-scene glue",
+      "blocks": [
+        {
+          "name": "axis-handoff",
+          "category": "transition",
+          "tag": "full-tro",
+          "source": "C · GPT-5.5 @13.45s",
+          "desc": "X-axis pair. Outgoing object is thrown off the axis and cut mid-flight; incoming object decelerates onto the same axis. Objects shown are placeholders — drop in any text or UI block.",
+          "durationInFrames": 150,
+          "fps": 60
+        },
+        {
+          "name": "depth-handoff",
+          "category": "transition",
+          "tag": "full-tro",
+          "source": "C · GPT-5.5 @3.9s",
+          "desc": "Z-axis pair. Outgoing object swells ~6% and is cut mid-swell; incoming object pops from 0.76 scale and decelerates into place. Objects shown are placeholders.",
+          "durationInFrames": 130,
+          "fps": 60
+        },
+        {
+          "name": "push-off-left",
+          "category": "transition",
+          "tag": "outro",
+          "source": "C · GPT-5.5 @13.45s",
+          "desc": "Short throw, cut at peak. Accelerates the object just ~20px (1.5% of frame width) over 150ms and hard-cuts it while still fully on screen — measured −1 → −5 → −10 px/frame. Never animate it off-screen.",
+          "durationInFrames": 75,
+          "fps": 60
+        },
+        {
+          "name": "scale-up-cut",
+          "category": "transition",
+          "tag": "outro",
+          "source": "C · GPT-5.5 @3.9s",
+          "desc": "Same law on Z. The object swells just ~6% over 100ms, accelerating (+5 → +16 → +24 px/frame), and is cut at peak while still fully visible.",
+          "durationInFrames": 75,
+          "fps": 60
+        },
+        {
+          "name": "glide-in",
+          "category": "transition",
+          "tag": "intro",
+          "source": "C · GPT-5.5 @13.6s",
+          "desc": "Decelerates the object 80px onto the axis the outgoing one just left — long-tailed ease-out (~0.9s). Measured left edge 325 → 205, velocity −29 → −12 → −4 → −1 → 0. Pair with any text-animation block for per-word motion.",
+          "durationInFrames": 100,
+          "fps": 60
+        },
+        {
+          "name": "scale-pop-in",
+          "category": "transition",
+          "tag": "intro",
+          "source": "C · GPT-5.5 @4.02s",
+          "desc": "Pops the object from 0.76 → 1.0 with a strong ease-out (~430ms, 62% of the change in the first 83ms), monotonic — no overshoot and no fade; scale alone carries the entrance.",
+          "durationInFrames": 90,
+          "fps": 60
+        }
+      ]
+    },
+    {
+      "label": "Typography",
+      "category": "typography",
+      "note": "pixel-point/animate-text",
+      "blocks": [
+        {
+          "name": "soft-blur-in",
+          "category": "typography",
+          "tag": null,
+          "source": "animate-text",
+          "desc": "Per-character fade-in with a gentle blur and upward motion. Apple's signature hero-title reveal.",
+          "target": "per-character",
+          "durationInFrames": null,
+          "fps": 30
+        },
+        {
+          "name": "per-character-rise",
+          "category": "typography",
+          "tag": null,
+          "source": "animate-text",
+          "desc": "Letters slide up from below with no blur — crisp, deliberate, kinetic. Apple's clean tvOS-style reveal.",
+          "target": "per-character",
+          "durationInFrames": null,
+          "fps": 30
+        },
+        {
+          "name": "per-word-crossfade",
+          "category": "typography",
+          "tag": null,
+          "source": "animate-text",
+          "desc": "Words gently fade into place one after another, with a short vertical drift for a calm keynote rhythm.",
+          "target": "per-word",
+          "durationInFrames": null,
+          "fps": 30
+        },
+        {
+          "name": "spring-scale-in",
+          "category": "typography",
+          "tag": null,
+          "source": "animate-text",
+          "desc": "Words pop in with a soft overshoot scale, like a physical spring settling into place.",
+          "target": "per-word",
+          "durationInFrames": null,
+          "fps": 30
+        },
+        {
+          "name": "mask-reveal-up",
+          "category": "typography",
+          "tag": null,
+          "source": "animate-text",
+          "desc": "Lines reveal upward with a soft masked feel and compact stagger.",
+          "target": "per-line",
+          "durationInFrames": null,
+          "fps": 30
+        },
+        {
+          "name": "line-by-line-slide",
+          "category": "typography",
+          "tag": null,
+          "source": "animate-text",
+          "desc": "Each line enters from the left with a staggered slide and exits to the right for a flowing paragraph reveal.",
+          "target": "per-line",
+          "durationInFrames": null,
+          "fps": 30
+        },
+        {
+          "name": "typewriter",
+          "category": "typography",
+          "tag": null,
+          "source": "animate-text",
+          "desc": "Per-character stepped reveal with a minimal editorial typing rhythm.",
+          "target": "per-character",
+          "durationInFrames": null,
+          "fps": 30
+        },
+        {
+          "name": "micro-scale-fade",
+          "category": "typography",
+          "tag": null,
+          "source": "animate-text",
+          "desc": "A calm, tiny scale pop used as subtle premium polish for labels and headings.",
+          "target": "whole",
+          "durationInFrames": null,
+          "fps": 30
+        },
+        {
+          "name": "shimmer-sweep",
+          "category": "typography",
+          "tag": null,
+          "source": "animate-text",
+          "desc": "A subtle sweep across a clean headline, blending in while gliding from left to center.",
+          "target": "whole",
+          "durationInFrames": null,
+          "fps": 30
+        },
+        {
+          "name": "fade-through",
+          "category": "typography",
+          "tag": null,
+          "source": "animate-text",
+          "desc": "A Material-style content transition: old fades out, new fades in with a soft delay.",
+          "target": "whole",
+          "durationInFrames": null,
+          "fps": 30
+        },
+        {
+          "name": "shared-axis-y",
+          "category": "typography",
+          "tag": null,
+          "source": "animate-text",
+          "desc": "Per-word hard-cut transition with staircase timing for sharp editorial swaps.",
+          "target": "per-word",
+          "durationInFrames": null,
+          "fps": 30
+        },
+        {
+          "name": "shared-axis-z",
+          "category": "typography",
+          "tag": null,
+          "source": "animate-text",
+          "desc": "Scale-based shared-axis transition for focus shifts and context depth.",
+          "target": "whole",
+          "durationInFrames": null,
+          "fps": 30
+        },
+        {
+          "name": "blur-out-up",
+          "category": "typography",
+          "tag": null,
+          "source": "animate-text",
+          "desc": "Words arrive clean and depart upward with increasing blur for airy exits.",
+          "target": "per-word",
+          "durationInFrames": null,
+          "fps": 30
+        },
+        {
+          "name": "scale-down-fade",
+          "category": "typography",
+          "tag": null,
+          "source": "animate-text",
+          "desc": "Subtle premium settle-in with a restrained scale-down fade on exit.",
+          "target": "whole",
+          "durationInFrames": null,
+          "fps": 30
+        },
+        {
+          "name": "focus-blur-resolve",
+          "category": "typography",
+          "tag": null,
+          "source": "animate-text",
+          "desc": "A premium focus pull from heavy blur to crisp text, then a soft blur-out exit.",
+          "target": "whole",
+          "durationInFrames": null,
+          "fps": 30
+        },
+        {
+          "name": "bottom-up-letters",
+          "category": "typography",
+          "tag": null,
+          "source": "animate-text",
+          "desc": "Letters rise from below in a pronounced staircase, one symbol at a time, with zero blur.",
+          "target": "per-character",
+          "durationInFrames": null,
+          "fps": 30
+        },
+        {
+          "name": "top-down-letters",
+          "category": "typography",
+          "tag": null,
+          "source": "animate-text",
+          "desc": "Letters descend from above in a pronounced staircase, one symbol at a time, with zero blur.",
+          "target": "per-character",
+          "durationInFrames": null,
+          "fps": 30
+        }
+      ]
+    },
+    {
+      "label": "UI motion",
+      "category": "ui",
+      "note": "GPT-5.5 house standard",
+      "blocks": [
+        {
+          "name": "chip-tokenize",
+          "category": "ui",
+          "tag": null,
+          "source": "C · GPT-5.5",
+          "desc": "A typed @-mention converts in place into a colored tool chip ~0.1s after the word completes; typing continues around it.",
+          "durationInFrames": null,
+          "fps": null
+        },
+        {
+          "name": "log-theater",
+          "category": "ui",
+          "tag": null,
+          "source": "C · GPT-5.5",
+          "desc": "Agent work as an accumulating checklist with app icons; the “Using X” header swaps as tools change; “Thinking” shimmers.",
+          "durationInFrames": null,
+          "fps": null
+        },
+        {
+          "name": "log-theater-zoomed",
+          "category": "ui",
+          "tag": null,
+          "source": "C · GPT-5.5",
+          "desc": "The same log framed as a static macro crop — the window is bigger than the viewport, pinned to the top-left; the feed auto-scrolls inside.",
+          "durationInFrames": null,
+          "fps": null
+        },
+        {
+          "name": "camera macro-push",
+          "category": "ui",
+          "tag": null,
+          "source": "C · GPT-5.5",
+          "desc": "The viewport pushes in ~1.6× over ~0.5s to showcase a hero component — strong ease-out that decelerates into the hold, no overshoot.",
+          "durationInFrames": null,
+          "fps": null
+        }
+      ]
+    }
+  ]
+}
