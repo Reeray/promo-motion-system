@@ -1,4 +1,4 @@
-import React, {useRef, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {createRoot} from 'react-dom/client';
 import {Player, PlayerRef} from '@remotion/player';
 import './styles.css';
@@ -81,38 +81,101 @@ const CopyName: React.FC<{text: string}> = ({text}) => {
 // click toggles pause/play. No player chrome — the animation is the content.
 const BlockCard: React.FC<{b: Block}> = ({b}) => {
   const ref = useRef<PlayerRef>(null);
-  const enter = () => {
+  const host = useRef<HTMLDivElement>(null);
+  // Mount the Player only once the card nears the viewport. Mounting all ~27 at once saturates
+  // the main thread on first load, which is what made early hovers appear stuck.
+  const [live, setLive] = useState(false);
+  // Hover is STATE, not an imperative call. A hover that lands before the player is ready used to
+  // hit `if (!p) return` and be dropped for good — mouseenter never re-fires while the pointer
+  // rests, so the card stayed frozen. Driving playback from an effect re-applies it on readiness.
+  const [hot, setHot] = useState(false);
+  // click-to-pause while hovering
+  const [frozen, setFrozen] = useState(false);
+  const at = useRef(0); // current frame, so pause/resume continues instead of restarting
+
+  useEffect(() => {
+    const el = host.current;
+    if (!el) return;
+    if (typeof IntersectionObserver === 'undefined') {
+      setLive(true);
+      return;
+    }
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) setLive(true);
+      },
+      {rootMargin: '500px'}
+    );
+    io.observe(el);
+    // Safety net: a hidden/backgrounded tab produces no compositing frames, so IntersectionObserver
+    // never fires and the gallery would sit permanently blank. Mount anyway after the initial burst
+    // has passed — late is fine, empty is not.
+    const t = window.setTimeout(() => setLive(true), 3000);
+    return () => {
+      window.clearTimeout(t);
+      io.disconnect();
+    };
+  }, []);
+
+  // Drive the preview by SEEKING each frame, never Player.play().
+  //
+  // play() is gated behind browser "user activation", and hover does not grant it — per spec only
+  // pointerdown/click/keydown do. So on a freshly loaded page every hover-triggered play() was
+  // silently rejected and the card sat frozen; clicking anything (the copy button was the tell)
+  // activated the document and every later hover worked. seekTo() has no such gate, so this is
+  // deterministic from the very first hover.
+  useEffect(() => {
     const p = ref.current;
     if (!p) return;
-    p.seekTo(0);
-    p.play();
-  };
-  const leave = () => {
-    const p = ref.current;
-    if (!p) return;
-    p.pause();
-    p.seekTo(b.poster);
-  };
-  const toggle = () => {
-    const p = ref.current;
-    if (!p) return;
-    p.isPlaying() ? p.pause() : p.play();
-  };
+    if (!hot || frozen) {
+      if (!hot) p.seekTo(b.poster);
+      return;
+    }
+    const total = b.durationInFrames ?? 75;
+    const fps = b.fps ?? 30;
+    const t0 = performance.now();
+    const from = at.current; // resume where a click-to-pause left off
+    let raf = 0;
+    const tick = (now: number) => {
+      const f = Math.floor(from + ((now - t0) / 1000) * fps) % total;
+      at.current = f;
+      p.seekTo(f);
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [hot, frozen, live, b.poster, b.durationInFrames, b.fps]);
+
+  const toggle = () => setFrozen((f) => !f);
   return (
-    <div className="demo" onMouseEnter={enter} onMouseLeave={leave} onClick={toggle}>
+    <div
+      ref={host}
+      className="demo"
+      onMouseEnter={() => {
+        setLive(true); // a hover must never wait on the observer
+        setHot(true);
+      }}
+      onMouseLeave={() => {
+        setHot(false);
+        setFrozen(false); // next hover always animates
+      }}
+      onClick={toggle}
+    >
       <div className="player">
-        <Player
-          ref={ref}
-          component={b.Comp}
-          durationInFrames={b.durationInFrames ?? 75}
-          fps={b.fps ?? 30}
-          compositionWidth={1280}
-          compositionHeight={720}
-          initialFrame={b.poster}
-          loop
-          acknowledgeRemotionLicense
-          style={{width: '100%'}}
-        />
+        {live && (
+          <Player
+            ref={ref}
+            component={b.Comp}
+            durationInFrames={b.durationInFrames ?? 75}
+            fps={b.fps ?? 30}
+            compositionWidth={1280}
+            compositionHeight={720}
+            initialFrame={b.poster}
+            loop
+            acknowledgeRemotionLicense
+            style={{width: '100%'}}
+          />
+        )}
       </div>
       <div className="body">
         <div className="head">
