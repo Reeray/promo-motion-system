@@ -11,7 +11,7 @@ import {ANIMATE_TEXT_EFFECTS} from '../blocks/animate-text';
 import {SpecText} from '../blocks/animate-text/SpecText';
 import {T, TZ} from '../blocks/transitions';
 import {SURFACES} from './surfaces';
-import {INTRO, OUTRO, SIZE, Scene, TextScene, UiScene} from './schema';
+import {FRAMING_ID, HEIGHT, INTRO, OUTRO, SIZE, Scene, TextScene, UiScene, WIDTH, isIdentity} from './schema';
 import {Prepared, PreparedScene} from './prepare';
 import {StageCtx} from './stage-ctx';
 
@@ -103,9 +103,22 @@ const SceneView: React.FC<{p: PreparedScene; pal: Pal}> = ({p, pal}) => {
   // AbsoluteFill instead of a shrink-to-fit div.
   const bleed = scene.kind === 'ui' && SURFACES[scene.surface]?.bleed;
 
+  // The authored camera (framing) is a SEPARATE transform node from the transition transform —
+  // never merged into one string, so the transition animates the whole framed surface while the
+  // camera positions the surface within it. A bleed surface is pinned top-left, so it scales from
+  // its 0% 0% corner; a boxed surface is centred, so it scales from its middle.
+  const fr = scene.kind === 'ui' ? scene.framing : FRAMING_ID;
+  const cam = isIdentity(fr) ? undefined : `translate(${fr.x * WIDTH}px, ${fr.y * HEIGHT}px) scale(${fr.zoom})`;
+  const camOrigin = bleed ? '0% 0%' : '50% 50%';
+  const framed = !cam
+    ? body
+    : bleed
+    ? <AbsoluteFill style={{transform: cam, transformOrigin: camOrigin}}>{body}</AbsoluteFill>
+    : <div style={{transform: cam, transformOrigin: camOrigin}}>{body}</div>;
+
   return (
     <Stage pal={pal}>
-      {bleed ? <AbsoluteFill style={{transform}}>{body}</AbsoluteFill> : <div style={{transform}}>{body}</div>}
+      {bleed ? <AbsoluteFill style={{transform}}>{framed}</AbsoluteFill> : <div style={{transform}}>{framed}</div>}
     </Stage>
   );
 };

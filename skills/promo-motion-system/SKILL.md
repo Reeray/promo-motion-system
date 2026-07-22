@@ -643,13 +643,30 @@ the editor. Author the doc; never author a composition.
 }
 ```
 
-### ⚑ LAW — NO NUMBERS IN THE DOC
+### ⚑ LAW — NO DERIVED NUMBERS IN THE DOC
 
-Every field is a **token**, never a measurement. `size` is `sm|md|lg|xl` (34/48/56/64px),
-`hold` is `short|normal|long` (350/550/900 ms), `effect`/`enter`/`exit`/`surface` are ids.
-There is not one frame count, pixel value or millisecond anywhere in a doc — and there must
-never be. The instant a doc can say `"frames": 120`, two sources of truth exist for how long a
-scene runs, and the one the renderer ignores is the one a human will trust.
+Every field is a **token**, never a measurement of something the renderer already computes.
+`size` is `sm|md|lg|xl` (34/48/56/64px), `hold` is `short|normal|long` (350/550/900 ms),
+`effect`/`enter`/`exit`/`surface` are ids. There is not one frame count or millisecond anywhere in
+a doc — and there must never be. The instant a doc can say `"frames": 120`, two sources of truth
+exist for how long a scene runs, and the one the renderer ignores is the one a human will trust.
+
+**The invariant is "no value that shadows a DERIVED one," not "no numbers."** A number is dangerous
+only when `prepare()` already computes the same quantity from other fields; then the doc's copy and
+the computed copy can disagree. Test any proposed numeric field against that, not against a blanket
+ban. Two things already pass it: `copy` is unbounded free text and always has been in the doc,
+because nothing derives copy; and **`framing`** — an authored camera `{zoom, x, y}` on a `ui` scene
+— is admitted for the same reason. `sceneFrames()` reads kind/copy/effect/hold/enter/exit/surface
+and can never reach `framing` (gate **P5** proves it by stripping every camera and asserting not one
+frame moves), so a camera duplicates no derived value. It relocates the `ZOOM`/`PIN` constants that
+used to be hand-typed inside a surface file up to the doc layer that should author them.
+
+Two guards keep `framing` honest: `x`/`y` are **fractions of the frame**, never pixels (a pixel
+offset would be a second source of truth for the frame size; a fraction survives a resolution
+change), and the same `clampFraming()` runs on the editor's live gesture AND its commit, so the
+preview can never show a camera the render would clamp away. A `bleed` surface floors zoom at 1
+(below it exposes bare stage — see MACRO CROP). Framing is legal on `ui` scenes ONLY; `validate()`
+rejects it on a text scene.
 
 Corollary: **duration is derived, never declared.**
 

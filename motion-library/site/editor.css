@@ -35,13 +35,75 @@
 .ed-brand { font-size: 15px; font-weight: 600; }
 .ed-dur { font-size: 12px; color: var(--muted); }
 .ed-warn { font-size: 11px; color: var(--out); }
-.ed-head select, .ed button {
+/* The 30px pill is only for the toolbar/inspector/strip buttons — scoped so preview tiles and
+   range inputs (which set their own geometry) don't fight it with !important. */
+/* :not(.pv-tile) — the preview tiles live inside .ed-insp but size themselves; without the guard
+   this pill rule clamps them to 30px and clips the thumbnail. */
+.ed-head select, .ed-head button, .ed-strip button, .ed-insp button:not(.pv-tile), .ed-frame-bar button {
   height: 30px; padding: 0 11px; font-size: 12px; border-radius: 7px; cursor: pointer;
   background: transparent; color: var(--fg); border: 1px solid var(--border);
 }
 .ed button:hover:not(:disabled) { background: var(--hover); }
 .ed button:disabled { opacity: 0.45; cursor: not-allowed; }
 .ed-primary { border-color: var(--accent) !important; color: var(--accent) !important; }
+.ed-dirty { font-size: 11px; color: var(--accent); }
+.ed-linkbtn { height: auto !important; padding: 0 4px !important; border: none !important; color: var(--accent) !important; font-size: 11px; text-decoration: underline; }
+
+/* ── surface framing camera ─────────────────────────────────────────────── */
+.ed-stage { position: relative; }
+.ed-frame-surface {
+  position: absolute; inset: 0; z-index: 2; cursor: grab; touch-action: none; user-select: none;
+  /* Rule-of-thirds guide. Dual black+white hairlines so it stays visible on ANY promo stage —
+     the promo theme is independent of the site theme, so a single white line vanishes on a light
+     stage and a black one on dark. */
+  background:
+    repeating-linear-gradient(to right, transparent 0 calc(33.33% - 1px), rgba(0,0,0,.22) calc(33.33% - 1px) calc(33.33%), rgba(255,255,255,.5) calc(33.33%) calc(33.33% + 1px), transparent calc(33.33% + 1px) 66.66%),
+    repeating-linear-gradient(to bottom, transparent 0 calc(33.33% - 1px), rgba(0,0,0,.22) calc(33.33% - 1px) calc(33.33%), rgba(255,255,255,.5) calc(33.33%) calc(33.33% + 1px), transparent calc(33.33% + 1px) 66.66%);
+  opacity: .55; transition: opacity .16s;
+}
+.ed-frame-surface:active { cursor: grabbing; opacity: .3; }
+.ed-frame-surface:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--accent); }
+.ed-frame-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 8px 0 2px; }
+.ed-frame-ctl { display: flex; align-items: center; gap: 8px; }
+.ed-frame-ctl input[type='range'] { width: 180px; accent-color: var(--accent); cursor: pointer; }
+.ed-frame-val { font-size: 11px; color: var(--muted); min-width: 42px; }
+.ed-frame-hint { font-size: 11px; color: var(--faint); display: inline-flex; align-items: center; gap: 6px; }
+.ed-framed { margin-left: 5px; color: var(--accent); font-size: 10px; }
+
+/* ── preview strip (block selectors) ────────────────────────────────────── */
+.pv-strip { position: relative; margin: 2px 0 14px; }
+/* Right-edge fade, theme-aware (var(--bg), never a hardcoded white). Only shown when the strip
+   actually overflows, so a 2-item strip has no phantom fade. */
+.pv-strip.has-more::after {
+  content: ''; position: absolute; top: 0; right: 0; bottom: 12px; width: 56px; pointer-events: none;
+  background: linear-gradient(to right, transparent, var(--bg));
+}
+.pv-scroll {
+  display: flex; gap: 8px; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity; padding: 2px 44px 8px 0; scrollbar-width: none;
+}
+.pv-scroll::-webkit-scrollbar { display: none; }
+.pv-tile {
+  flex: 0 0 auto; scroll-snap-align: start; display: block; text-align: left;
+  height: auto; padding: 0; overflow: hidden; border-radius: 9px; cursor: pointer;
+  background: var(--card); border: 1px solid var(--card-border);
+  transition: border-color .15s, transform .15s, box-shadow .15s;
+}
+.pv-tile:hover:not(.dead) { border-color: var(--accent); transform: translateY(-1px); }
+.pv-tile:focus-visible { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-bg); }
+.pv-tile.on { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.pv-tile.r-out.on { border-color: var(--out); box-shadow: inset 0 0 0 1px var(--out); }
+.pv-tile.r-in.on { border-color: var(--in); box-shadow: inset 0 0 0 1px var(--in); }
+.pv-tile.r-ft.on { border-color: var(--ft); box-shadow: inset 0 0 0 1px var(--ft); }
+.pv-tile.dead { opacity: .4; cursor: not-allowed; }
+.pv-media { display: block; background: var(--code-bg); aspect-ratio: 16 / 9; }
+.pv-skel { display: block; width: 100%; height: 100%; background: var(--hover); }
+.pv-cap { display: flex; flex-direction: column; gap: 1px; padding: 6px 9px 7px; }
+.pv-name { font-size: 11.5px; font-weight: 600; color: var(--fg); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pv-meta { font-size: 9.5px; color: var(--faint); }
+/* mini scroll-progress bar */
+.pv-bar { position: relative; height: 3px; border-radius: 2px; background: var(--hover); margin-top: 2px; overflow: hidden; }
+.pv-bar-thumb { position: absolute; top: 0; height: 100%; border-radius: 2px; background: var(--accent); opacity: .55; }
 
 .ed-error { border: 1px solid var(--out); background: var(--out-bg); border-radius: 9px; padding: 11px 13px; margin-bottom: 14px; font-size: 12.5px; }
 .ed-error pre { margin: 6px 0 0; white-space: pre-wrap; font-size: 11.5px; }

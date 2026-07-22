@@ -39,7 +39,19 @@ const editorApi = (): Plugin => ({
       const safe = (f: string) => /^[\w.-]+\.promo\.json$/.test(f);
 
       if (url.pathname === '/__docs') {
-        return json({docs: readdirSync(DOCS).filter((f) => f.endsWith('.promo.json'))});
+        // Return parsed content, not bare names, so the picker can show a human label
+        // (id · N scenes · theme) instead of a filename. Duration stays client-side: the editor
+        // runs prepare() on the doc, keeping prepare() the single duration boundary.
+        const files = readdirSync(DOCS).filter((f) => f.endsWith('.promo.json'));
+        return json({
+          docs: files.map((f) => {
+            try {
+              return {f, doc: JSON.parse(readFileSync(resolve(DOCS, f), 'utf8'))};
+            } catch (e) {
+              return {f, doc: null, error: String((e as Error).message)};
+            }
+          }),
+        });
       }
 
       if (url.pathname === '/__doc') {

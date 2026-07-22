@@ -3,7 +3,7 @@ import {countUnits, timeline} from '../blocks/animate-text/SpecText';
 import {SURFACES} from './surfaces';
 import {
   FPS, HEIGHT, HOLD, INTRO, MIN_SETTLE, OUTRO, PromoDoc, PromoDocRaw, Scene, WIDTH,
-  axisWarnings, normalize, validate,
+  axisWarnings, framingWarnings, normalize, validate,
 } from './schema';
 
 /* ============================================================================
@@ -88,6 +88,7 @@ export const prepare = (raw: PromoDocRaw): Prepared => {
 
   const warnings = [
     ...axisWarnings(doc),
+    ...framingWarnings(doc),
     ...scenes
       .filter((p) => p.scene.kind === 'text' && p.frames > SCENE_WARN)
       .map((p) => `scene "${p.scene.id}" is ${(p.frames / FPS).toFixed(1)}s — long for a quick promo.`),

@@ -4,10 +4,16 @@ import {SURFACES} from './surfaces';
 /* ============================================================================
  * PROMODOC — a promo as data.
  *
- * THE STANDING RULE: this document contains NO NUMBERS. Copy strings, block ids and
- * size/hold tokens, and nothing else. There is no field for a frame, a millisecond, an
- * easing, a colour or a font size — so the locked-motion law holds because motion is
- * UNREPRESENTABLE here, not because a rule asks nicely.
+ * THE STANDING RULE: this document contains NO DERIVED NUMBERS. Copy strings, block ids and
+ * size/hold tokens carry everything the renderer COMPUTES from — there is no field for a frame,
+ * a millisecond, an easing, a colour or a font size, so the locked-motion law holds because
+ * motion is UNREPRESENTABLE here, not because a rule asks nicely.
+ *
+ * The single admitted exception is `framing` on a ui scene (below): an authored CAMERA — zoom and
+ * a fractional x/y offset — over a surface. It is allowed precisely because nothing in this repo
+ * DERIVES a camera; sceneFrames() cannot reach it (gate P5 proves this), so it duplicates no
+ * computed value. It relocates the hand-typed ZOOM/PIN constants that used to live inside a
+ * surface file up to the doc layer that should author them. See "NO DERIVED NUMBERS" in SKILL.md.
  *
  * No zod. It is not a declared dependency (present only transitively via Remotion, built
  * against a different major), and the whole validation need is array membership plus four
@@ -19,6 +25,42 @@ import {SURFACES} from './surfaces';
 export const FPS = 60;
 export const WIDTH = 1280;
 export const HEIGHT = 720;
+
+/* ── SURFACE FRAMING — the one authored-geometry field ──────────────────────────────────────
+ * A camera over a ui surface: `zoom` is a dimensionless multiplier, `x`/`y` are FRACTIONS of the
+ * frame (so they stay correct if WIDTH/HEIGHT ever change — a pixel offset would be a second
+ * source of truth for the frame size, a fraction is not). Identity is zoom 1, no offset. */
+export type Framing = {zoom: number; x: number; y: number};
+export const FRAMING_ID: Framing = {zoom: 1, x: 0, y: 0};
+
+/* Bounds and quantisation. `bleedMin` is 1 because a BLEED surface IS the viewport — scaling it
+ * below 1 would expose bare stage around it (see MACRO CROP). The steps keep an authored diff
+ * reviewable: zoom to 1/100, offset to 1/1000 of the frame. */
+export const FRAMING_BOUNDS = {
+  zoom: {min: 0.5, bleedMin: 1, max: 4, step: 0.01},
+  offset: {min: -1, max: 1, step: 0.001},
+} as const;
+
+const clampQ = (v: number, lo: number, hi: number, step: number): number => {
+  const n = Number.isFinite(v) ? v : 0;
+  return Math.round(Math.min(hi, Math.max(lo, n)) / step) * step;
+};
+
+export const isIdentity = (f: Framing | undefined): boolean =>
+  !f || (f.zoom === 1 && f.x === 0 && f.y === 0);
+
+/** Force a framing into range and onto the quantisation grid. The EDITOR runs this on both the
+ *  live gesture and the commit, so what the preview shows and what the doc stores are identical
+ *  and can never fall outside what the renderer will accept. `bleed` raises the zoom floor. */
+export const clampFraming = (f: Framing | undefined, bleed: boolean): Framing => {
+  if (!f) return FRAMING_ID;
+  const z = FRAMING_BOUNDS.zoom, o = FRAMING_BOUNDS.offset;
+  return {
+    zoom: clampQ(f.zoom, bleed ? z.bleedMin : z.min, z.max, z.step),
+    x: clampQ(f.x, o.min, o.max, o.step),
+    y: clampQ(f.y, o.min, o.max, o.step),
+  };
+};
 
 /** Rest after the enter lands, in ms. Not a timing knob — three named paces. */
 export const HOLD = {short: 350, normal: 550, long: 900} as const;
@@ -58,7 +100,7 @@ export type SizeTok = keyof typeof SIZE;
 export type HoldTok = keyof typeof HOLD;
 
 /* ── Raw: what the editor writes to disk. Optionals allowed. ───────────────── */
-type BaseRaw = {id: string; enter?: IntroId; exit?: OutroId; hold?: HoldTok};
+type BaseRaw = {id: string; enter?: IntroId; exit?: OutroId; hold?: HoldTok; framing?: Framing};
 export type TextSceneRaw = BaseRaw & {kind: 'text'; effect: string; copy: string; sub?: string; size?: SizeTok};
 export type UiSceneRaw = BaseRaw & {kind: 'ui'; surface: string};
 export type SceneRaw = TextSceneRaw | UiSceneRaw;
@@ -75,8 +117,10 @@ export type PromoDocRaw = {v: 1; id: string; theme?: Theme; scenes: SceneRaw[]};
 
 /* ── Normalized: what components see. Every field present. ─────────────────── */
 type Base = {id: string; enter: IntroId; exit: OutroId; hold: HoldTok};
-export type TextScene = Base & {kind: 'text'; effect: string; copy: string; sub: string | null; size: SizeTok};
-export type UiScene = Base & {kind: 'ui'; surface: string};
+/* `framing?` is carried on TextScene ONLY so validate can reject it — a camera on text is
+ *  meaningless and a sign of a hand-edited doc. Promo.tsx reads framing on ui scenes exclusively. */
+export type TextScene = Base & {kind: 'text'; effect: string; copy: string; sub: string | null; size: SizeTok; framing?: Framing};
+export type UiScene = Base & {kind: 'ui'; surface: string; framing: Framing};
 export type Scene = TextScene | UiScene;
 export type PromoDoc = {v: 1; id: string; theme: Theme; scenes: Scene[]};
 
@@ -88,9 +132,12 @@ export const normalize = (raw: PromoDocRaw): PromoDoc => ({
   theme: raw.theme ?? 'soft-light',
   scenes: (raw.scenes ?? []).map((s) => {
     const base = {id: s.id, enter: s.enter ?? DEFAULTS.enter, exit: s.exit ?? DEFAULTS.exit, hold: s.hold ?? DEFAULTS.hold};
+    // ui: clamp framing here so BOTH the render path (calculateMetadata → prepare) and the editor
+    // land on the same in-range value — a hand-edited zoom:99 renders clamped, not blinding-huge.
+    // text: pass framing THROUGH unchanged (illegal, but validate must see it to reject it).
     return s.kind === 'ui'
-      ? ({...base, kind: 'ui', surface: s.surface} as UiScene)
-      : ({...base, kind: 'text', effect: s.effect, copy: s.copy, sub: s.sub ?? null, size: s.size ?? DEFAULTS.size} as TextScene);
+      ? ({...base, kind: 'ui', surface: s.surface, framing: clampFraming(s.framing, SURFACES[s.surface]?.bleed ?? false)} as UiScene)
+      : ({...base, kind: 'text', effect: s.effect, copy: s.copy, sub: s.sub ?? null, size: s.size ?? DEFAULTS.size, ...(s.framing !== undefined ? {framing: s.framing} : {})} as TextScene);
   }),
 });
 
@@ -110,12 +157,29 @@ export const validate = (doc: PromoDoc): string[] => {
       if (!TEXT_EFFECT_IDS.includes(s.effect)) errs.push(`scene "${s.id}": unknown text effect "${s.effect}"`);
       if (!s.copy?.trim()) errs.push(`scene "${s.id}": copy is empty`);
       if (!(s.size in SIZE)) errs.push(`scene "${s.id}": unknown size token "${s.size}"`);
+      if (s.framing !== undefined) errs.push(`scene "${s.id}": text scenes cannot carry framing — a camera is for ui surfaces only`);
     } else if (!SURFACES[s.surface]) {
       errs.push(`scene "${s.id}": unknown surface "${s.surface}"`);
     }
     if (!(s.hold in HOLD)) errs.push(`scene "${s.id}": unknown hold token "${s.hold}"`);
   }
   return errs;
+};
+
+/** Framing pushed so far the surface has mostly left the frame. A WARNING, never an error — an
+ *  extreme crop can be deliberate (MACRO CROP pins a surface partly off-frame on purpose), and the
+ *  editor clamps within bounds anyway. This only catches gross whole-surface off-framing; it does
+ *  NOT verify that an exercised control stayed whole (a surface declares no control rectangle). */
+export const framingWarnings = (doc: PromoDoc): string[] => {
+  const out: string[] = [];
+  for (const s of doc.scenes) {
+    if (s.kind !== 'ui' || isIdentity(s.framing)) continue;
+    const f = s.framing;
+    if (Math.abs(f.x) > 0.45 || Math.abs(f.y) > 0.45 || f.zoom < 0.6) {
+      out.push(`scene "${s.id}": framing (zoom ${f.zoom}, offset ${f.x}/${f.y}) pushes the surface far off-centre — check it still reads.`);
+    }
+  }
+  return out;
 };
 
 /* Axis adjacency is a WARNING, not an error. The editor's primary action is swapping a whole

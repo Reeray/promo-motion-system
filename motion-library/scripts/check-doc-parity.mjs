@@ -66,6 +66,25 @@ for (const f of docs) {
   if (a.durationInFrames !== b.durationInFrames) fail.push(`${f}: P1 prepare() is not deterministic (${a.durationInFrames} vs ${b.durationInFrames})`);
   const sum = a.scenes.reduce((n, s) => n + s.frames, 0);
   if (sum !== a.durationInFrames) fail.push(`${f}: P2 durationInFrames ${a.durationInFrames} != sum of scenes ${sum}`);
+
+  // P5 — framing is duration-inert. Stripping every scene's camera must not move a single frame,
+  // which is the mechanical proof that an authored camera can never shadow a derived length (the
+  // whole basis for admitting it under NO DERIVED NUMBERS). If sceneFrames() ever reads framing,
+  // this fails loudly.
+  const bare = JSON.parse(JSON.stringify(raw));
+  for (const s of bare.scenes ?? []) delete s.framing;
+  let c;
+  try {
+    c = prepare(bare);
+  } catch (e) {
+    fail.push(`${f}: P5 unframed copy failed to prepare: ${String(e.message || e)}`);
+    continue;
+  }
+  if (c.durationInFrames !== a.durationInFrames) fail.push(`${f}: P5 framing changed the total (${a.durationInFrames} framed vs ${c.durationInFrames} unframed) — framing must never reach prepare()`);
+  a.scenes.forEach((s, i) => {
+    if (s.frames !== c.scenes[i]?.frames) fail.push(`${f}: P5 framing changed scene "${s.scene.id}" (${s.frames}f vs ${c.scenes[i]?.frames}f unframed)`);
+  });
+
   for (const w of a.warnings) warn.push(`${f}: ${w}`);
 }
 
