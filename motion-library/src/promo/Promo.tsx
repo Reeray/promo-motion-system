@@ -2,7 +2,7 @@ import React from 'react';
 import {AbsoluteFill, Series, interpolate, useCurrentFrame} from 'remotion';
 import '../lib/fonts';
 import {EASE, lerp} from '../lib/ease';
-import {ELEV, FONT, PD, PS, PX} from '../lib/palette';
+import {ELEV, FONT, PC, PD, PS, PX} from '../lib/palette';
 
 /* PX and PD don't share a type (only PX carries accent tokens), so the stage is typed against
  * the fields it actually reads. Structural, not nominal — a third palette would just work. */
@@ -111,10 +111,10 @@ const SceneView: React.FC<{p: PreparedScene; pal: Pal}> = ({p, pal}) => {
 };
 
 export const Promo: React.FC<Prepared> = ({doc, scenes}) => {
-  const pal = doc.theme === 'dark' ? PD : doc.theme === 'light' ? PX : PS;
+  const pal = doc.theme === 'dark' ? PD : doc.theme === 'light' ? PX : doc.theme === 'cream' ? PC : PS;
   /* Only SOFT LIGHT separates by shadow. The other two put the card at a different luminance
    * from the stage, where an added shadow reads as heavy — the classic fake-product-shot tell. */
-  const stage = {elev: doc.theme === 'soft-light' ? ELEV.card : null};
+  const stage = {elev: doc.theme === 'soft-light' ? ELEV.card : doc.theme === 'cream' ? ELEV.warm : null};
   return (
     <StageCtx.Provider value={stage}>
     <Series>

@@ -58,9 +58,34 @@ export const PS = {
  *  reference measurement to 1280x720. */
 export const ELEV = {
   card: '0 18px 40px rgba(16,22,38,.10), 0 2px 6px rgba(16,22,38,.05)',
+  /** Cream's shadow is warm and a touch deeper — a cool grey shadow on warm paper reads as dirt. */
+  warm: '0 16px 38px rgba(58,44,26,.14), 0 2px 6px rgba(58,44,26,.08)',
   /** For a macro crop, where the surface is larger than the frame and only its edge is visible. */
   window: '0 24px 64px rgba(16,22,38,.13), 0 3px 8px rgba(16,22,38,.06)',
 } as const;
+
+/* ── CREAM — Bauhaus paper ────────────────────────────────────────────────────────────────
+ *
+ * Warm paper, true warm-black ink, and the Bauhaus primaries as accents. The point of difference
+ * from soft-light is TEMPERATURE, not level: the stage is a warm off-white rather than a neutral
+ * one, so a product surface captured at #ffffff reads as a cool white SHEET lying on warm paper.
+ * That contrast of temperature is what does the separating — which is why this theme carries both
+ * a hairline and a warm shadow, and why its ink is warm-black (#1a1712) rather than blue-black.
+ * Neutral grey ink on warm paper is the single tell that a cream theme was faked by tinting a
+ * white one. */
+export const PC = {
+  bg: '#f3ede3',
+  fg: '#1a1712',
+  card: '#fbf8f2',
+  border: 'rgba(26,23,18,.12)',
+  muted: '#6e6357',
+  faint: '#9a8d7d',
+  codeBg: 'rgba(26,23,18,.05)',
+};
+
+/** Bauhaus primaries. Not used by the stage itself — held here so a text or diagram block can
+ *  reach for them instead of inventing a red. */
+export const BAUHAUS = {red: '#d5391f', blue: '#21409a', yellow: '#f2c230'} as const;
 
 /* FIXED palette — does NOT follow the site theme.
  *

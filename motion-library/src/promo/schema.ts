@@ -62,14 +62,15 @@ type BaseRaw = {id: string; enter?: IntroId; exit?: OutroId; hold?: HoldTok};
 export type TextSceneRaw = BaseRaw & {kind: 'text'; effect: string; copy: string; sub?: string; size?: SizeTok};
 export type UiSceneRaw = BaseRaw & {kind: 'ui'; surface: string};
 export type SceneRaw = TextSceneRaw | UiSceneRaw;
-/* THREE stages, not two. `soft-light` and `light` are both light — they differ in HOW a surface
+/* FOUR stages. `soft-light` and `light` are both light — they differ in HOW a surface
  * separates from the void it sits in:
  *   soft-light  white stage, white card, separation by SHADOW      (the [C] house default)
  *   light       dimmer stage, pure-white card, separation by CONTRAST
+ *   cream       Bauhaus warm paper, warm-black ink, separation by TEMPERATURE + shadow
  * Pick soft-light unless the product UI you captured needs to read as a distinctly white sheet
  * against something. */
-export type Theme = 'soft-light' | 'light' | 'dark';
-export const THEMES: Theme[] = ['soft-light', 'light', 'dark'];
+export type Theme = 'soft-light' | 'light' | 'cream' | 'dark';
+export const THEMES: Theme[] = ['soft-light', 'light', 'cream', 'dark'];
 
 export type PromoDocRaw = {v: 1; id: string; theme?: Theme; scenes: SceneRaw[]};
 

@@ -43,7 +43,7 @@ narrative, directs the eye, or bridges scenes. Nothing moves just to be pretty.
 
 ## 0 · ROUTING — always do this first
 
-Unless the user already said so, **ask which STAGE they want: soft light, light, or dark.** That
+Unless the user already said so, **ask which STAGE they want: soft light, light, cream, or dark.** That
 is the one routing question — it sets the palette for the whole piece. The two light stages are
 NOT interchangeable; they differ in how a surface separates from the void it sits in:
 
@@ -51,6 +51,7 @@ NOT interchangeable; they differ in how a surface separates from the void it sit
 |---|---|---|---|
 | **Soft light** *(default)* | `PS` — stage **`#ffffff`**, card **`#ffffff`** | **SHADOW** (`ELEV`) | the OpenAI "white void" school: airy, editorial, calm. MEASURED off [C]: stage 255, card 253 — the card is not brighter, it floats. See DEPTH, NOT BRIGHTNESS |
 | **Light** | `PX` — stage **`#eef1f6`**, card `#f8fafc`+ | **CONTRAST**, no shadow | when the captured product must read as a distinctly white sheet against something |
+| **Cream** | `PC` — Bauhaus paper **`#f3ede3`**, card `#fbf8f2`, warm-black ink `#1a1712` | **TEMPERATURE** + warm shadow (`ELEV.warm`) | editorial, printed, human. A product captured at `#ffffff` becomes a cool white sheet lying on warm paper |
 | **Dark** | `PD` — **`#0b0e13`** (cards `#14181f`, border `rgba(255,255,255,.10)`) | `#e9ecef` | product/terminal feel, lets colour-rich UI and charts glow; matches dark-theme product captures |
 
 **Two rules that follow from the answer:**
@@ -985,6 +986,16 @@ a dim stage *and* a shadow together is the classic fake-product-shot tell:
 |---|---|---|---|
 | `soft-light` | `#ffffff` | `#ffffff` | shadow only |
 | `light` | `#eef1f6` | `#f8fafc`+ | luminance only, no shadow |
+
+**1b. CREAM separates by TEMPERATURE, and its details are not optional.** Warm paper needs
+warm-black ink (`#1a1712`, never a blue-black) and a warm shadow (`rgba(58,44,26,…)`). Neutral grey
+ink and a cool grey shadow are the two tells that a cream theme was faked by tinting a white one —
+the shadow in particular reads as dirt rather than depth. Bauhaus primaries live in `BAUHAUS`
+(`#d5391f` / `#21409a` / `#f2c230`) so a block reaches for one instead of inventing a red.
+
+Know what cream does NOT do: a theme sets the stage and the type, while a captured surface keeps
+its extracted colours. On a macro-crop shot the stage is a thin margin, so cream reads mainly on
+text and chrome scenes. Choose it for the piece's voice, not to recolour a product.
 
 **2. The shadow is far softer than instinct.** Under 5% darkening, ~32px of reach at 720p. Use two
 layers — a wide ambient one that does the floating, and a tight contact shadow so the edge is not
