@@ -585,6 +585,104 @@ transition.
   (§2.5). Avoid the 3 not-yet-implemented layout-aware renderers (`kinetic-center-build`,
   `short-slide-right`, `short-slide-down`) until built.
 
+## 2.6 · THE PROMO DOC — a promo is data, and `prepare()` is its only boundary
+
+A finished promo is **one JSON file** (`docs/*.promo.json`) rendered by ONE composition
+(`Promo`). There are no per-promo `.tsx` files any more, and adding one is a regression: it
+puts numbers back where a human has to keep them in sync, and it makes the promo invisible to
+the editor. Author the doc; never author a composition.
+
+```jsonc
+{
+  "v": 1, "id": "hf-storage", "theme": "dark",        // theme: "light" | "dark"
+  "scenes": [
+    {"id": "title", "kind": "text", "effect": "blur-out-up",
+     "copy": "Every repository's storage, visualized", "size": "lg", "hold": "long",
+     "enter": "scale-pop-in", "exit": "push-off-left"},
+    {"id": "repositories", "kind": "ui", "surface": "hf-storage-repositories",
+     "enter": "glide-in", "exit": "scale-up-cut"}
+  ]
+}
+```
+
+### ⚑ LAW — NO NUMBERS IN THE DOC
+
+Every field is a **token**, never a measurement. `size` is `sm|md|lg|xl` (34/48/56/64px),
+`hold` is `short|normal|long` (350/550/900 ms), `effect`/`enter`/`exit`/`surface` are ids.
+There is not one frame count, pixel value or millisecond anywhere in a doc — and there must
+never be. The instant a doc can say `"frames": 120`, two sources of truth exist for how long a
+scene runs, and the one the renderer ignores is the one a human will trust.
+
+Corollary: **duration is derived, never declared.**
+
+```
+scene = max( body , enter.frames + MIN_SETTLE ) + exit.frames
+body(text) = ceil( (spec enter-total + HOLD[hold]) / 1000 * fps )
+body(ui)   = the surface's own measured `frames`
+```
+
+- The **intro floor** is the `max(...)`: `glide-in` needs 54 frames, so a scene whose text
+  finishes in 30 still runs 56. Without the floor a short line gets thrown off stage while it is
+  still gliding on. Shortest real scenes derive to ~60f.
+- The spec's **exit** and `RT.gap` are deliberately excluded — the doc renders `loop={false}`,
+  and the transition owns the exit (§"short throw, cut at peak").
+- `prepare()` is the **only** place this arithmetic exists. `calculateMetadata` calls it, and the
+  editor's `<Player>` consumes the same `Prepared` object the CLI render does, which is what
+  makes preview/render divergence structurally impossible instead of merely tested for. A
+  renderer must never see a raw doc.
+- Guardrails: `SCENE_WARN` 240f, `SCENE_MAX` 480f, `TOTAL_MAX` 1200f. **`ui` scenes are exempt** —
+  a surface's length is measured choreography, not a pacing choice.
+
+### Swap-duration table (measured, at 60fps)
+
+| slot | id | axis | frames | swapping changes the scene by |
+|---|---|---|---|---|
+| intro | `glide-in` | X | 54 | +28f vs `scale-pop-in` (and can raise the floor) |
+| intro | `scale-pop-in` | Z | 26 | −28f vs `glide-in` |
+| outro | `push-off-left` | X | 9 | +3f vs `scale-up-cut` |
+| outro | `scale-up-cut` | Z | 6 | −3f vs `push-off-left` |
+
+A matched pair collapses into one **full-tro**: `push-off-left`+`glide-in` = `axis-handoff` (X),
+`scale-up-cut`+`scale-pop-in` = `depth-handoff` (Z). Junction = `sceneN.exit + sceneN+1.enter`;
+that is the unit the editor shows and the unit you should think in.
+
+**Axis adjacency is a WARNING, not an error.** Two junctions in a row on the same axis reads as
+one repeated move (§VARY THE TRANSITIONS), so alternate X / Z — but a doc that repeats an axis
+still validates and still renders. Never fail a build on taste.
+
+### What is editable, and what is not
+
+| | editable in the doc/editor | why |
+|---|---|---|
+| **text copy, `sub`** | ✅ free text | it is the story |
+| **`effect`, `size`, `hold`** | ✅ swap within the vocabulary | content layer (§2.5) |
+| **`enter` / `exit`** | ✅ swap intro↔intro, outro↔outro, full-tro↔full-tro | handoff layer |
+| **product-UI surfaces** | ❌ opaque, fixed length | the chart geometry, per-state data and typed choreography were EXTRACTED from the real product (§3c/§3e). Exposing them as doc fields invites exactly the eyeballed drift that work removed. |
+
+Swapping a surface is a **round trip**, not an in-editor action: the agent re-runs capture and
+rebuilds the component. Say that plainly to the user rather than implying the surface is editable.
+
+A surface owns two things a scene must not override: its **measured box** (`surfaces/frame.tsx`,
+1180×650 centred in 1280×720 — the size its layout was extracted against) and, for a macro crop
+that IS the viewport, its **`bleed` flag** (absolutely positioned children collapse inside a
+shrink-to-fit transform div, so a bleed scene carries the transition transform on an
+`AbsoluteFill`). Get either wrong and the doc render silently stops matching the capture.
+
+### Usable text effects
+
+17 of the 24 specs execute under `SpecText`. Seven are **excluded with a written reason**
+(gate B1) and must not be referenced from a doc: `kinetic-center-build`, `short-slide-right`,
+`short-slide-down`, `stagger-from-center`, `stagger-from-edges`, `depth-parallax-words`,
+`shared-axis-x`. `BLOCKS.md` / `blocks.json` are generated (`npm run blocks`) and are the
+catalog of record — read them, don't remember them.
+
+### Gate R5 — every `<SpecText>` in a stage file passes `color` AND `loop={false}`
+
+Both failures are invisible to the pixel gate. `color` defaults to the theme-aware `var(--fg)`,
+which is invisible dark ink on a dark stage; `loop` defaults to true, which runs the spec's EXIT
+at the hardcoded `RT.hold` mid-scene and leaves the outro throwing an empty stage. `Promo.tsx`
+sets both once, which is the other reason to author docs rather than compositions.
+
 ## 3 · Transition Catalog (measured)
 
 | # | Name | Src | Mechanics | Duration | Easing | Use when |
