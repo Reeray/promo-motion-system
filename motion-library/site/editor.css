@@ -1,0 +1,113 @@
+/* Editor — reuses the gallery's tokens (--bg/--fg/--card/--border) so it feels like one product.
+   Transition role colours match the block tags: outro coral, intro teal, full-tro purple. */
+.ed {
+  --out: #d8491f;
+  --out-bg: rgba(224, 83, 47, 0.13);
+  --in: #0b8f70;
+  --in-bg: rgba(14, 158, 124, 0.13);
+  --ft: #5f3df0;
+  --ft-bg: rgba(109, 74, 255, 0.13);
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 22px 24px 60px;
+  color: var(--fg);
+}
+:root[data-theme='dark'] .ed {
+  --out: #ff8a63;
+  --out-bg: rgba(255, 122, 82, 0.16);
+  --in: #3fdcaa;
+  --in-bg: rgba(42, 211, 159, 0.16);
+  --ft: #a996ff;
+  --ft-bg: rgba(157, 134, 255, 0.18);
+}
+.ed-empty {
+  max-width: 560px;
+  margin: 18vh auto;
+  color: var(--fg);
+  font-size: 14px;
+}
+.ed-title { font-size: 26px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 8px; }
+.ed-docs { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+
+.ed-head { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+.ed-brand { font-size: 15px; font-weight: 600; }
+.ed-dur { font-size: 12px; color: var(--muted); }
+.ed-warn { font-size: 11px; color: var(--out); }
+.ed-head select, .ed button {
+  height: 30px; padding: 0 11px; font-size: 12px; border-radius: 7px; cursor: pointer;
+  background: transparent; color: var(--fg); border: 1px solid var(--border);
+}
+.ed button:hover:not(:disabled) { background: var(--hover); }
+.ed button:disabled { opacity: 0.45; cursor: not-allowed; }
+.ed-primary { border-color: var(--accent) !important; color: var(--accent) !important; }
+
+.ed-error { border: 1px solid var(--out); background: var(--out-bg); border-radius: 9px; padding: 11px 13px; margin-bottom: 14px; font-size: 12.5px; }
+.ed-error pre { margin: 6px 0 0; white-space: pre-wrap; font-size: 11.5px; }
+
+.ed-player { border: 1px solid var(--card-border); border-radius: 11px; overflow: hidden; background: #000; }
+
+/* ── timeline ───────────────────────────────────────────────────────────── */
+.ed-strip { display: flex; align-items: stretch; height: 52px; margin: 14px 0 4px; }
+.ed-seg {
+  display: flex; flex-direction: column; justify-content: center; gap: 2px;
+  min-width: 0; padding: 0 10px !important; height: auto !important;
+  text-align: left; overflow: hidden; border-radius: 8px !important;
+  background: var(--card) !important; border: 1px solid var(--card-border) !important;
+}
+.ed-seg.dull { background: var(--hover) !important; color: var(--faint) !important; }
+.ed-seg.on { border-color: var(--fg) !important; border-width: 1.5px !important; }
+.ed-seg-l { font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ed-seg-t { font-size: 9.5px; color: var(--faint); }
+
+/* Junctions are fixed-width: a 9-frame outro would be a 3px sliver at true scale. */
+.ed-j {
+  position: relative; display: flex; margin: 0 5px; gap: 0;
+  transition: flex-basis 0.34s cubic-bezier(0.34, 1.56, 0.64, 1), gap 0.34s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.ed-j.open { gap: 5px; }
+.ed-j.split { animation: ed-squash 0.34s ease-out; }
+@keyframes ed-squash {
+  0% { transform: scaleY(1); } 38% { transform: scaleY(0.82); }
+  72% { transform: scaleY(1.06); } 100% { transform: scaleY(1); }
+}
+.ed-jh {
+  flex: 1; min-width: 0; height: auto !important; padding: 0 !important;
+  font-size: 10px; display: flex; align-items: center; justify-content: center;
+  transition: border-radius 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.18s;
+}
+.ed-jh.merged { background: var(--ft-bg) !important; border-color: var(--ft) !important; color: var(--ft) !important; border-left: none !important; border-right: none !important; }
+.ed-jh.merged:first-of-type { border-radius: 8px 0 0 8px !important; border-left: 1px solid var(--ft) !important; }
+.ed-jh.merged:last-of-type { border-radius: 0 8px 8px 0 !important; border-right: 1px solid var(--ft) !important; }
+.ed-jh.sep { border-radius: 8px !important; }
+.ed-jh.out.sep { background: var(--out-bg) !important; border-color: var(--out) !important; color: var(--out) !important; }
+.ed-jh.in.sep { background: var(--in-bg) !important; border-color: var(--in) !important; color: var(--in) !important; }
+.ed-jh.on { border-width: 1.5px !important; }
+.ed-jh.bad { border-style: dashed !important; }
+.ed-ft { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; font-size: 12px; color: var(--ft); }
+
+/* ── inspector ──────────────────────────────────────────────────────────── */
+.ed-insp { border-top: 1px solid var(--border); margin-top: 16px; padding-top: 14px; }
+.ed-insp-h { font-size: 13px; margin-bottom: 9px; }
+.c-out { color: var(--out); }
+.c-in { color: var(--in); }
+.ed-note { font-size: 12px; color: var(--muted); margin: 0 0 10px; max-width: 70ch; }
+.ed-note.bad { color: var(--out); }
+.ed-insp textarea, .ed-insp input {
+  width: 100%; font: inherit; font-size: 13px; padding: 8px 10px; margin-bottom: 8px;
+  border-radius: 7px; background: var(--card); color: var(--fg); border: 1px solid var(--border); resize: vertical;
+}
+.ed-row { display: flex; align-items: center; gap: 5px; margin-bottom: 12px; flex-wrap: wrap; }
+.ed-lab { font-size: 9.5px; letter-spacing: 0.07em; color: var(--faint); margin: 0 4px 6px 0; }
+.ed-tok { height: 26px !important; padding: 0 9px !important; font-size: 11px !important; }
+.ed-tok.on { border-color: var(--fg) !important; background: var(--hover) !important; }
+.ed-picks { display: flex; flex-wrap: wrap; gap: 5px; }
+.ed-pick {
+  display: flex; align-items: baseline; gap: 7px; height: 28px !important;
+  padding: 0 9px !important; font-size: 11px !important; color: var(--muted) !important;
+}
+.ed-pick .mono { font-size: 10px; color: var(--faint); }
+.ed-pick.on { border-color: var(--fg) !important; background: var(--hover) !important; color: var(--fg) !important; }
+.ed-log {
+  margin-top: 18px; padding: 12px 14px; border-radius: 9px; background: var(--code-bg);
+  font-size: 11.5px; white-space: pre-wrap; max-height: 300px; overflow: auto;
+}

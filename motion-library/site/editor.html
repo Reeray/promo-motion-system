@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Promo editor — live edit before render</title>
+    <!-- No Google Fonts <link>, same reason as the gallery: the render has no page CSS, so the
+         preview must not be more forgiving than it. Fonts come from src/lib/fonts.ts. -->
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem('pms-theme');
+          if (!t) t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+          document.documentElement.setAttribute('data-theme', t);
+        } catch (e) {}
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="./editor.tsx"></script>
+  </body>
+</html>
