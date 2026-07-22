@@ -959,6 +959,51 @@ npm run check:render out/<file>.mp4  # AFTER render: pixel gate
 
 Both must pass. A render that fails either does not ship.
 
+### ⚑ LAW — TAG THE COLOUR, OR THE PLAYER INVENTS IT
+
+**Before diagnosing a render as too bright, too dark or washed out, check the file's colour tags.**
+A correct picture in a wrongly-described file is indistinguishable from a badly-graded one by eye,
+and every pixel measurement will say it is fine — because a decoder applies the file's own tags
+before you measure it.
+
+This shipped here. Remotion 4 defaults `--color-space` to `default`, which produces:
+
+```
+yuvj420p (pc, bt470bg / unknown / unknown)     # full-range luma, BT.601 PAL matrix
+```
+
+Full-range means luma occupies 0–255. But MP4/avc1 convention is limited range (16–235), so most
+players ignore the `pc` flag and **expand** 16–235 onto 0–255. Measured on a real render, that
+expansion drove **94.9% of the frame to pure #ffffff** (versus 26.9% decoded correctly) — a video
+that looked blinding while its own frames, extracted as PNG, looked perfect.
+
+**The tell:** stills look right, the video does not. If a PNG of frame N and the MP4 at frame N
+disagree, it is never the design — it is the container. Confirm with:
+
+```bash
+ffprobe -v error -select_streams v:0 -show_entries stream=pix_fmt,color_range,color_space file.mp4
+```
+
+Want `yuv420p, tv, bt709`. Anything with `pc`, `yuvj*` or `bt470bg` is mis-signalled.
+
+**The fix is a config, not a flag.** Put it where every entry point picks it up — CLI render,
+`still`, Studio, and any programmatic render — because a flag someone has to remember is a bug
+waiting for the next promo:
+
+```ts
+// remotion.config.ts
+Config.setColorSpace('bt709');
+Config.setVideoImageFormat('png');  // lossless into the colour conversion
+```
+
+Then **gate it**: the post-render check must assert the tags, not just the pixels. Note the cost
+of doing this right — limited range stores 219 levels instead of 256, so a re-encode shifts the
+decoded picture by ~1–2/255. That is the correct trade and what every player expects.
+
+**Why the pixel gate cannot cover this:** it decodes with the tags applied, so a mis-tagged file
+measures identically to a correct one. Tags need their own check. This is the same class of bug as
+DECLARE, DON'T INHERIT — something outside the frame deciding what the frame means.
+
 ### ⚑ LAW — RENDER EXPOSURE (never ship a blinding video)
 
 Blocks use CSS vars so the gallery can follow the site theme. **A headless render has no
