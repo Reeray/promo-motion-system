@@ -1,25 +1,22 @@
 import React from 'react';
-import {AbsoluteFill, Series, useCurrentFrame} from 'remotion';
-import {EASE, lerp} from '../lib/ease';
-import {PD, FONT} from '../lib/palette';
-import {GlideIn, PushOffLeft, ScalePopIn, ScaleUpCut, T, TZ, useGlideIn, useScaleUpCut} from '../blocks/transitions';
-import {SpecText, Spec} from '../blocks/animate-text/SpecText';
-import {MacroCropLog} from '../clips/C';
-import softBlurIn from '../blocks/animate-text/specs/soft-blur-in.json';
-import microScaleFade from '../blocks/animate-text/specs/micro-scale-fade.json';
+import {AbsoluteFill, useCurrentFrame} from 'remotion';
+import {EASE, lerp} from '../../lib/ease';
+import {PD, FONT} from '../../lib/palette';
+import {MacroCropLog} from '../../clips/C';
 
-/* "Build Spaces with AI Agents" — Hugging Face changelog, 16 Jul 2026.
+/* ============================================================================
+ * SURFACES — Hugging Face - Build Spaces with AI Agents (16 Jul 2026).
  *
- * FEATURE FLOW (§0.8) — job: turn a model into a running Space without writing the app.
- *   1. flip Manual setup -> AI agent setup      => the command card appears
- *   2. edit <a model, paper, or local folder>   => command is ready, copy it
- *   3. paste into Claude Code                   => agent builds, Space goes live
- * CARRIED OBJECT = the command. Born in 1, edited in 2, executed in 3 — it is the thread
- * and the transition vehicle. Steps 1+2 happen on ONE hero surface (state changes, no cut).
+ * Lifted out of src/promos/HFSpacesAgents.tsx; the old promo imports them back so both render
+ * one definition. Three surfaces, one carried object (the command): it is born on the new-space
+ * page, edited there, then executed in the agent log.
  *
- * UI: captured from the real logged-in page, then simplified (§ CAPTURE, THEN SIMPLIFY).
- * All copy verbatim. Dropped: the Spaces boilerplate paragraph, the huggingface-spaces
- * sentence. Dark palette matches the captured product theme. 60fps. */
+ * UI captured from the real logged-in page, then simplified (SKILL - CAPTURE, THEN SIMPLIFY).
+ * All copy verbatim. Dropped: the Spaces boilerplate paragraph, the huggingface-spaces sentence.
+ * ========================================================================== */
+
+export const CTA_URL = 'huggingface.co/new-space?setup=agent';
+
 
 const SANS = FONT.sans;
 const MONO = FONT.mono;
@@ -29,16 +26,6 @@ const CMD_A = 'curl https://huggingface.co/new-space/agents.md and build me a';
 const CMD_B = 'Space with a demo for ';
 const PLACEHOLDER = '<a model, paper, or local folder>';
 const FILLED = 'black-forest-labs/FLUX.1-dev';
-
-const Stage: React.FC<{children?: React.ReactNode}> = ({children}) => (
-  <AbsoluteFill style={{background: PD.bg, color: PD.fg, fontFamily: SANS, justifyContent: 'center', alignItems: 'center', overflow: 'hidden'}}>
-    {children}
-  </AbsoluteFill>
-);
-
-const TextObject: React.FC<{spec: unknown; copy: string; size?: number}> = ({spec, copy, size = 58}) => (
-  <SpecText spec={spec as Spec} sample={copy} fontSize={size} loop={false} bare color={PD.fg} />
-);
 
 // Hugging Face mark — four dots.
 const HFMark: React.FC<{s?: number}> = ({s = 22}) => (
@@ -183,74 +170,9 @@ const LiveSpace: React.FC = () => {
   );
 };
 
-/* ── SCENES ───────────────────────────────────────────────────────────────── */
-const S1 = 110; // title
-const S2 = 300; // hero surface — steps 1 + 2 (one surface, no cut)
-const S3 = 260; // agent surface — step 3
-const S4 = 160; // payoff
-const S5 = 130; // CTA
+/* Measured lengths of each surface's internal choreography, at 60fps. */
+export const NEW_SPACE_FRAMES = 300;
+export const AGENT_LOG_FRAMES = 260;
+export const LIVE_SPACE_FRAMES = 160;
 
-const Scene1: React.FC = () => (
-  <Stage>
-    <ScaleUpCut start={S1 - TZ.SCALE_UP_DUR}>
-      <TextObject spec={softBlurIn} copy="Build Spaces with AI Agents" size={68} />
-    </ScaleUpCut>
-  </Stage>
-);
-
-const Scene2: React.FC = () => (
-  <Stage>
-    <PushOffLeft start={S2 - T.THROW_DUR}>
-      <ScalePopIn><NewSpaceSurface /></ScalePopIn>
-    </PushOffLeft>
-  </Stage>
-);
-
-/* Full-bleed macro crop — transitions are applied to the whole frame layer, not to a
-   centred child, because the object here IS the viewport-filling window. */
-const Scene3: React.FC = () => {
-  const up = useScaleUpCut(S3 - TZ.SCALE_UP_DUR);
-  const x = useGlideIn(0);
-  if (up.gone) return <Stage />;
-  return (
-    <AbsoluteFill style={{background: PD.bg, fontFamily: FONT.sans, transform: `translateX(${x}px) scale(${up.scale})`}}>
-      <AgentSurface />
-    </AbsoluteFill>
-  );
-};
-
-const Scene4: React.FC = () => (
-  <Stage>
-    <PushOffLeft start={S4 - T.THROW_DUR}>
-      <ScalePopIn><LiveSpace /></ScalePopIn>
-    </PushOffLeft>
-  </Stage>
-);
-
-const Scene5: React.FC = () => {
-  const f = useCurrentFrame();
-  return (
-    <Stage>
-      <GlideIn>
-        <div style={{textAlign: 'center'}}>
-          <TextObject spec={microScaleFade} copy="huggingface.co/new-space?setup=agent" size={36} />
-          <div style={{marginTop: 20, fontSize: 18, color: PD.muted, opacity: lerp(f, [24, 40], [0, 1], EASE.out)}}>
-            Works with Claude Code, Codex, Pi, Open Code
-          </div>
-        </div>
-      </GlideIn>
-    </Stage>
-  );
-};
-
-export const HFSpacesAgentsPromo: React.FC = () => (
-  <Series>
-    <Series.Sequence durationInFrames={S1}><Scene1 /></Series.Sequence>
-    <Series.Sequence durationInFrames={S2}><Scene2 /></Series.Sequence>
-    <Series.Sequence durationInFrames={S3}><Scene3 /></Series.Sequence>
-    <Series.Sequence durationInFrames={S4}><Scene4 /></Series.Sequence>
-    <Series.Sequence durationInFrames={S5}><Scene5 /></Series.Sequence>
-  </Series>
-);
-
-export const HF_AGENTS_DURATION = S1 + S2 + S3 + S4 + S5; // 960f @60fps = 16s
+export {NewSpaceSurface, AgentSurface, LiveSpace};

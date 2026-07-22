@@ -93,13 +93,18 @@ const SceneView: React.FC<{p: PreparedScene; pal: Pal}> = ({p, pal}) => {
   }
 
   const body = scene.kind === 'text' ? <TextBody scene={scene} pal={pal} /> : <SurfaceBody scene={scene} />;
-  const fill = scene.kind === 'ui';
+  const transform = `translateX(${x}px) scale(${scale})`;
+
+  // No sizing here: a surface carries its own measured box (surfaces/frame.tsx), so the doc
+  // render and the hand-written promo mount pixel-identical geometry. The one exception is a
+  // BLEED surface, which is the viewport rather than an object on it — its absolutely
+  // positioned children need a full-size containing block, so the transform rides an
+  // AbsoluteFill instead of a shrink-to-fit div.
+  const bleed = scene.kind === 'ui' && SURFACES[scene.surface]?.bleed;
 
   return (
     <Stage pal={pal}>
-      <div style={{transform: `translateX(${x}px) scale(${scale})`, ...(fill ? {width: '100%', height: '100%'} : {})}}>
-        {body}
-      </div>
+      {bleed ? <AbsoluteFill style={{transform}}>{body}</AbsoluteFill> : <div style={{transform}}>{body}</div>}
     </Stage>
   );
 };

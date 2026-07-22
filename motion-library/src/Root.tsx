@@ -4,12 +4,8 @@ import {lerp} from './lib/ease';
 import {PX, FONT} from './lib/palette';
 import {Labeled} from './lib/Labeled';
 import {ChipTokenize, LogTheater, LogTheaterZoomed, CameraPush} from './clips/C';
-import {HFSpacesPromo, HF_PROMO_DURATION} from './promos/HFSpaces';
 import {ANIMATE_TEXT_BLOCKS} from './blocks/animate-text';
 import {TRANSITION_BLOCKS} from './blocks/transitions';
-import {HFSpacesAgentsPromo, HF_AGENTS_DURATION} from './promos/HFSpacesAgents';
-import {HFHardwareFilterPromo, HF_HARDWARE_DURATION} from './promos/HFHardwareFilter';
-import {HFStorageOverviewPromo, HF_STORAGE_DURATION} from './promos/HFStorageOverview';
 import {Promo} from './promo/Promo';
 import {prepare} from './promo/prepare';
 import {PromoDocRaw} from './promo/schema';
@@ -74,10 +70,6 @@ const AnimateTextReel: React.FC = () => (
 export const Root: React.FC = () => (
   <>
     <Composition id="MotionLibrary" component={Library} durationInFrames={60 + UI_CLIPS.length * CLIP} fps={30} width={1280} height={720} />
-    <Composition id="HFSpacesPromo" component={HFSpacesPromo} durationInFrames={HF_PROMO_DURATION} fps={30} width={1280} height={720} />
-    <Composition id="HFAgentsPromo" component={HFSpacesAgentsPromo} durationInFrames={HF_AGENTS_DURATION} fps={60} width={1280} height={720} />
-    <Composition id="HFHardwarePromo" component={HFHardwareFilterPromo} durationInFrames={HF_HARDWARE_DURATION} fps={60} width={1280} height={720} />
-    <Composition id="HFStoragePromo" component={HFStorageOverviewPromo} durationInFrames={HF_STORAGE_DURATION} fps={60} width={1280} height={720} />
     {/* One generic composition for every PromoDoc. calculateMetadata is the ONLY place the raw
         doc is turned into Prepared — the component never sees a raw doc, and neither does the
         editor's <Player>. Duration is derived here, never hardcoded. */}

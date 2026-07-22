@@ -23,17 +23,55 @@ export type Surface = {
   label: string;
   /** Measured length of the surface's internal choreography, in frames at 60fps. */
   frames: number;
+  /** True when the surface IS the viewport (a macro crop pinned to the frame) rather than an
+   *  object centred on the stage. Bleed surfaces are absolutely positioned, so the scene has to
+   *  carry the transition transform on a full-size layer or their containing block collapses. */
+  bleed?: boolean;
   Comp: React.FC;
 };
 
-import {RepositoriesPage, SURFACE_FRAMES as HF_STORAGE_FRAMES} from './hf-storage-repositories';
+import {RepositoriesSurface, SURFACE_FRAMES as HF_STORAGE_FRAMES} from './hf-storage-repositories';
+import {ModelsSurface, SURFACE_FRAMES as HF_HARDWARE_FRAMES} from './hf-hardware-filter';
+import {
+  NewSpaceSurface,
+  AgentSurface,
+  LiveSpace,
+  NEW_SPACE_FRAMES,
+  AGENT_LOG_FRAMES,
+  LIVE_SPACE_FRAMES,
+} from './hf-spaces-agents';
 
 export const SURFACES: Record<string, Surface> = {
   'hf-storage-repositories': {
     id: 'hf-storage-repositories',
     label: 'HF · Settings › Repositories storage',
     frames: HF_STORAGE_FRAMES,
-    Comp: RepositoriesPage,
+    Comp: RepositoriesSurface,
+  },
+  'hf-hardware-filter': {
+    id: 'hf-hardware-filter',
+    label: 'HF · Models filtered by hardware',
+    frames: HF_HARDWARE_FRAMES,
+    Comp: ModelsSurface,
+  },
+  'hf-spaces-new': {
+    id: 'hf-spaces-new',
+    label: 'HF · Create a new Space — AI agent setup',
+    frames: NEW_SPACE_FRAMES,
+    Comp: NewSpaceSurface,
+  },
+  'hf-spaces-agent-log': {
+    id: 'hf-spaces-agent-log',
+    label: 'HF · Coding agent builds the Space',
+    frames: AGENT_LOG_FRAMES,
+    bleed: true,
+    Comp: AgentSurface,
+  },
+  'hf-spaces-live': {
+    id: 'hf-spaces-live',
+    label: 'HF · The Space is running',
+    frames: LIVE_SPACE_FRAMES,
+    Comp: LiveSpace,
   },
 };
 

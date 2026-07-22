@@ -1,0 +1,45 @@
+{
+  "v": 1,
+  "id": "hf-hardware",
+  "theme": "dark",
+  "scenes": [
+    {
+      "id": "title",
+      "kind": "text",
+      "effect": "soft-blur-in",
+      "copy": "Filter models by your hardware",
+      "size": "xl",
+      "hold": "long",
+      "enter": "scale-pop-in",
+      "exit": "scale-up-cut"
+    },
+    {
+      "id": "models",
+      "kind": "ui",
+      "surface": "hf-hardware-filter",
+      "enter": "scale-pop-in",
+      "exit": "push-off-left"
+    },
+    {
+      "id": "payoff",
+      "kind": "text",
+      "effect": "per-character-rise",
+      "copy": "Only what your machine can run.",
+      "size": "lg",
+      "hold": "long",
+      "enter": "glide-in",
+      "exit": "scale-up-cut"
+    },
+    {
+      "id": "cta",
+      "kind": "text",
+      "effect": "micro-scale-fade",
+      "copy": "huggingface.co/models",
+      "sub": "Hardware stacks with every filter · shareable by URL",
+      "size": "sm",
+      "hold": "long",
+      "enter": "scale-pop-in",
+      "exit": "push-off-left"
+    }
+  ]
+}

@@ -1,0 +1,49 @@
+{
+  "v": 1,
+  "id": "hf-agents",
+  "theme": "dark",
+  "scenes": [
+    {
+      "id": "title",
+      "kind": "text",
+      "effect": "soft-blur-in",
+      "copy": "Build Spaces with AI Agents",
+      "size": "xl",
+      "hold": "long",
+      "enter": "scale-pop-in",
+      "exit": "scale-up-cut"
+    },
+    {
+      "id": "new-space",
+      "kind": "ui",
+      "surface": "hf-spaces-new",
+      "enter": "scale-pop-in",
+      "exit": "push-off-left"
+    },
+    {
+      "id": "agent",
+      "kind": "ui",
+      "surface": "hf-spaces-agent-log",
+      "enter": "glide-in",
+      "exit": "scale-up-cut"
+    },
+    {
+      "id": "live",
+      "kind": "ui",
+      "surface": "hf-spaces-live",
+      "enter": "scale-pop-in",
+      "exit": "push-off-left"
+    },
+    {
+      "id": "cta",
+      "kind": "text",
+      "effect": "micro-scale-fade",
+      "copy": "huggingface.co/new-space?setup=agent",
+      "sub": "Works with Claude Code, Codex, Pi, Open Code",
+      "size": "sm",
+      "hold": "long",
+      "enter": "glide-in",
+      "exit": "push-off-left"
+    }
+  ]
+}

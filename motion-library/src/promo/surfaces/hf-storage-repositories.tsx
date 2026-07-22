@@ -1,4 +1,5 @@
 import React from 'react';
+import {SurfaceFrame} from './frame';
 import {AbsoluteFill, useCurrentFrame, interpolate} from 'remotion';
 import {EASE, lerp} from '../../lib/ease';
 import {HF, BrowserFrame} from '../../blocks/ui/hf-models';
@@ -151,4 +152,11 @@ const RepositoriesPage: React.FC = () => {
 
 
 export const SURFACE_FRAMES = 450;
-export {RepositoriesPage};
+/** The surface as every consumer mounts it: framed at the box it was measured in. */
+const RepositoriesSurface: React.FC = () => (
+  <SurfaceFrame>
+    <RepositoriesPage />
+  </SurfaceFrame>
+);
+
+export {RepositoriesSurface};

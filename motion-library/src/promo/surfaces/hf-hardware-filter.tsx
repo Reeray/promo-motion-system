@@ -1,21 +1,19 @@
 import React from 'react';
-import {AbsoluteFill, Series, interpolate, useCurrentFrame} from 'remotion';
-import {EASE, lerp} from '../lib/ease';
-import {PD, FONT} from '../lib/palette';
-import {GlideIn, ScalePopIn, ScaleUpCut, T, TZ} from '../blocks/transitions';
-import {SpecText, Spec} from '../blocks/animate-text/SpecText';
-import softBlurIn from '../blocks/animate-text/specs/soft-blur-in.json';
-import microScaleFade from '../blocks/animate-text/specs/micro-scale-fade.json';
-import {HF, HFLogo, HardwareChip, ModelCard, BrowserFrame, Model} from '../blocks/ui/hf-models';
+import {SurfaceFrame} from './frame';
+import {AbsoluteFill, interpolate, useCurrentFrame} from 'remotion';
+import {EASE, lerp} from '../../lib/ease';
+import {HF, HFLogo, HardwareChip, ModelCard, BrowserFrame, Model} from '../../blocks/ui/hf-models';
 
-/* "Filter models by hardware" — Hugging Face changelog, 30 Jun 2026.  60fps.
+/* ============================================================================
+ * SURFACE — Hugging Face - Models, filtered by hardware.
  *
- * §0.6 CAPTURE — the real logged-in huggingface.co/models: two-panel layout, real device-icon
- * assets, real author-avatar images (public/hf-avatars), real counts + ~12 rows for EVERY option.
- * §0.8 FLOW (user-authored) — land on the page, then cycle every hardware chip; the list swaps
- * per option. Shown inside a BROWSER FRAME; the result list SCROLLS INFINITELY (the model count
- * is huge, so the list never ends). SIMPLIFY BY SUBTRACTION — the two-panel skeleton and the
- * count-above-the-list are the real structure; only undemoed facet groups are cut. */
+ * Lifted out of src/promos/HFHardwareFilter.tsx; the old promo imports it back so both render
+ * one definition. Opaque on purpose (see surfaces/index.ts): the per-device result rows and
+ * counts were captured per filter option from the live site, and the avatars are real assets.
+ *
+ * 590 frames: land on the base list, then cycle every Hardware chip -
+ * RTX 3080 Ti / Apple M1 / Xeon / A100, each with its own real count and rows.
+ * ========================================================================== */
 
 const CTA_URL = 'huggingface.co/models';
 const BASE_URL = 'huggingface.co/models?apps=llama.cpp';
@@ -102,16 +100,6 @@ const ROW_H = 62;        // card height + gap — the infinite-scroll unit
 const SCROLL = 0.8;      // px/frame, gentle continuous browse
 const comma = (n: number) => Math.round(n).toLocaleString('en-US');
 
-const Stage: React.FC<{children?: React.ReactNode}> = ({children}) => (
-  <AbsoluteFill style={{background: PD.bg, color: PD.fg, fontFamily: FONT.sans, justifyContent: 'center', alignItems: 'center', overflow: 'hidden'}}>
-    {children}
-  </AbsoluteFill>
-);
-const TextObject: React.FC<{spec: unknown; copy: string; size?: number}> = ({spec, copy, size = 60}) => (
-  <SpecText spec={spec as Spec} sample={copy} fontSize={size} loop={false} bare color={PD.fg} />
-);
-
-// one state's list, duplicated and translated so it loops seamlessly (infinite scroll)
 const ScrollColumn: React.FC<{rows: Model[]; scroll: number; intro?: boolean; f?: number}> = ({rows, scroll, intro, f = 0}) => {
   const blockH = rows.length * ROW_H;
   const y = -(scroll % blockH);
@@ -187,64 +175,14 @@ const ModelsPage: React.FC = () => {
   );
 };
 
-/* ── Scenes ──────────────────────────────────────────────────────────────── */
-const S1 = 110, S2 = 590, S3 = 150, S4 = 140;
 
-const Scene1: React.FC = () => (
-  <Stage>
-    <ScaleUpCut start={S1 - TZ.SCALE_UP_DUR}>
-      <TextObject spec={softBlurIn} copy="Filter models by your hardware" size={62} />
-    </ScaleUpCut>
-  </Stage>
+export const SURFACE_FRAMES = 590;
+/** The surface as every consumer mounts it: framed at the box it was measured in. */
+const ModelsSurface: React.FC = () => (
+  <SurfaceFrame>
+    <ModelsPage />
+  </SurfaceFrame>
 );
 
-const Scene2: React.FC = () => {
-  const f = useCurrentFrame();
-  const pop = lerp(f, [0, TZ.POP_DUR], [TZ.POP_FROM, 1], EASE.camera);
-  const throwF = S2 - T.THROW_DUR;
-  const tx = f >= throwF ? -interpolate(f, [throwF, S2], [0, 1], {extrapolateRight: 'clamp', easing: EASE.throwOut}) * T.THROW_PX : 0;
-  return (
-    <AbsoluteFill style={{background: PD.bg, fontFamily: FONT.sans, justifyContent: 'center', alignItems: 'center'}}>
-      <div style={{width: 1180, height: 650, transform: `translateX(${tx}px) scale(${pop})`}}>
-        <ModelsPage />
-      </div>
-    </AbsoluteFill>
-  );
-};
-
-const Scene3: React.FC = () => (
-  <Stage>
-    <GlideIn>
-      <div style={{textAlign: 'center'}}>
-        <TextObject spec={softBlurIn} copy="Only what your machine can run." size={52} />
-      </div>
-    </GlideIn>
-  </Stage>
-);
-
-const Scene4: React.FC = () => {
-  const f = useCurrentFrame();
-  return (
-    <Stage>
-      <ScalePopIn>
-        <div style={{textAlign: 'center'}}>
-          <TextObject spec={microScaleFade} copy={CTA_URL} size={34} />
-          <div style={{marginTop: 20, fontSize: 18, color: PD.muted, opacity: lerp(f, [24, 40], [0, 1], EASE.out)}}>
-            Hardware stacks with every filter · shareable by URL
-          </div>
-        </div>
-      </ScalePopIn>
-    </Stage>
-  );
-};
-
-export const HFHardwareFilterPromo: React.FC = () => (
-  <Series>
-    <Series.Sequence durationInFrames={S1}><Scene1 /></Series.Sequence>
-    <Series.Sequence durationInFrames={S2}><Scene2 /></Series.Sequence>
-    <Series.Sequence durationInFrames={S3}><Scene3 /></Series.Sequence>
-    <Series.Sequence durationInFrames={S4}><Scene4 /></Series.Sequence>
-  </Series>
-);
-
-export const HF_HARDWARE_DURATION = S1 + S2 + S3 + S4;
+export {ModelsSurface};
+export {CTA_URL};
