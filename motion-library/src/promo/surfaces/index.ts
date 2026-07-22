@@ -32,6 +32,7 @@ export type Surface = {
 
 import {RepositoriesSurface, SURFACE_FRAMES as HF_STORAGE_FRAMES} from './hf-storage-repositories';
 import {ModelsSurface, SURFACE_FRAMES as HF_HARDWARE_FRAMES} from './hf-hardware-filter';
+import {PresetChipsSurface, PresetCycleSurface, CHIPS_FRAMES, CYCLE_FRAMES} from './hf-token-presets';
 import {
   NewSpaceSurface,
   AgentSurface,
@@ -53,6 +54,19 @@ export const SURFACES: Record<string, Surface> = {
     label: 'HF · Models filtered by hardware',
     frames: HF_HARDWARE_FRAMES,
     Comp: ModelsSurface,
+  },
+  'hf-token-preset-chips': {
+    id: 'hf-token-preset-chips',
+    label: 'HF · Token preset chips rise',
+    frames: CHIPS_FRAMES,
+    Comp: PresetChipsSurface,
+  },
+  'hf-token-presets': {
+    id: 'hf-token-presets',
+    label: 'HF · Every token preset exercised',
+    frames: CYCLE_FRAMES,
+    bleed: true,
+    Comp: PresetCycleSurface,
   },
   'hf-spaces-new': {
     id: 'hf-spaces-new',

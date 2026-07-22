@@ -1,0 +1,42 @@
+{
+  "v": 1,
+  "id": "hf-token-presets",
+  "theme": "light",
+  "scenes": [
+    {
+      "id": "chips",
+      "kind": "ui",
+      "surface": "hf-token-preset-chips",
+      "enter": "scale-pop-in",
+      "exit": "push-off-left"
+    },
+    {
+      "id": "presets",
+      "kind": "ui",
+      "surface": "hf-token-presets",
+      "enter": "glide-in",
+      "exit": "scale-up-cut"
+    },
+    {
+      "id": "payoff",
+      "kind": "text",
+      "effect": "mask-reveal-up",
+      "copy": "Pick a preset. Get the right permissions.",
+      "size": "md",
+      "hold": "long",
+      "enter": "scale-pop-in",
+      "exit": "push-off-left"
+    },
+    {
+      "id": "cta",
+      "kind": "text",
+      "effect": "micro-scale-fade",
+      "copy": "huggingface.co/settings/tokens/new",
+      "sub": "Or switch to Custom to fine-tune every permission, as before",
+      "size": "sm",
+      "hold": "long",
+      "enter": "glide-in",
+      "exit": "push-off-left"
+    }
+  ]
+}

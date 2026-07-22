@@ -1,0 +1,243 @@
+{
+  "id": "hf-token-presets",
+  "source": "https://huggingface.co/settings/tokens/new",
+  "changelog": "https://huggingface.co/changelog/token-presets",
+  "capturedAt": "2026-07-22",
+  "method": "Claude in Chrome, logged in. Every preset chip CLICKED, not inferred. Light theme read by removing the `dark` class in the DOM for inspection only (never persisted, never the account setting).",
+  "theme": "light",
+  "tokens": {
+    "_note": "getComputedStyle -> oklch -> sRGB. These land exactly on Tailwind v4's palette, which is the check that the extraction is right.",
+    "card": "#ffffff",
+    "cardBorder": "#f3f4f6",
+    "cardBodyBg": "#fafafb",
+    "ink": "#101828",
+    "muted": "#6a7282",
+    "listInk": "#364153",
+    "check": "#2b7fff",
+    "chipBorder": "#e5e7eb",
+    "_perPreset": "Each preset carries its OWN accent, used by the chip selection ring, the chip icon and the card icon box. Verified by CLICKING all six, not inferred from the one that happened to be preselected."
+  },
+  "metrics": {
+    "cardWidth": 643,
+    "cardRadius": 12,
+    "cardPadding": 20,
+    "cardHeadGap": 16,
+    "titleSize": 16,
+    "titleWeight": 700,
+    "descSize": 15,
+    "sectionLabelSize": 14,
+    "sectionLabelWeight": 600,
+    "rowSize": 14,
+    "rowHeight": 20,
+    "iconBoxRadius": 8,
+    "iconBoxPadding": 10,
+    "iconSize": 24,
+    "chipIconSize": 14,
+    "chipSelectedBorderWidth": 2
+  },
+  "presets": [
+    {
+      "id": "read-only",
+      "label": "Read-Only",
+      "desc": "Download models and datasets",
+      "perms": [
+        "Read repository contents",
+        "Read contents of gated repos you can access"
+      ],
+      "accent": "#6a7282",
+      "boxBg": "#f9fafb",
+      "boxBorder": "#e5e7eb"
+    },
+    {
+      "id": "inference",
+      "label": "Inference",
+      "desc": "Make calls to Inference Providers and endpoints",
+      "perms": [
+        "Make calls to Inference Providers",
+        "Make calls to Inference Endpoints"
+      ],
+      "accent": "#fe9a00",
+      "boxBg": "#fffbeb",
+      "boxBorder": "#fee685"
+    },
+    {
+      "id": "write",
+      "label": "Write",
+      "desc": "Push models and datasets to the Hub",
+      "perms": [
+        "Read repository contents",
+        "View access requests for gated repos",
+        "Write to repositories",
+        "Interact with discussions / Open PRs",
+        "Read contents of gated repos you can access"
+      ],
+      "accent": "#2b7fff",
+      "boxBg": "#eff6ff",
+      "boxBorder": "#bedbff"
+    },
+    {
+      "id": "ci-cd",
+      "label": "CI/CD",
+      "desc": "Automation, webhooks, and pipelines",
+      "perms": [
+        "Read repository contents",
+        "View access requests for gated repos",
+        "Write to repositories",
+        "Interact with discussions / Open PRs",
+        "Read webhooks",
+        "Create and manage webhooks",
+        "Start and manage Jobs",
+        "Read contents of gated repos you can access"
+      ],
+      "accent": "#00bba7",
+      "boxBg": "#f0fdfa",
+      "boxBorder": "#96f7e4"
+    },
+    {
+      "id": "full-access",
+      "label": "Full Access",
+      "desc": "Complete access to your account",
+      "perms": [
+        "Read repository contents",
+        "View access requests for gated repos",
+        "Write to repositories",
+        "Make calls to Inference Providers",
+        "Make calls to Inference Endpoints",
+        "Manage Inference Endpoints",
+        "Read webhooks",
+        "Create and manage webhooks",
+        "Read collections",
+        "Write to collections",
+        "Interact with discussions / Open PRs",
+        "Read billing information",
+        "Start and manage Jobs",
+        "Read your notification inbox",
+        "Manage your notification inbox",
+        "Interact with posts",
+        "Read contents of gated repos you can access"
+      ],
+      "accent": "#fb2c36",
+      "boxBg": "#fef2f2",
+      "boxBorder": "#ffc9c9"
+    },
+    {
+      "id": "custom",
+      "label": "Custom",
+      "desc": null,
+      "perms": null,
+      "_note": "Custom has NO summary card. Selecting it swaps in the full checkbox grid below — the UI that used to be the only way to build a fine-grained token. That contrast is the feature.",
+      "accent": "#6a7282",
+      "boxBg": null,
+      "boxBorder": null
+    }
+  ],
+  "customGrid": {
+    "heading": "User permissions (ada-demo)",
+    "groups": [
+      {
+        "name": "Repositories",
+        "items": [
+          "Read contents of your repos",
+          "View access requests for your gated repos",
+          "Read contents of public gated repos you can access",
+          "Write contents/settings of your repos"
+        ]
+      },
+      {
+        "name": "Inference",
+        "items": [
+          "Make calls to Inference Providers",
+          "Make calls to your Inference Endpoints",
+          "Manage your Inference Endpoints"
+        ]
+      },
+      {
+        "name": "Webhooks",
+        "items": [
+          "Access webhooks data",
+          "Create and manage webhooks"
+        ]
+      },
+      {
+        "name": "Collections",
+        "items": [
+          "Read your collections",
+          "Write to your collections"
+        ]
+      },
+      {
+        "name": "Discussions & Posts",
+        "items": [
+          "Interact with discussions / Open PRs on your repos",
+          "Interact with discussions / Open PRs on external repos",
+          "Interact with posts"
+        ]
+      },
+      {
+        "name": "Billing",
+        "items": [
+          "Read billing usage and payment method status"
+        ]
+      },
+      {
+        "name": "Jobs",
+        "items": [
+          "Start and manage Jobs"
+        ]
+      },
+      {
+        "name": "Notifications",
+        "items": [
+          "Read your notification inbox",
+          "Manage your notification inbox"
+        ]
+      }
+    ],
+    "_cut": "A 'Repositories permissions' section (per-repo/org scoping) follows the grid on the real page. Cut per SIMPLIFY BY SUBTRACTION — it is not part of the preset story.",
+    "_pii": "The live page renders the signed-in account's handle here. Genericised to the repo's demo handle: a capture is committed to a PUBLIC repo and rendered into a shareable video, so the capturing account's identity must never survive into either."
+  },
+  "icons": {
+    "_note": "Copied from the live SVGs, never redrawn (SKILL: COPY ICONS, NEVER DRAW THEM).",
+    "read-only": {
+      "viewBox": "0 0 32 32",
+      "paths": [
+        "M26 24v4H6v-4H4v4a2 2 0 0 0 2 2h20a2 2 0 0 0 2-2v-4zm0-10l-1.41-1.41L17 20.17V2h-2v18.17l-7.59-7.58L6 14l10 10l10-10z"
+      ]
+    },
+    "inference": {
+      "viewBox": "0 0 24 24",
+      "paths": [
+        "M11 15H6l7-14v8h5l-7 14v-8z"
+      ]
+    },
+    "write": {
+      "viewBox": "0 0 32 32",
+      "paths": [
+        "M7.41 13.41 6 12 16 2l10 10-1.41 1.41L17 5.83V24h-2V5.83zM26 28v-4h2v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-4h2v4z"
+      ]
+    },
+    "ci-cd": {
+      "viewBox": "0 0 24 24",
+      "paths": [
+        "M5.99994 5.00003C5.44765 5.00003 4.99994 5.44775 4.99994 6.00003C4.99994 6.54969 5.44341 6.99577 5.99207 7C5.99471 6.99998 5.99736 6.99997 6 6.99997C6.00262 6.99997 6.00525 6.99998 6.00786 7C6.5565 6.99574 6.99994 6.54967 6.99994 6.00003C6.99994 5.44775 6.55222 5.00003 5.99994 5.00003ZM7 8.8293C8.16516 8.41745 8.99994 7.30623 8.99994 6.00003C8.99994 4.34318 7.65679 3.00003 5.99994 3.00003C4.34308 3.00003 2.99994 4.34318 2.99994 6.00003C2.99994 7.30627 3.83478 8.41753 5 8.82935V15.1707C3.83478 15.5825 2.99994 16.6938 2.99994 18C2.99994 19.6569 4.34308 21 5.99994 21C7.65679 21 8.99994 19.6569 8.99994 18C8.99994 16.6938 8.16516 15.5826 7 15.1708V8.8293ZM5.99994 17C5.44765 17 4.99994 17.4477 4.99994 18C4.99994 18.5523 5.44765 19 5.99994 19C6.55222 19 6.99994 18.5523 6.99994 18C6.99994 17.4477 6.55222 17 5.99994 17Z",
+        "M14.707 2.29289C15.0975 2.68342 15.0975 3.31658 14.707 3.70711L13.4141 5H15.9999C16.7955 5 17.5586 5.31607 18.1212 5.87868C18.6838 6.44129 18.9999 7.20435 18.9999 8V15.1707C20.1651 15.5825 20.9999 16.6938 20.9999 18C20.9999 19.6569 19.6568 21 17.9999 21C16.3431 21 14.9999 19.6569 14.9999 18C14.9999 16.6938 15.8347 15.5826 16.9999 15.1708V8C16.9999 7.73478 16.8945 7.48043 16.707 7.29289C16.5194 7.10536 16.2651 7 15.9999 7H13.4141L14.707 8.29289C15.0975 8.68342 15.0975 9.31658 14.707 9.70711C14.3165 10.0976 13.6833 10.0976 13.2928 9.70711L10.2928 6.70711C10.1969 6.61123 10.1246 6.50073 10.0758 6.38278C10.0269 6.26488 9.99988 6.13559 9.99988 6C9.99988 5.72386 10.1118 5.47386 10.2928 5.29289L13.2928 2.29289C13.6833 1.90237 14.3165 1.90237 14.707 2.29289ZM16.9999 18C16.9999 17.4477 17.4477 17 17.9999 17C18.5522 17 18.9999 17.4477 18.9999 18C18.9999 18.5523 18.5522 19 17.9999 19C17.4477 19 16.9999 18.5523 16.9999 18Z"
+      ]
+    },
+    "full-access": {
+      "viewBox": "0 0 32 32",
+      "paths": [
+        "M26,4H6A2,2,0,0,0,4,6V26a2,2,0,0,0,2,2H26a2,2,0,0,0,2-2V6A2,2,0,0,0,26,4Zm0,2v4H6V6ZM6,26V12H26V26Z"
+      ],
+      "polygons": [
+        "10.76 16.18 13.58 19.01 10.76 21.84 12.17 23.25 16.41 19.01 12.17 14.77 10.76 16.18"
+      ]
+    },
+    "custom": {
+      "viewBox": "0 0 9 7",
+      "paths": [
+        "M8.537 1.153H7.361A1.445 1.445 0 0 0 5.954 0c-.689 0-1.263.49-1.407 1.153H.5v.576h4.047a1.445 1.445 0 0 0 1.407 1.153c.689 0 1.263-.49 1.407-1.153h1.176v-.576M5.954 2.305a.847.847 0 0 1-.861-.864c0-.49.373-.865.861-.865s.861.375.861.865-.373.864-.861.864M.5 5.764h1.177a1.445 1.445 0 0 0 1.406 1.152c.69 0 1.263-.49 1.407-1.152h4.047v-.577H4.49a1.445 1.445 0 0 0-1.407-1.152c-.688 0-1.263.49-1.406 1.152H.5v.577M3.083 4.61c.488 0 .862.375.862.864 0 .49-.374.865-.862.865a.847.847 0 0 1-.86-.865c0-.49.372-.864.86-.864"
+      ]
+    }
+  },
+  "blockers": []
+}
