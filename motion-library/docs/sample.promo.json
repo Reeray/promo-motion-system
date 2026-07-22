@@ -1,0 +1,38 @@
+{
+  "v": 1,
+  "id": "sample",
+  "theme": "dark",
+  "scenes": [
+    {
+      "id": "title",
+      "kind": "text",
+      "effect": "blur-out-up",
+      "copy": "Promos as data",
+      "size": "xl",
+      "hold": "long",
+      "enter": "scale-pop-in",
+      "exit": "scale-up-cut"
+    },
+    {
+      "id": "claim",
+      "kind": "text",
+      "effect": "per-word-crossfade",
+      "copy": "Edit the copy. Swap the blocks.",
+      "size": "lg",
+      "hold": "normal",
+      "enter": "scale-pop-in",
+      "exit": "push-off-left"
+    },
+    {
+      "id": "cta",
+      "kind": "text",
+      "effect": "micro-scale-fade",
+      "copy": "npm run blocks",
+      "sub": "Then confirm, and it renders.",
+      "size": "sm",
+      "hold": "normal",
+      "enter": "glide-in",
+      "exit": "push-off-left"
+    }
+  ]
+}

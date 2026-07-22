@@ -2,7 +2,7 @@
   "name": "motion-library",
   "private": true,
   "scripts": {
-    "check": "node scripts/check-render-safety.mjs && node scripts/check-blocks.mjs",
+    "check": "node scripts/check-render-safety.mjs && node scripts/check-blocks.mjs && node scripts/check-doc-parity.mjs",
     "check:render": "python scripts/check-render.py",
     "studio": "remotion studio",
     "render": "remotion render MotionLibrary out/motion-library.mp4",
