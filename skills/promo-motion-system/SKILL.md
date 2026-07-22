@@ -43,12 +43,14 @@ narrative, directs the eye, or bridges scenes. Nothing moves just to be pretty.
 
 ## 0 · ROUTING — always do this first
 
-Unless the user already said so, **ask which THEME they want: soft light or dark.** That is the
-one routing question — it sets the stage palette for the whole piece:
+Unless the user already said so, **ask which STAGE they want: soft light, light, or dark.** That
+is the one routing question — it sets the palette for the whole piece. The two light stages are
+NOT interchangeable; they differ in how a surface separates from the void it sits in:
 
-| Theme | Stage | Ink | Use / feel |
+| Stage | Palette | Separation | Use / feel |
 |---|---|---|---|
-| **Soft light** | `PX` — soft off-white **`#e9ecf1`** (surfaces `#f8fafc` sit slightly brighter on top) | `#14161c` | the OpenAI "white void" school: airy, editorial, calm. **Never pure `#fff`** — see the RENDER EXPOSURE law |
+| **Soft light** *(default)* | `PS` — stage **`#ffffff`**, card **`#ffffff`** | **SHADOW** (`ELEV`) | the OpenAI "white void" school: airy, editorial, calm. MEASURED off [C]: stage 255, card 253 — the card is not brighter, it floats. See DEPTH, NOT BRIGHTNESS |
+| **Light** | `PX` — stage **`#eef1f6`**, card `#f8fafc`+ | **CONTRAST**, no shadow | when the captured product must read as a distinctly white sheet against something |
 | **Dark** | `PD` — **`#0b0e13`** (cards `#14181f`, border `rgba(255,255,255,.10)`) | `#e9ecef` | product/terminal feel, lets colour-rich UI and charts glow; matches dark-theme product captures |
 
 **Two rules that follow from the answer:**
@@ -958,6 +960,45 @@ npm run check:render out/<file>.mp4  # AFTER render: pixel gate
   The live preview never touches the encoder, so it cannot catch any of these.
 
 Both must pass. A render that fails either does not ship.
+
+### ⚑ LAW — DEPTH, NOT BRIGHTNESS (the two light stages)
+
+**MEASURED off [C] "Introducing GPT-5.5" at 1920x1080:**
+
+```
+stage Y = 255        card interior Y = 253       <- the card is DARKER than the stage
+shadow: ~12/255 deep (under 5%), fading over ~48px   (~32px at 1280)
+85.8% of pixels on its light frames sit at >= 250
+```
+
+The card is not brighter than the void it floats in. There is **no luminance step at all** — every
+bit of separation is a shadow. That is why the reference reads as calm while being almost entirely
+white: nothing on screen is competing to be the brightest thing, so nothing has to shout. Contrast
+is spent on **depth**, not on brightness.
+
+Two things that are easy to get backwards:
+
+**1. Do not darken the stage to make a white card visible.** That is the other grammar. Pick one —
+a dim stage *and* a shadow together is the classic fake-product-shot tell:
+
+| | stage | card | separation |
+|---|---|---|---|
+| `soft-light` | `#ffffff` | `#ffffff` | shadow only |
+| `light` | `#eef1f6` | `#f8fafc`+ | luminance only, no shadow |
+
+**2. The shadow is far softer than instinct.** Under 5% darkening, ~32px of reach at 720p. Use two
+layers — a wide ambient one that does the floating, and a tight contact shadow so the edge is not
+pasted on. A heavy shadow looks like a slide deck, not a product.
+
+A surface must never decide this for itself: it is captured product UI and knows nothing about the
+stage it will be mounted on. The stage hands down one value — "here is the elevation I want, or
+none" — and the surface applies exactly that (`src/promo/stage-ctx.tsx`).
+
+**Corollary for the gate: blown-pixel share is not a comfort metric on a light theme**, it is a
+description of the design. The reference measures 85.8% and IS the house standard; a 40% ceiling
+rejected it. Likewise "90% of pixels at one extreme" is not blankness — the reference trips that on
+42.3% of its frames. What makes a frame worthless is having **no ink**, at any brightness. Measure
+that instead.
 
 ### ⚑ LAW — TAG THE COLOUR, OR THE PLAYER INVENTS IT
 

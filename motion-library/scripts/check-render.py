@@ -4,7 +4,7 @@
 The live preview renders inside a page and never touches the encoder, so it cannot catch
 these. Each threshold here corresponds to a bug that actually shipped:
 
-  exposure  -> a full-frame #ffffff stage rendered at 252/255 mean luminance (blinding)
+  exposure  -> a full-frame #ffffff stage with nothing on it (a blank, not a bright, video)
   ink       -> a dark-ink text block on a dark stage rendered invisible (empty frames)
   variance  -> a scene that never changes = a dead/stuck shot
   colour    -> a correct picture shipped in a file that DESCRIBES it wrongly (see below)
@@ -28,16 +28,30 @@ except ImportError as e:  # the dep is out-of-band from npm; say so actionably
           file=sys.stderr)
     raise SystemExit(2)
 
-MEAN_MAX = 245.0       # large flats must stay off pure white
-BLOWN_MAX = 40.0       # % of pixels >= 250, averaged
+MEAN_MAX = 252.0       # a whole film that averages above this has no ink anywhere in it
+# % of pixels >= 250, averaged over the film. This was 40, which REJECTED THE HOUSE REFERENCE:
+# [C] "Introducing GPT-5.5" measures 85.8% on its light frames, because a white-void promo is
+# supposed to be white. Blown-pixel share is not a comfort signal on a light theme — it is just a
+# description of the design. The real whiteout detector is FLAT_FRAMES_MAX below, which asks
+# whether any individual frame is blank; that is what the original #ffffff-fallback bug tripped
+# (93.5% of pixels blown on essentially every frame). This bound is only a backstop now.
+BLOWN_MAX = 96.0
 CONTRAST_MIN = 0.30    # % of pixels that differ strongly from the stage (text/UI present)
 
-# Every metric above is a whole-video average, which is structurally blind to a SUSTAINED flat
-# stretch: two full seconds of pure #ffffff barely move a 15s mean. So also count how many
-# individual frames are flat. The allowance is deliberate — T1's bloom and T13's dark-payoff cut
-# are legitimately 1-3 flat frames — but a held blank stage blows past it.
-NEAR_FLAT = 0.90       # a frame is "flat" when >=90% of its pixels sit at one extreme
-FLAT_FRAMES_MAX = 4.0  # % of sampled frames allowed to be flat
+# A whole-video average is structurally blind to a SUSTAINED blank stretch: two seconds of empty
+# stage barely move a 15s mean. So also count individual BLANK frames.
+#
+# Blankness is measured as ABSENCE OF INK, not as brightness. The old test asked whether >=90% of
+# a frame's pixels sat at one extreme, which is a description of a white-void design rather than a
+# defect: the [C] reference trips it on 42.3% of its frames, and this project's own soft-light
+# promo on 60.8%. Both are fine videos. What actually makes a frame worthless is having nothing on
+# it, at any brightness — which also folds the old flat-white and flat-black tests into one.
+#
+# Calibrated against four good renders (frames under the ink floor): [C] reference 1.0%,
+# ours soft-light 1.8%, dark storage 0.8%, dark agents 3.3%. The allowance covers transition
+# frames where one scene has left and the next has not arrived.
+INK_FLOOR = 0.10        # % of pixels differing strongly from the frame's own mean
+BLANK_FRAMES_MAX = 6.0  # % of sampled frames allowed to carry no ink
 
 # ── COLOUR SIGNALLING ────────────────────────────────────────────────────────
 # Every pixel metric above decodes the file with its own tags applied, so a file whose TAGS are
@@ -112,7 +126,7 @@ def check(path: str, expect_frames: int | None = None) -> bool:
         print(f"[FAIL] {path}: unreadable or empty")
         return False
 
-    lums, blown, crushed, contrast, frames = [], [], [], [], []
+    lums, blown, contrast, frames = [], [], [], []
     for i in range(0, n, max(1, n // 120)):
         cap.set(cv2.CAP_PROP_POS_FRAMES, i)
         ok, fr = cap.read()
@@ -122,7 +136,6 @@ def check(path: str, expect_frames: int | None = None) -> bool:
         m = g.mean()
         lums.append(m)
         blown.append((g >= 250).mean())
-        crushed.append((g <= 4).mean())
         # ink on a light stage OR light text on a dark stage — whichever applies
         contrast.append(((g < m - 45) | (g > m + 45)).mean())
         frames.append(g.mean())
@@ -131,14 +144,12 @@ def check(path: str, expect_frames: int | None = None) -> bool:
     blown_pct = 100 * float(np.mean(blown))
     contrast_pct = 100 * float(np.mean(contrast))
     spread = float(np.std(frames))
-    white_frames = 100 * float(np.mean([b >= NEAR_FLAT for b in blown]))
-    black_frames = 100 * float(np.mean([c >= NEAR_FLAT for c in crushed]))
+    blank_frames = 100 * float(np.mean([100 * c < INK_FLOOR for c in contrast]))
 
     checks = [
         ("exposure  mean luminance", mean_l, f"< {MEAN_MAX}", mean_l < MEAN_MAX),
         ("exposure  blown pixels %", blown_pct, f"< {BLOWN_MAX}", blown_pct < BLOWN_MAX),
-        ("exposure  flat-white frames %", white_frames, f"< {FLAT_FRAMES_MAX}", white_frames < FLAT_FRAMES_MAX),
-        ("exposure  flat-black frames %", black_frames, f"< {FLAT_FRAMES_MAX}", black_frames < FLAT_FRAMES_MAX),
+        ("content   blank frames %", blank_frames, f"< {BLANK_FRAMES_MAX}", blank_frames < BLANK_FRAMES_MAX),
         ("legibility contrast %", contrast_pct, f"> {CONTRAST_MIN}", contrast_pct > CONTRAST_MIN),
         ("motion    frame variance", spread, "> 0.05", spread > 0.05),
     ]

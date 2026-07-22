@@ -2,7 +2,7 @@ import React from 'react';
 import {AbsoluteFill, Series, interpolate, useCurrentFrame} from 'remotion';
 import '../lib/fonts';
 import {EASE, lerp} from '../lib/ease';
-import {FONT, PD, PX} from '../lib/palette';
+import {ELEV, FONT, PD, PS, PX} from '../lib/palette';
 
 /* PX and PD don't share a type (only PX carries accent tokens), so the stage is typed against
  * the fields it actually reads. Structural, not nominal — a third palette would just work. */
@@ -13,6 +13,7 @@ import {T, TZ} from '../blocks/transitions';
 import {SURFACES} from './surfaces';
 import {INTRO, OUTRO, SIZE, Scene, TextScene, UiScene} from './schema';
 import {Prepared, PreparedScene} from './prepare';
+import {StageCtx} from './stage-ctx';
 
 /* ============================================================================
  * THE GENERIC PROMO — one composition renders any PromoDoc.
@@ -110,8 +111,12 @@ const SceneView: React.FC<{p: PreparedScene; pal: Pal}> = ({p, pal}) => {
 };
 
 export const Promo: React.FC<Prepared> = ({doc, scenes}) => {
-  const pal = doc.theme === 'light' ? PX : PD;
+  const pal = doc.theme === 'dark' ? PD : doc.theme === 'light' ? PX : PS;
+  /* Only SOFT LIGHT separates by shadow. The other two put the card at a different luminance
+   * from the stage, where an added shadow reads as heavy — the classic fake-product-shot tell. */
+  const stage = {elev: doc.theme === 'soft-light' ? ELEV.card : null};
   return (
+    <StageCtx.Provider value={stage}>
     <Series>
       {scenes.map((p) => (
         // The SAME array prepare() summed, so the composition length and the sum of these
@@ -121,5 +126,6 @@ export const Promo: React.FC<Prepared> = ({doc, scenes}) => {
         </Series.Sequence>
       ))}
     </Series>
+    </StageCtx.Provider>
   );
 };

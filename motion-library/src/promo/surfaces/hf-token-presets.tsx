@@ -3,6 +3,7 @@ import {AbsoluteFill, useCurrentFrame} from 'remotion';
 import {EASE, lerp} from '../../lib/ease';
 import {FONT} from '../../lib/palette';
 import {SurfaceFrame} from './frame';
+import {useElev} from '../stage-ctx';
 import CAP from '../../../captures/hf-token-presets.json';
 
 /* ============================================================================
@@ -107,7 +108,10 @@ const Check: React.FC = () => (
 );
 
 const SummaryCard: React.FC<{p: Preset}> = ({p}) => (
-  <div style={{width: M.cardWidth, borderRadius: M.cardRadius, border: `1px solid ${T.cardBorder}`, background: T.card, overflow: 'hidden'}}>
+  /* The captured card is #ffffff. On a SOFT LIGHT stage that is also white, so the only thing
+   * that makes it a card is the elevation the stage hands down. On the contrast themes the stage
+   * is darker and useElev() is undefined, which is the right amount of shadow there: none. */
+  <div style={{width: M.cardWidth, borderRadius: M.cardRadius, border: `1px solid ${T.cardBorder}`, background: T.card, overflow: 'hidden', boxShadow: useElev()}}>
     <div style={{display: 'flex', alignItems: 'flex-start', gap: M.cardHeadGap, padding: M.cardPadding}}>
       <div style={{flexShrink: 0, borderRadius: M.iconBoxRadius, padding: M.iconBoxPadding, background: p.boxBg!, border: `1px solid ${p.boxBorder}`}}>
         <Icon id={p.id} size={M.iconSize} color={p.accent} />

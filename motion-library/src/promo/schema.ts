@@ -62,21 +62,30 @@ type BaseRaw = {id: string; enter?: IntroId; exit?: OutroId; hold?: HoldTok};
 export type TextSceneRaw = BaseRaw & {kind: 'text'; effect: string; copy: string; sub?: string; size?: SizeTok};
 export type UiSceneRaw = BaseRaw & {kind: 'ui'; surface: string};
 export type SceneRaw = TextSceneRaw | UiSceneRaw;
-export type PromoDocRaw = {v: 1; id: string; theme: 'dark' | 'light'; scenes: SceneRaw[]};
+/* THREE stages, not two. `soft-light` and `light` are both light — they differ in HOW a surface
+ * separates from the void it sits in:
+ *   soft-light  white stage, white card, separation by SHADOW      (the [C] house default)
+ *   light       dimmer stage, pure-white card, separation by CONTRAST
+ * Pick soft-light unless the product UI you captured needs to read as a distinctly white sheet
+ * against something. */
+export type Theme = 'soft-light' | 'light' | 'dark';
+export const THEMES: Theme[] = ['soft-light', 'light', 'dark'];
+
+export type PromoDocRaw = {v: 1; id: string; theme?: Theme; scenes: SceneRaw[]};
 
 /* ── Normalized: what components see. Every field present. ─────────────────── */
 type Base = {id: string; enter: IntroId; exit: OutroId; hold: HoldTok};
 export type TextScene = Base & {kind: 'text'; effect: string; copy: string; sub: string | null; size: SizeTok};
 export type UiScene = Base & {kind: 'ui'; surface: string};
 export type Scene = TextScene | UiScene;
-export type PromoDoc = {v: 1; id: string; theme: 'dark' | 'light'; scenes: Scene[]};
+export type PromoDoc = {v: 1; id: string; theme: Theme; scenes: Scene[]};
 
 export const DEFAULTS = {enter: 'glide-in' as IntroId, exit: 'push-off-left' as OutroId, hold: 'normal' as HoldTok, size: 'lg' as SizeTok};
 
 export const normalize = (raw: PromoDocRaw): PromoDoc => ({
   v: 1,
   id: raw.id,
-  theme: raw.theme ?? 'dark',
+  theme: raw.theme ?? 'soft-light',
   scenes: (raw.scenes ?? []).map((s) => {
     const base = {id: s.id, enter: s.enter ?? DEFAULTS.enter, exit: s.exit ?? DEFAULTS.exit, hold: s.hold ?? DEFAULTS.hold};
     return s.kind === 'ui'
