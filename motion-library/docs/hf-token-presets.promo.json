@@ -8,7 +8,7 @@
       "kind": "text",
       "effect": "soft-blur-in",
       "copy": "Tokens without the checklist",
-      "size": "lg",
+      "size": "xl",
       "hold": "long",
       "enter": "scale-pop-in",
       "exit": "scale-up-cut"

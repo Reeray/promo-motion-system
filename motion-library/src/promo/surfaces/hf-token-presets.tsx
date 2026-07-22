@@ -166,7 +166,7 @@ const CustomGrid: React.FC = () => (
 /* ── SURFACE 1 — the chip row rises, offset ───────────────────────────────── */
 /* Composed, not fitted. Sizing a lone row to *just* clear the frame edge is how it ended up at
    85% of the width and reading as oversize; ~2/3 leaves it room to be an object on a stage. */
-const ROW_ZOOM = 1.24;
+const ROW_ZOOM = 1.5;
 const RISE_STEP = 4; // frames between neighbouring chips
 const RISE_DUR = 22;
 
@@ -194,7 +194,7 @@ const PresetChips: React.FC = () => {
    frame is a crop of it rather than a fit of it — the log-theater-zoomed treatment. The chips are
    NOT part of the crop: they are the control being exercised, so every one of them must stay on
    screen at all times. Two scales on purpose. */
-const CHIP_ZOOM = 1.34;
+const CHIP_ZOOM = 1.62;
 const ZOOM = 2.35;
 /* The Custom grid gets its own, smaller scale. A macro crop should bleed off the edge, not slice
    a word in half — and the grid's two columns run the full 643px, where the summary card's single
@@ -202,7 +202,7 @@ const ZOOM = 2.35;
    and its HEIGHT still overflows: the wall of checkboxes is a vertical message anyway. */
 const GRID_ZOOM = 1.9;
 const PIN_X = 48;
-const PIN_Y = 30;
+const PIN_Y = 62;
 const SETTLE = 26;
 /* Dwell scales with how much there is to read — Full Access has 17 rows, Read-Only has 2. */
 const DWELL = [58, 58, 70, 78, 92, 104];
