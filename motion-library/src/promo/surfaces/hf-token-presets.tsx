@@ -87,7 +87,7 @@ const Chip: React.FC<{p: Preset; on: boolean; press?: number}> = ({p, on, press 
 );
 
 const ChipRow: React.FC<{sel: number; rise?: (i: number) => {y: number; o: number}; press?: number}> = ({sel, rise, press = 0}) => (
-  <div style={{display: 'flex', gap: 8, justifyContent: 'center'}}>
+  <div style={{display: 'flex', gap: 8}}>
     {P.map((p, i) => {
       const r = rise ? rise(i) : {y: 0, o: 1};
       return (
@@ -122,8 +122,10 @@ const SummaryCard: React.FC<{p: Preset}> = ({p}) => (
       <div style={{fontSize: M.sectionLabelSize, fontWeight: M.sectionLabelWeight, color: T.ink, marginBottom: 14}}>
         This token will be able to:
       </div>
-      {/* Two columns, as on the real page — it is what keeps Full Access's 17 rows readable. */}
-      <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: 24, rowGap: 8}}>
+      {/* ONE column, where the real page uses two. The real card is 643px wide and only splits to
+          fit that width; magnified past the frame there is no width problem to solve, and a second
+          column would put half the permissions off the right edge. Same information, none cropped. */}
+      <div style={{display: 'grid', gridTemplateColumns: '1fr', rowGap: 9}}>
         {p.perms!.map((t) => (
           <div key={t} style={{display: 'flex', alignItems: 'center', gap: 8, fontSize: M.rowSize, color: T.listInk, lineHeight: 1.35}}>
             <Check />
@@ -162,7 +164,9 @@ const CustomGrid: React.FC = () => (
 );
 
 /* ── SURFACE 1 — the chip row rises, offset ───────────────────────────────── */
-const ROW_ZOOM = 1.58;
+/* Composed, not fitted. Sizing a lone row to *just* clear the frame edge is how it ended up at
+   85% of the width and reading as oversize; ~2/3 leaves it room to be an object on a stage. */
+const ROW_ZOOM = 1.24;
 const RISE_STEP = 4; // frames between neighbouring chips
 const RISE_DUR = 22;
 
@@ -186,7 +190,19 @@ const PresetChips: React.FC = () => {
 };
 
 /* ── SURFACE 2 — zoomed, overflowing, every preset exercised ──────────────── */
-const ZOOM = 1.62;
+/* MACRO CROP (see SKILL): the card is drawn LARGER than the frame and pinned top-left, so the
+   frame is a crop of it rather than a fit of it — the log-theater-zoomed treatment. The chips are
+   NOT part of the crop: they are the control being exercised, so every one of them must stay on
+   screen at all times. Two scales on purpose. */
+const CHIP_ZOOM = 1.34;
+const ZOOM = 2.35;
+/* The Custom grid gets its own, smaller scale. A macro crop should bleed off the edge, not slice
+   a word in half — and the grid's two columns run the full 643px, where the summary card's single
+   column stops around 500px and leaves only padding to crop. Sized so the grid's WIDTH just fits
+   and its HEIGHT still overflows: the wall of checkboxes is a vertical message anyway. */
+const GRID_ZOOM = 1.9;
+const PIN_X = 48;
+const PIN_Y = 30;
 const SETTLE = 26;
 /* Dwell scales with how much there is to read — Full Access has 17 rows, Read-Only has 2. */
 const DWELL = [58, 58, 70, 78, 92, 104];
@@ -209,14 +225,21 @@ const PresetCycle: React.FC = () => {
   const p = P[sel];
 
   return (
-    <AbsoluteFill style={{fontFamily: FONT.sans, alignItems: 'center', overflow: 'hidden'}}>
-      {/* Anchored to the top and scaled past the frame: the tall states (Full Access, Custom)
-          crop at the bottom edge rather than shrinking to fit — the overflow IS the message. */}
-      <div style={{transform: `scale(${ZOOM})`, transformOrigin: '50% 0%', paddingTop: 40}}>
+    <AbsoluteFill style={{fontFamily: FONT.sans, overflow: 'hidden'}}>
+      <div style={{position: 'absolute', left: PIN_X, top: PIN_Y, transform: `scale(${CHIP_ZOOM})`, transformOrigin: '0% 0%'}}>
         <ChipRow sel={sel} press={Math.max(0, press)} />
-        <div style={{marginTop: 22, opacity: bodyO, transform: `translateY(${bodyY}px)`}}>
-          {p.perms ? <SummaryCard p={p} /> : <CustomGrid />}
-        </div>
+      </div>
+      <div
+        style={{
+          position: 'absolute',
+          left: PIN_X,
+          top: PIN_Y + 34 * CHIP_ZOOM + 26,
+          transform: `scale(${p.perms ? ZOOM : GRID_ZOOM})`,
+          transformOrigin: '0% 0%',
+          opacity: bodyO,
+        }}
+      >
+        <div style={{transform: `translateY(${bodyY}px)`}}>{p.perms ? <SummaryCard p={p} /> : <CustomGrid />}</div>
       </div>
     </AbsoluteFill>
   );

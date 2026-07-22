@@ -249,6 +249,42 @@ Logos, device marks, task glyphs, avatars are the **#1 tell** that a mock is fak
   (auth-gated, hotlink-blocked). It must read as an obvious placeholder + get a blocker note, never a
   lookalike of a real mark.
 
+### ⚑ LAW — MACRO CROP (the "zoomed manner")
+
+The default instinct is to scale a captured surface until it *fits* the frame. That is the wrong
+move and it produces the two failures users report most: **"too small to read"** and
+**"looks oversize"** — which are the same bug seen from either side of the fit.
+
+**A macro crop renders the surface LARGER than the frame and pins it to a corner — usually top-left
+— so the frame is a CROP of the surface, not a FIT of it.** The reference does exactly this: the
+log-theater window is 1520px wide inside a 1280px frame, pinned at (60, 34), and its right edge is
+simply gone. `log-theater-zoomed` / `MacroCropLog` is the canonical block.
+
+Why it works: at real metrics a product card's body text is 13–15px, which is illegible at 720p.
+Fitting forces you to invent bigger type, and invented type is no longer the product. Cropping lets
+you keep **every captured number 1:1** and win legibility from one scale constant. The overflow is
+not damage — it is the signal that there is more surface than the shot, which is what "zoomed in"
+means to a viewer.
+
+**Rules:**
+1. **Author at captured metrics.** One `transform: scale(Z)` on the container. Never re-type sizes.
+2. **Pin, don't centre.** `position: absolute; left/top; transformOrigin: '0% 0%'`. A centred macro
+   crop bleeds on both sides and reads as a mistake; a pinned one reads as a camera position.
+3. **Bleed, never slice.** Crop where the content has already ended — padding, a border, trailing
+   whitespace. A word cut in half looks like a bug, not a crop. If a layout runs to its full width
+   (a two-column grid), either give that state its own smaller scale or collapse it to one column.
+4. **Controls stay whole.** Anything the shot EXERCISES — the chip row, the tab bar, the toggle —
+   must be fully on screen for the whole shot, at its own smaller scale if needed. Two scales in one
+   shot is correct when one layer is the control and the other is the detail.
+5. **Prefer vertical overflow.** Height carries "there is more of this" without hiding a control.
+6. **Multi-column exists to fit a narrow width.** Once magnified there is no width to fit; one
+   column is the same information with nothing off-frame.
+
+**Fit is a bug, not a taste call.** A surface that exceeds the frame, or a text object that wraps
+mid-word, passes every existing gate — exposure, contrast, motion, length all read fine. Until a
+fit/legibility gate exists, check boundary stills by eye before rendering: the first and last frame
+of every UI scene, plus one frame per state.
+
 ### 3d · FIDELITY DIFF — the capture gate (do before building motion)
 
 Render the static replica of the hero surface and put it **beside the real screenshot**. Walk this
