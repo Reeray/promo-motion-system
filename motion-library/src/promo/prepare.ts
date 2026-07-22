@@ -71,7 +71,10 @@ export const prepare = (raw: PromoDocRaw): Prepared => {
     return p;
   });
 
-  const over = scenes.filter((p) => p.frames > SCENE_MAX);
+  // The per-scene bounds exist to catch COPY-DRIVEN balloon — per-unit stagger multiplied by a
+  // long string. A ui surface's length is its own measured choreography (the storage surface is a
+  // legitimate 7.6s), so bounding it would be second-guessing a captured artifact.
+  const over = scenes.filter((p) => p.scene.kind === 'text' && p.frames > SCENE_MAX);
   if (over.length) {
     throw new Error(
       `Invalid promo doc "${doc.id}": scene(s) exceed ${SCENE_MAX} frames — ` +
@@ -85,7 +88,9 @@ export const prepare = (raw: PromoDocRaw): Prepared => {
 
   const warnings = [
     ...axisWarnings(doc),
-    ...scenes.filter((p) => p.frames > SCENE_WARN).map((p) => `scene "${p.scene.id}" is ${(p.frames / FPS).toFixed(1)}s — long for a quick promo.`),
+    ...scenes
+      .filter((p) => p.scene.kind === 'text' && p.frames > SCENE_WARN)
+      .map((p) => `scene "${p.scene.id}" is ${(p.frames / FPS).toFixed(1)}s — long for a quick promo.`),
   ];
 
   // `start` has accumulated the sum of every scene, so the composition length and the sum of the

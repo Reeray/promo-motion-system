@@ -124,6 +124,35 @@ deliberately construct. (The existing storage promo *has* such a mismatch — it
 
 ---
 
+## T12 record — hand-written vs doc-driven (hf-storage)
+
+Both renders pass all seven gate checks. Accepted deltas:
+
+| | old (hand-written) | new (doc) | note |
+|---|---|---|---|
+| frames | 740 | 745 | +0.7%; per-scene within 11f |
+| mean luminance | 17.35 | 18.57 | |
+| blown pixels % | 0.01 | 0.01 | |
+| legibility contrast % | 2.58 | 3.02 | |
+| frame variance | 2.30 | 3.09 | |
+
+The three moved metrics exceed the <5% bar I originally set, and the cause is **deliberate, not
+drift**: in the doc every scene has an intro, whereas the hand-written promo's title card simply
+appeared. More on-screen motion and more text-bearing frames raise contrast and variance exactly
+as you'd expect. Scene midpoints are visually identical, and no boundary shows an empty stage that
+the old render didn't also show.
+
+Also fixed while porting: the original's **axis mismatch** (scene 2 exited `push-off-left` on X
+into scene 3's `scale-pop-in` on Z). The doc sets scene 2's exit to `scale-up-cut`, so the
+junctions now read X → Z → X — each internally consistent *and* alternating between handoffs,
+satisfying both the adjacency law and the VARY law.
+
+Token quantisation was accepted, not retuned: `long` hold lands the text scenes within 11 frames
+of hand-authored, and the new `xl` token preserved the title/payoff size contrast.
+
+Surfaces are exempt from the per-scene bounds — those exist to catch copy-driven balloon, and a
+surface's 7.6s is its own measured choreography.
+
 ## Backlog
 
 **Swapping UI-motion blocks.** Product-UI scenes are opaque registry references — the

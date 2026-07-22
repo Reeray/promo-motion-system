@@ -1,0 +1,45 @@
+{
+  "v": 1,
+  "id": "hf-storage",
+  "theme": "dark",
+  "scenes": [
+    {
+      "id": "title",
+      "kind": "text",
+      "effect": "blur-out-up",
+      "copy": "Every repository's storage, visualized",
+      "size": "lg",
+      "hold": "long",
+      "enter": "scale-pop-in",
+      "exit": "push-off-left"
+    },
+    {
+      "id": "repositories",
+      "kind": "ui",
+      "surface": "hf-storage-repositories",
+      "enter": "glide-in",
+      "exit": "scale-up-cut"
+    },
+    {
+      "id": "payoff",
+      "kind": "text",
+      "effect": "per-word-crossfade",
+      "copy": "Know exactly what's using your space.",
+      "size": "md",
+      "hold": "long",
+      "enter": "scale-pop-in",
+      "exit": "push-off-left"
+    },
+    {
+      "id": "cta",
+      "kind": "text",
+      "effect": "micro-scale-fade",
+      "copy": "huggingface.co/settings/repositories",
+      "sub": "In your User & Organization settings",
+      "size": "sm",
+      "hold": "long",
+      "enter": "glide-in",
+      "exit": "push-off-left"
+    }
+  ]
+}

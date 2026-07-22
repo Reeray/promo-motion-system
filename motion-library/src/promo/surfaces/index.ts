@@ -26,6 +26,15 @@ export type Surface = {
   Comp: React.FC;
 };
 
-export const SURFACES: Record<string, Surface> = {};
+import {RepositoriesPage, SURFACE_FRAMES as HF_STORAGE_FRAMES} from './hf-storage-repositories';
+
+export const SURFACES: Record<string, Surface> = {
+  'hf-storage-repositories': {
+    id: 'hf-storage-repositories',
+    label: 'HF · Settings › Repositories storage',
+    frames: HF_STORAGE_FRAMES,
+    Comp: RepositoriesPage,
+  },
+};
 
 export const SURFACE_IDS = () => Object.keys(SURFACES);
