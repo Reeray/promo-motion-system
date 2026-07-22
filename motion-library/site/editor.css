@@ -50,28 +50,42 @@
 
 /* ── timeline ───────────────────────────────────────────────────────────── */
 /* Editable and fixed segments must not read as the same control. An editable segment is a solid
-   card with an accent rail and a live hover; a fixed one is hatched, dashed and lock-marked —
+   card that names its effect and lights up on hover; a fixed one is hatched, dashed, lock-marked —
    the visual grammar of "this is a label, not a button" (they stay clickable, for seek). */
 .ed-strip { display: flex; align-items: stretch; height: 54px; margin: 14px 0 4px; }
 .ed-seg {
+  position: relative;
   display: flex; flex-direction: column; justify-content: center; gap: 3px;
   min-width: 0; padding: 0 11px !important; height: auto !important;
   text-align: left; overflow: hidden; border-radius: 8px !important;
   background: var(--card) !important; border: 1px solid var(--card-border) !important;
-  box-shadow: inset 3px 0 0 var(--accent);
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition: border-color 0.15s, background 0.15s;
 }
-.ed-seg:hover:not(.dull) { border-color: var(--accent) !important; box-shadow: inset 3px 0 0 var(--accent), 0 0 0 3px var(--accent-bg); }
-.ed-seg.on { border-color: var(--fg) !important; border-width: 1.5px !important; }
+.ed-seg:hover:not(.dull) { border-color: var(--accent) !important; }
+
+/* Selection is an underline that grows, not a bright outline. A full white border sits on top of
+   the strip's own colour language (role-tinted junctions, hatched surfaces) and shouts louder
+   than the thing it marks; a 2px bar in the segment's own colour is unmistakable at a glance and
+   still lets the eye rest on the player above. */
+.ed-seg::after {
+  content: ''; position: absolute; left: 10px; right: 10px; bottom: 0; height: 2px;
+  border-radius: 2px 2px 0 0; background: var(--accent);
+  transform: scaleX(0); transform-origin: 50% 100%;
+  transition: transform 0.24s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.ed-seg.on::after { transform: scaleX(1); }
+.ed-seg.on { border-color: var(--accent) !important; background: var(--accent-bg) !important; }
 
 .ed-seg.dull {
   color: var(--faint) !important;
   border-style: dashed !important;
-  box-shadow: none;
   background: repeating-linear-gradient(
     -45deg, transparent 0 5px, var(--hover) 5px 10px
   ) !important;
 }
+/* A selected surface must not borrow the accent — that would read as "now editable". */
+.ed-seg.dull::after { background: var(--muted); }
+.ed-seg.dull.on { border-color: var(--muted) !important; }
 .ed-seg.dull .ed-seg-l { color: var(--muted); font-weight: 400; }
 
 /* Padlock, drawn rather than typed: a glyph would inherit the segment's condensed line-height
@@ -111,7 +125,9 @@
 .ed-jh.sep { border-radius: 8px !important; }
 .ed-jh.out.sep { background: var(--out-bg) !important; border-color: var(--out) !important; color: var(--out) !important; }
 .ed-jh.in.sep { background: var(--in-bg) !important; border-color: var(--in) !important; color: var(--in) !important; }
-.ed-jh.on { border-width: 1.5px !important; }
+/* Same idea as the scene bar, in the half's own role colour: double the edge from the inside
+   rather than switching it to white, so a selected outro still reads as an outro. */
+.ed-jh.on { box-shadow: inset 0 0 0 1px currentColor; }
 .ed-jh.bad { border-style: dashed !important; }
 .ed-ft { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; font-size: 12px; color: var(--ft); }
 
@@ -129,14 +145,15 @@
 .ed-row { display: flex; align-items: center; gap: 5px; margin-bottom: 12px; flex-wrap: wrap; }
 .ed-lab { font-size: 9.5px; letter-spacing: 0.07em; color: var(--faint); margin: 0 4px 6px 0; }
 .ed-tok { height: 26px !important; padding: 0 9px !important; font-size: 11px !important; }
-.ed-tok.on { border-color: var(--fg) !important; background: var(--hover) !important; }
+.ed-tok.on { border-color: var(--accent) !important; background: var(--accent-bg) !important; color: var(--accent) !important; }
 .ed-picks { display: flex; flex-wrap: wrap; gap: 5px; }
 .ed-pick {
   display: flex; align-items: baseline; gap: 7px; height: 28px !important;
   padding: 0 9px !important; font-size: 11px !important; color: var(--muted) !important;
 }
 .ed-pick .mono { font-size: 10px; color: var(--faint); }
-.ed-pick.on { border-color: var(--fg) !important; background: var(--hover) !important; color: var(--fg) !important; }
+.ed-pick.on { border-color: var(--accent) !important; background: var(--accent-bg) !important; color: var(--accent) !important; }
+.ed-pick.on .mono { color: var(--accent); opacity: 0.75; }
 .ed-log {
   margin-top: 18px; padding: 12px 14px; border-radius: 9px; background: var(--code-bg);
   font-size: 11.5px; white-space: pre-wrap; max-height: 300px; overflow: auto;
