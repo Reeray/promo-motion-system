@@ -180,8 +180,16 @@ const App: React.FC = () => {
                     onClick={() => { setSel({t: 'scene', i}); setOpenJ(-1); seek(p.start); }}
                     title={`${s.id} · ${(p.frames / prep.fps).toFixed(2)}s`}
                   >
-                    <span className="ed-seg-l">{dull ? '● ' : ''}{s.id}</span>
-                    <span className="ed-seg-t mono">{(p.frames / prep.fps).toFixed(2)}s</span>
+                    {/* A text scene names the thing you can change (its effect); a surface names
+                        the reason you can't. Duration rides along on the same line so the two
+                        kinds of segment differ in what they SAY, not only in how they look. */}
+                    <span className="ed-seg-l">
+                      {dull && <span className="ed-lock" aria-hidden="true" />}
+                      {s.id}
+                    </span>
+                    <span className="ed-seg-t mono">
+                      {dull ? 'fixed surface' : s.effect} · {(p.frames / prep.fps).toFixed(2)}s
+                    </span>
                   </button>
                   {j && (
                     <div
