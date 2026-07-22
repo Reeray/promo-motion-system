@@ -119,8 +119,11 @@ deliberately construct. (The existing storage promo *has* such a mismatch — it
 ### Phase 5 — close the loop
 - **T18** Render button: `npm run check` -> `remotion render` -> `check-render.py
   --expect-frames`. Any failure blocks the result.
-- **T19** port the remaining promos to docs; delete the hand-written ones once each passes.
-- **T20** write the editing rules into SKILL.md.
+- **T19** ✅ port the remaining promos to docs; delete the hand-written ones once each passes.
+- **T20** ✅ write the editing rules into SKILL.md (§2.6).
+
+**Phases 1–5 are complete.** Every promo in the repo is now a `docs/*.promo.json`; `src/promos/`
+is gone and `Promo` is the only composition that renders video.
 
 ---
 
@@ -153,6 +156,32 @@ of hand-authored, and the new `xl` token preserved the title/payoff size contras
 Surfaces are exempt from the per-scene bounds — those exist to catch copy-driven balloon, and a
 surface's 7.6s is its own measured choreography.
 
+## T19 record — the four surfaces, old promo vs doc render
+
+Sampled across each surface segment; mean absolute pixel difference, 0–255:
+
+| surface | frames | diff | note |
+|---|---|---|---|
+| `hf-hardware-filter` | 590 | 0.00 / worst 0.58 | exact on most sampled frames |
+| `hf-storage-repositories` | 450 | 0.31 / worst 1.07 | old scene cross-faded opacity; the doc glide does not |
+| `hf-spaces-new` | 300 | 0.0001 | |
+| `hf-spaces-agent-log` | 260 | 0.30 | full-bleed macro crop |
+| `hf-spaces-live` | 160 | 0.0006 | |
+
+Everything under ~1/255 is h.264 noise from differing GOP boundaries. Two structural fixes were
+needed to get there, and both are now properties of the **surface**, not of whichever scene
+mounts it:
+
+- **`surfaces/frame.tsx`** — the 1180×650 stage box used to live in the promo's scene, so the
+  doc path (which sized nothing) rendered at 1280×720 and the extraction stopped lining up. The
+  box is what the layout was measured against, so the surface owns it.
+- **`Surface.bleed`** — the agent-log surface *is* the viewport, not an object on it. Its
+  absolutely positioned children collapse inside a shrink-to-fit transform div, so a bleed scene
+  carries the transition transform on an `AbsoluteFill` instead.
+
+Derived vs hand-authored length: hardware 941f vs 990f, agents 960f vs 960f. `HFSpacesPromo`
+(the lone 30fps one, superseded by the agents promo) was deleted — open question 6 resolved.
+
 ## Backlog
 
 **Swapping UI-motion blocks.** Product-UI scenes are opaque registry references — the
@@ -173,10 +202,10 @@ bootstrap clone. Natural once the block registry becomes a public API.
 | # | Question | Status |
 |---|---|---|
 | 1 | axis adjacency — error or warning? | **resolved**: warning on the junction |
-| 2 | doc-rebuilt storage promo will be shorter than 740f | recommend accept |
-| 3 | three size tokens, or add `xl`? | recommend add `xl` |
-| 4 | editor as its own page or a gallery tab? | recommend own page |
-| 5 | saving needs a dev-only Vite middleware | recommend yes; render needs the file on disk |
-| 6 | keep `HFSpacesPromo` (the lone 30fps one)? | recommend delete in T19 |
+| 2 | doc-rebuilt storage promo will be shorter than 740f | **resolved**: 745f, accepted (T12) |
+| 3 | three size tokens, or add `xl`? | **resolved**: `xl` added |
+| 4 | editor as its own page or a gallery tab? | **resolved**: own page, timeline-major |
+| 5 | saving needs a dev-only Vite middleware | **resolved**: `editorApi()` in `vite.config.ts` |
+| 6 | keep `HFSpacesPromo` (the lone 30fps one)? | **resolved**: deleted in T19 |
 | 7 | add/delete scenes in the editor? | recommend edit-only this stage |
 | 8 | duration ceiling | recommend 20s total |
