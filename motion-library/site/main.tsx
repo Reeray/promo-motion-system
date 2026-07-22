@@ -2,6 +2,10 @@ import React, {useEffect, useRef, useState} from 'react';
 import {createRoot} from 'react-dom/client';
 import {Player, PlayerRef} from '@remotion/player';
 import './styles.css';
+// Load the same fonts the render loads, from the same place. This import is the ONLY reason the
+// gallery has Inter and IBM Plex Mono now that the Google Fonts <link> is gone — which is the
+// point: if a font is missing here it is missing in the MP4 too, instead of the page CSS hiding it.
+import '../src/lib/fonts';
 // The library owns the catalog; this site just renders it. Add a block in src/blocks/ and it
 // appears here automatically — no edit to the website.
 import {Block, BLOCK_GROUPS} from '../src/blocks';

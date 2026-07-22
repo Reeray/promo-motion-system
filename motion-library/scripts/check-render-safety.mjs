@@ -92,6 +92,27 @@ for (const file of walk(SRC)) {
     }
   }
 
+  /* R5 — every <SpecText> in a stage file must pass BOTH `color` and `loop={false}`.
+   * Two silent failure modes, neither visible to the pixel gate (its legibility bar is 0.30% of
+   * pixels averaged over ~120 samples, which a partly-blank video clears easily):
+   *   colour — SpecText defaults to var(--fg, #14161c), which is invisible ink on a PD dark stage
+   *   loop   — defaulting true makes SpecText run its EXIT at the hardcoded RT.hold, animating the
+   *            text to opacity 0 mid-scene and leaving the outro to throw an empty stage. */
+  if (isStageFile) {
+    for (const m of src.matchAll(/<SpecText\b[^>]*\/?>/g)) {
+      const tag = m[0];
+      const line = src.slice(0, m.index).split('\n').length;
+      if (!/\bcolor\s*=/.test(tag)) {
+        failures.push(`${rel}:${line}: <SpecText> without an explicit \`color\` — its default is the ` +
+          `theme-aware var(--fg), which renders as invisible dark ink on a PD dark stage.`);
+      }
+      if (!/\bloop\s*=\s*\{false\}/.test(tag)) {
+        failures.push(`${rel}:${line}: <SpecText> without \`loop={false}\` — looping runs the exit at ` +
+          `SpecText's hardcoded hold, blanking the stage mid-scene before the outro fires.`);
+      }
+    }
+  }
+
   // R2 — fixed-palette areas must not use the theme-aware palette
   if (isStageFile) {
     const imp = src.match(/import\s*\{([^}]*)\}\s*from\s*'[^']*lib\/palette'/);

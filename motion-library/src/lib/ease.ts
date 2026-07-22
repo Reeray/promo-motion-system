@@ -25,6 +25,14 @@ export const EASE = {
   throwOut: Easing.bezier(0.45, 0.02, 0.85, 0.25),
 };
 
+/** Convert a measured duration in milliseconds to frames at the composition's own fps.
+ *
+ * Every timing in this system was measured in ms from the reference films, then hardcoded as a
+ * frame count for 60fps. That silently bakes a framerate into the motion: the same block rendered
+ * at 30fps would run twice as long in wall-clock time. Derive from `useVideoConfig().fps` instead
+ * so a block keeps its measured *duration* whatever the composition's framerate is. */
+export const msToFrames = (ms: number, fps: number) => Math.round((ms / 1000) * fps);
+
 export const lerp = (
   frame: number,
   range: [number, number],

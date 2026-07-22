@@ -1,6 +1,6 @@
 import React from 'react';
-import {AbsoluteFill, useCurrentFrame} from 'remotion';
-import {EASE, lerp} from '../lib/ease';
+import {AbsoluteFill, useCurrentFrame, useVideoConfig} from 'remotion';
+import {EASE, lerp, msToFrames} from '../lib/ease';
 import {Block} from './types';
 import {P, FONT} from '../lib/palette';
 
@@ -29,46 +29,62 @@ import {P, FONT} from '../lib/palette';
 const SANS = FONT.sans;
 const FPS = 60;
 
-// Measured values, scaled from the 1920-wide reference to our 1280-wide stage.
-const THROW_PX = 20; // 30px @1920
-const THROW_DUR = 9; // 150ms
-const GLIDE_PX = 80; // 120px @1920
-const GLIDE_DUR = 54; // ~0.9s
-const WORD_STEP = 5; // ~85ms — exported for the TEXT layer, not used here
-const SCALE_UP_TO = 1.062;
-const SCALE_UP_DUR = 6; // 100ms
-const POP_FROM = 0.76;
-const POP_DUR = 26; // ~430ms
+/* Durations are MILLISECONDS — the unit they were measured in — and are converted to frames
+ * against the composition's own fps at render time. They used to be frame counts computed for
+ * 60fps while the hooks read useCurrentFrame() and never consulted useVideoConfig(), so the same
+ * block at 30fps ran for twice the wall-clock time. The measured duration is the invariant; the
+ * frame count is derived. */
+const THROW_MS = 150;
+const GLIDE_MS = 900;
+const SCALE_UP_MS = 100;
+const POP_MS = 430;
+const WORD_STEP_MS = 85;
 
-export const T = {THROW_PX, THROW_DUR, GLIDE_PX, GLIDE_DUR, WORD_STEP};
-export const TZ = {SCALE_UP_TO, SCALE_UP_DUR, POP_FROM, POP_DUR};
+// Distances, scaled from the 1920-wide reference to our 1280-wide stage.
+const THROW_PX = 20; // 30px @1920
+const GLIDE_PX = 80; // 120px @1920
+const SCALE_UP_TO = 1.062;
+const POP_FROM = 0.76;
+
+// Frame counts at the library's own 60fps, kept so existing promos and the gallery keep their
+// authored scene lengths. New code should prefer the _MS values via msToFrames(ms, fps).
+const THROW_DUR = msToFrames(THROW_MS, FPS);
+const GLIDE_DUR = msToFrames(GLIDE_MS, FPS);
+const SCALE_UP_DUR = msToFrames(SCALE_UP_MS, FPS);
+const POP_DUR = msToFrames(POP_MS, FPS);
+const WORD_STEP = msToFrames(WORD_STEP_MS, FPS);
+
+export const T = {THROW_PX, THROW_DUR, GLIDE_PX, GLIDE_DUR, WORD_STEP, THROW_MS, GLIDE_MS, WORD_STEP_MS};
+export const TZ = {SCALE_UP_TO, SCALE_UP_DUR, POP_FROM, POP_DUR, SCALE_UP_MS, POP_MS};
 
 /* ── Primitives (hooks) — for hand-rolled composition ────────────────────── */
 
 /** OUTRO · X — accelerate a short distance, stay on screen, then vanish. */
 export const useThrow = (start: number) => {
   const f = useCurrentFrame();
-  const p = lerp(f, [start, start + THROW_DUR], [0, 1], EASE.throwOut);
-  return {x: -p * THROW_PX, gone: f > start + THROW_DUR};
+  const d = msToFrames(THROW_MS, useVideoConfig().fps);
+  const p = lerp(f, [start, start + d], [0, 1], EASE.throwOut);
+  return {x: -p * THROW_PX, gone: f > start + d};
 };
 
 /** OUTRO · Z — swell and be cut at peak. Works on text or UI alike. */
 export const useScaleUpCut = (start: number) => {
   const f = useCurrentFrame();
-  const p = lerp(f, [start, start + SCALE_UP_DUR], [0, 1], EASE.throwOut);
-  return {scale: 1 + p * (SCALE_UP_TO - 1), gone: f > start + SCALE_UP_DUR};
+  const d = msToFrames(SCALE_UP_MS, useVideoConfig().fps);
+  const p = lerp(f, [start, start + d], [0, 1], EASE.throwOut);
+  return {scale: 1 + p * (SCALE_UP_TO - 1), gone: f > start + d};
 };
 
 /** INTRO · X — decelerate onto the axis the outgoing object just left. */
 export const useGlideIn = (start: number) => {
   const f = useCurrentFrame();
-  return lerp(f, [start, start + GLIDE_DUR], [GLIDE_PX, 0], EASE.out);
+  return lerp(f, [start, start + msToFrames(GLIDE_MS, useVideoConfig().fps)], [GLIDE_PX, 0], EASE.out);
 };
 
 /** INTRO · Z — pop from 0.76, strong ease-out, no overshoot, no fade. */
 export const usePopIn = (start: number) => {
   const f = useCurrentFrame();
-  return lerp(f, [start, start + POP_DUR], [POP_FROM, 1], EASE.camera);
+  return lerp(f, [start, start + msToFrames(POP_MS, useVideoConfig().fps)], [POP_FROM, 1], EASE.camera);
 };
 
 /* ── Wrappers — drop ANY object inside ───────────────────────────────────── */

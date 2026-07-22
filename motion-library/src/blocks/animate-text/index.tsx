@@ -53,3 +53,20 @@ const toBlock = (raw: unknown): Block => {
 };
 
 export const ANIMATE_TEXT_BLOCKS: Block[] = RAW.map(toBlock);
+
+/* ── The registry the PromoDoc layer and the editor's swap picker consume ────────────────────
+ * Built from the same RAW array that produces the gallery blocks, so the two can never disagree.
+ * No codegen script and no import.meta.glob: glob is Vite-only while the Remotion bundle is
+ * webpack, making it the one construct that would silently differ between the gallery build and
+ * the render build — the exact class of bug this project keeps getting bitten by.
+ *
+ * This is also where `display_name` finally survives: it is read into the Spec type above and then
+ * thrown away by toBlock(), which is why nothing could show a human label for an effect. */
+export type TextEffect = {id: string; label: string; spec: Spec};
+
+export const ANIMATE_TEXT_EFFECTS: TextEffect[] = RAW.map((raw) => {
+  const spec = raw as Spec;
+  return {id: spec.id, label: spec.display_name ?? spec.id, spec};
+});
+
+export const TEXT_EFFECT_IDS: string[] = ANIMATE_TEXT_EFFECTS.map((e) => e.id);
