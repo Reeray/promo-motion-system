@@ -195,6 +195,23 @@ absolute pixels, so even changing dimensions inherits motion tuned for another c
 **Publish the library as an npm package** so the skill can require a version instead of a
 bootstrap clone. Natural once the block registry becomes a public API.
 
+**Container morph as a native block** (raise this on the next container-morphing request).
+T9 "element morph" is catalogued and never built. Build it NATIVELY, not with GSAP's Flip:
+Flip's value is measuring geometry you don't know, and here we author both rects (the capture
+already holds `cardWidth: 643`, `cardRadius: 12`). Flip also needs a "before" and an "after"
+separated in time, which a frame renderer has nowhere to put — frames render independently and
+out of order. Native recipe: interpolate `x/y/width/height/borderRadius` between two known rects
+and cross-fade the contents, bringing content in only AFTER the container lands (the rule from
+the `border-morph-transition` skill). Animate real width/height rather than scaling a fixed box —
+the layout cost that makes browsers avoid it is irrelevant offline, and it removes child
+distortion entirely.
+
+**A determinism gate** — worth having regardless of the above. Every current gate measures ONE
+finished file; "two renders are identical" has never been asserted. Three checks: render twice
+and compare PNG frames (not MP4 — encoder variance muddies it), render at concurrency 1 vs 8,
+and compare `remotion still --frame=N` against frame N of the full video. The third is the sharp
+one: it catches any effect that secretly depends on frame-to-frame continuity.
+
 ---
 
 ## Open questions
