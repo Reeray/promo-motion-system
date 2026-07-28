@@ -35,44 +35,6 @@ const EXCLUDED_SPECS = {
   'shared-axis-x': 'needs a layout-aware renderer, not just a registry line',
 };
 
-/* ── B4/B5 — the synthesized SFX ────────────────────────────────────────────────────────────
- * B4 regeneration must be byte-identical. The WAVs are committed, so a generator that drifts
- *    would silently ship audio that no longer matches its own recipe.
- * B5 no transcendental may reach the sample loop. Math.sin/cos/exp/pow/log are NOT bit-pinned
- *    across JS engines, so a cue built with them could differ between two people's machines and
- *    B4 would only catch it on the machine that changed. gen-sfx.mjs ships its own polynomial
- *    sine for exactly this reason.
- */
-{
-  const sfxDir = join(ROOT, 'public', 'sfx');
-  const gen = join(ROOT, 'scripts', 'gen-sfx.mjs');
-  if (existsSync(gen) && existsSync(sfxDir)) {
-    const src = readFileSync(gen, 'utf8');
-    // Scanned RAW, deliberately. An earlier version stripped comments first and then matched
-    // nothing even on a genuinely tampered file - a gate that cannot fail. gen-sfx.mjs is written
-    // to never name these functions in prose either, so a raw scan needs no stripping.
-    const banned = [...src.matchAll(/Math\.(sin|cos|tan|exp|log|log2|log10|pow|cbrt|atan2?|asin|acos|hypot|random)\b/g)];
-    for (const b of banned) {
-      fail.push(`B5 gen-sfx.mjs uses Math.${b[1]} — not bit-pinned across JS engines, so regeneration ` +
-        `could differ between machines while B4 passes on yours. Use the local polynomial sine / seeded LCG.`);
-    }
-    // B4 — regenerate into place and compare bytes.
-    const before = readdirSync(sfxDir).filter((f) => f.endsWith('.wav'))
-      .map((f) => [f, createHash('sha256').update(readFileSync(join(sfxDir, f))).digest('hex')]);
-    if (before.length) {
-      const r = spawnSync('node', [gen], {cwd: ROOT, encoding: 'utf8', shell: process.platform === 'win32'});
-      if (r.status !== 0) {
-        fail.push(`B4 gen-sfx.mjs failed to run: ${(r.stderr || '').trim().split('\n').slice(-2).join(' ')}`);
-      } else {
-        for (const [f, hash] of before) {
-          const now = createHash('sha256').update(readFileSync(join(sfxDir, f))).digest('hex');
-          if (now !== hash) fail.push(`B4 public/sfx/${f} changed on regeneration — gen-sfx.mjs is not deterministic.`);
-        }
-      }
-    }
-  }
-}
-
 const atDir = join(ROOT, 'src', 'blocks', 'animate-text');
 const idx = readFileSync(join(atDir, 'index.tsx'), 'utf8');
 const registered = [...idx.matchAll(/from '\.\/specs\/([\w-]+)\.json'/g)].map((m) => m[1]);

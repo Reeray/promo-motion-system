@@ -317,10 +317,29 @@ TAG_BUDGET     = 8      # numberOfSharedAudioTags. Player's DEFAULT IS 5 and it 
 These are a **coherent-sum worst case** (identical signals). Real cues are different sounds and
 sum incoherently at roughly +3 dB per doubling, so −15 dBFS is conservative by design.
 
+## Measured: audio lands 43 ms late, and it is the encoder
+
+Every rendered sound arrives **2065 samples** after the frame its cue names — within 17 samples of
+the classic **2048-sample AAC priming delay**, and constant across cues. The container carries no
+compensating edit list (`initial_padding=0`, `start_time=0` on both streams), so the priming
+samples decode as real audio and shift everything late by **42.7 ms ≈ 2.56 frames**.
+
+This is not a placement bug: the derived cue frames are exact, and `check-doc-parity` proves it.
+It is what Remotion's AAC encode does to them afterwards.
+
+Deliberately **not** silently compensated. A hidden global shift would be a second source of truth
+for timing — the thing this system exists to avoid — and 2.56 frames is not expressible as an
+integer `Sequence from` anyway. Options, for a decision:
+- leave it and let per-cue `nudge` absorb it (it is within ITU-R BT.1359's ~125 ms audio-late
+  tolerance, but it is at the edge of perceptible for a sharp transient on a visual hit)
+- trim the priming in a post step, or add an edit list, so players skip it
+- expose it as a visible default nudge rather than an invisible correction
+
 ## Open questions
 
 | # | Question | Status |
 |---|---|---|
+| 0 | The 43 ms AAC priming offset above | **open** — measured, not yet compensated |
 | 1 | Per-cue peak ceiling | **resolved in T26**: −15 dBFS, measured |
 | 2 | `TAG_BUDGET` / `MIX_BUDGET` | **resolved in T26**: 8 / 4 |
 | 3 | A1's -40 dBFS floor is invented | keep as a *presence* check, record the measured actual beside it |

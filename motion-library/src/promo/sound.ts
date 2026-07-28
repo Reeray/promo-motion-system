@@ -30,12 +30,33 @@ export type Cue = {
   frame: number;
   /** Length in frames — REQUIRED, see the header. */
   len: number;
-  src: string;
+  /**
+   * The audio to play, or NULL for an empty slot.
+   *
+   * This system derives WHEN a sound should happen; it does not supply the sound. A cue with no
+   * src is a fully-formed placeholder — it has a precise time, a length, an id and a dot in the
+   * editor — that simply makes no noise until someone drops a file on it. That is the normal
+   * state of a new promo, not an error.
+   *
+   * Deliberately NOT resolved by filename convention (`sfx/<kind>.wav`): the renderer runs in a
+   * browser and cannot check whether a file exists, and Remotion fetches every asset up front and
+   * dies on a 404. So the doc names exactly what will play, and gate A4 can check it.
+   */
+  src: string | null;
   gain: number;
 };
 
-/** Cue lengths in ms, mirroring public/sfx/manifest.json. The four transition kinds must equal
- *  INTRO/OUTRO's measured frames; `cueLengthDrift()` below asserts that rather than trusting it. */
+/**
+ * How long a slot IS, which is not the same as how long the file a user drops into it is.
+ *
+ * The four transition kinds are exactly their transition's measured duration — that is the SOUND
+ * FOLLOWS MOTION law, and `cueLengthDrift()` below checks it rather than trusting it. The three ui
+ * lengths are chosen, not measured, and are marked as such.
+ *
+ * What this length does: it bounds the cue's <Sequence>, so a long file is trimmed to the gesture
+ * it belongs to rather than running over the next one, and it is what the overlap budget counts.
+ * A shorter file simply finishes early.
+ */
 const CUE_MS: Record<CueKind, number> = {
   'push-off-left': 150,
   'scale-up-cut': 100,
@@ -105,7 +126,7 @@ export const cues = (prep: PreparedLike): Cue[] => {
       kind,
       frame: Math.max(0, nudged),
       len: framesFor(kind, fps),
-      src: o?.src ?? `sfx/${kind}.wav`,
+      src: o?.src ?? null, // empty slot until someone fills it — see the Cue type
       gain: GAIN[(o?.gain ?? 'normal') as GainTok] ?? 1,
     });
   };

@@ -125,14 +125,20 @@ for (const f of docs) {
     fail.push(`${f}: C1 ${peak} simultaneous audio tags exceeds TAG_BUDGET ${TAG_BUDGET} — the Player throws.`);
   }
 
-  /* A4 — every referenced asset exists. Split deliberately: a missing SFX is an ERROR because the
-   * doc asked for a sound the render cannot make, while missing MUSIC is a WARNING because "no
-   * music" is a valid, supported state (locked decision 3) and a user's bed is gitignored. */
+  /* A4 — every NAMED asset exists.
+   *
+   * An EMPTY slot (src === null) is not a problem: no audio ships with this repo, so an unfilled
+   * cue is the normal state of a promo whose sounds have not been chosen. What IS a problem is a
+   * doc naming a file that is not there, because Remotion fetches assets up front and dies on a
+   * 404 — so this must fail before a render starts rather than during one. */
   for (const c of list) {
-    if (!existsSync(join(ROOT, 'public', c.src))) {
-      fail.push(`${f}: A4 cue "${c.id}" references public/${c.src}, which does not exist.`);
+    if (c.src && !existsSync(join(ROOT, 'public', c.src))) {
+      fail.push(`${f}: A4 cue "${c.id}" names public/${c.src}, which does not exist. Audio is ` +
+        `user-supplied and gitignored, so either drop the file in or clear the cue's src.`);
     }
   }
+  const empty = list.filter((c) => !c.src).length;
+  if (empty && list.length) warn.push(`${f}: ${empty} of ${list.length} cues are empty slots (no audio yet).`);
   const mus = a.doc.sound?.music?.src;
   if (mus && !existsSync(join(ROOT, 'public', mus))) {
     // This was a WARNING until a render proved otherwise: Remotion downloads every asset up front

@@ -135,13 +135,15 @@ const SceneView: React.FC<{p: PreparedScene; pal: Pal}> = ({p, pal}) => {
  * Remotion throws hard once they pass numberOfSharedAudioTags. Verified in the installed tree:
  * Sequence.js:22 sets the default, shared-audio-tags.js:348 throws.
  *
- * A cue whose file is missing simply renders silent — the gate refuses the doc long before this,
- * and a preview that throws on a half-authored doc would be worse than one that is quiet. */
+ * An EMPTY SLOT (src === null) mounts nothing at all. That is the normal state of a promo whose
+ * sounds have not been chosen yet: the cue still exists with a derived time, a length and a dot in
+ * the editor, it simply makes no noise. Mounting a media tag for it would cost an audio tag from
+ * the budget and buy silence. */
 const CueLayer: React.FC<{list: Cue[]}> = ({list}) => (
   <>
-    {list.map((c) => (
+    {list.filter((c) => c.src !== null).map((c) => (
       <Sequence key={c.id} from={c.frame} durationInFrames={c.len} layout="none" name={`sfx ${c.kind}`}>
-        <Html5Audio src={staticFile(c.src)} volume={c.gain} />
+        <Html5Audio src={staticFile(c.src as string)} volume={c.gain} />
       </Sequence>
     ))}
   </>

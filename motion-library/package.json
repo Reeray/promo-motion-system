@@ -11,7 +11,6 @@
     "blocks": "node scripts/gen-blocks.mjs && npm run skill:sync",
     "skill:sync": "node scripts/sync-skill.mjs",
     "verify": "node scripts/verify.mjs",
-    "sfx": "node scripts/gen-sfx.mjs",
     "check:render:audio": "node scripts/verify.mjs --level full --expect sound"
   },
   "dependencies": {
