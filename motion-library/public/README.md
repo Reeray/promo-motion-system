@@ -19,3 +19,14 @@ That is the normal state of a new promo, not an error.
 Both directories are git-ignored for the same reason as the captured images above: whatever you
 put there is not ours to redistribute.
 
+### A committed doc must not name a sound
+
+The consequence of the two rules above meeting: `docs/*.promo.json` is committed, `public/sfx/` is
+not. A doc that names `sfx/click.wav` therefore fails gate A4 on anyone else's clone, because the
+file is not there — and it has to fail, since Remotion fetches assets up front and dies on a 404
+rather than rendering silence.
+
+So the docs in this repo ship with **empty slots**. Fill them locally; that edit is yours and stays
+in your working tree. If a promo genuinely needs to ship WITH its audio, the audio has to be
+committed too — which means being certain it is yours to redistribute.
+

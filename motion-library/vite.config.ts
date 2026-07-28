@@ -1,9 +1,22 @@
 import {defineConfig, Plugin} from 'vite';
 import react from '@vitejs/plugin-react';
 import {execFile} from 'child_process';
-import {readdirSync, readFileSync, writeFileSync} from 'fs';
-import {resolve} from 'path';
+import {mkdirSync, readdirSync, readFileSync, statSync, unlinkSync, writeFileSync} from 'fs';
+import {join, resolve} from 'path';
 import type {IncomingMessage} from 'http';
+
+/** Remotion ships ffprobe inside its per-platform compositor package — the only copy guaranteed to
+ *  exist after `npm install`. Globbed rather than hardcoded so this is not Windows-only. */
+const ffprobe = (): string => {
+  const dir = resolve(__dirname, 'node_modules', '@remotion');
+  for (const pkg of readdirSync(dir).filter((d) => d.startsWith('compositor-'))) {
+    for (const n of ['ffprobe.exe', 'ffprobe']) {
+      const p = join(dir, pkg, n);
+      try { statSync(p); return p; } catch { /* next candidate */ }
+    }
+  }
+  throw new Error('no bundled ffprobe under node_modules/@remotion/compositor-*');
+};
 
 const DOCS = resolve(__dirname, 'docs');
 const OUT = resolve(__dirname, 'out');
@@ -88,6 +101,57 @@ const editorApi = (): Plugin => ({
         return json(JSON.parse(readFileSync(resolve(DOCS, f), 'utf8')));
       }
 
+      /* Upload one audio file into public/sfx/ (git-ignored — see public/README.md).
+       *
+       * Rides the Buffer-based rawBody from T23. The old string reader decoded each chunk as
+       * UTF-8, which corrupts any byte that is not valid UTF-8 — a dropped WAV would have arrived
+       * mangled and looked like a bad file rather than a bad server.
+       *
+       * Validated twice, because neither check alone is enough: the NAME is guarded so nothing can
+       * escape the directory, and the BYTES are probed so a renamed .txt cannot become a cue that
+       * kills the render with a decode error. */
+      if (url.pathname === '/__audio' && req.method === 'POST') {
+        const f = url.searchParams.get('f') ?? '';
+        if (!/^[\w-]+\.(wav|mp3|m4a|ogg|aac|flac)$/i.test(f)) {
+          return json({ok: false, error: 'filename must be simple and audio (wav/mp3/m4a/ogg/aac/flac)'}, 400);
+        }
+        let buf: Buffer;
+        try {
+          buf = await rawBody(req);
+        } catch (e) {
+          return json({ok: false, error: String((e as Error).message)}, 413);
+        }
+        if (!buf.length) return json({ok: false, error: 'empty upload'}, 400);
+
+        const dir = resolve(__dirname, 'public', 'sfx');
+        mkdirSync(dir, {recursive: true});
+        const dest = resolve(dir, f);
+        if (!dest.startsWith(dir)) return json({ok: false, error: 'path escape'}, 400);
+        writeFileSync(dest, buf);
+
+        // Probe AFTER writing, and delete on failure, so a rejected file never lingers where a
+        // doc could later name it.
+        const probe = await run(ffprobe(), ['-v', 'error', '-select_streams', 'a:0',
+          '-show_entries', 'stream=codec_type,duration', '-of', 'json', dest]);
+        if (!probe.ok || !/"codec_type"\s*:\s*"audio"/.test(probe.out)) {
+          try { unlinkSync(dest); } catch { /* already gone */ }
+          return json({ok: false, error: 'not a decodable audio file'}, 400);
+        }
+        const dur = Number(/"duration"\s*:\s*"([\d.]+)"/.exec(probe.out)?.[1] ?? 0);
+        return json({ok: true, src: `sfx/${f}`, seconds: dur});
+      }
+
+      /* What is already in public/sfx/, so the editor can offer existing files instead of making
+       * you re-upload the same click for every cue. */
+      if (url.pathname === '/__audio') {
+        const dir = resolve(__dirname, 'public', 'sfx');
+        try {
+          return json({files: readdirSync(dir).filter((n) => /\.(wav|mp3|m4a|ogg|aac|flac)$/i.test(n)).map((n) => `sfx/${n}`)});
+        } catch {
+          return json({files: []}); // directory does not exist yet — no audio has been added
+        }
+      }
+
       if (url.pathname === '/__render') {
         const f = url.searchParams.get('f') ?? '';
         const frames = url.searchParams.get('frames') ?? '';
@@ -129,10 +193,20 @@ const editorApi = (): Plugin => ({
 export default defineConfig({
   root: 'site',
   base: './',
+  /* Serve motion-library/public at / in dev. Without this, `publicDir` defaults to <root>/public
+   * — i.e. site/public — and the editor's fetch of an audio file silently returns index.html with
+   * a 200, which decodeAudioData then rejects with an opaque error. Remotion's staticFile() has
+   * always resolved against motion-library/public, so the RENDER worked while the EDITOR could not
+   * see the same file: exactly the preview/render split this project exists to prevent. */
+  publicDir: resolve(__dirname, 'public'),
   plugins: [react(), editorApi()],
   server: {host: true, port: 5173, strictPort: false, allowedHosts: true},
   build: {
     outDir: '../../docs',
     emptyOutDir: false, // docs/ is the published gallery
+    /* Do NOT copy public/ into the published gallery. It now holds user-supplied audio and
+     * captured third-party images — none of which belong in a public GitHub Pages build, and all
+     * of which are git-ignored precisely so they are not redistributed. */
+    copyPublicDir: false,
   },
 });

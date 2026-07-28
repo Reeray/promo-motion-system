@@ -125,6 +125,22 @@ const App: React.FC = () => {
     setDirty(true);
   };
 
+  /** Fill or clear a slot. Clearing DELETES the src key rather than storing null, so an emptied
+   *  cue leaves no residue in the doc — a reader can tell "never filled" from "filled with
+   *  nothing", and the diff stays clean. */
+  const patchCueSrc = (id: string, src: string | null) => {
+    setRaw((d) => {
+      if (!d) return d;
+      const {src: _drop, ...rest} = d.sound?.cues?.[id] ?? {};
+      const next = src ? {...rest, src} : rest;
+      const all = {...(d.sound?.cues ?? {}), [id]: next};
+      // Drop the entry entirely when nothing is left to say about this cue.
+      if (!Object.keys(next).length) delete all[id];
+      return {...d, sound: {...d.sound, cues: all}};
+    });
+    setDirty(true);
+  };
+
   const setJunction = (i: number, exit: OutroId, enter: IntroId) => {
     setRaw((d) =>
       d ? {...d, scenes: d.scenes.map((s, n) => (n === i ? {...s, exit} : n === i + 1 ? {...s, enter} : s))} : d
@@ -283,7 +299,7 @@ const App: React.FC = () => {
           </div>
           </div>
 
-          <Inspector sel={sel} scenes={scenes} prep={prep} patch={patchScene} setJunction={setJunction} cues={cueList} onNudge={patchNudge} />
+          <Inspector sel={sel} scenes={scenes} prep={prep} patch={patchScene} setJunction={setJunction} cues={cueList} onNudge={patchNudge} onSetSrc={patchCueSrc} />
         </>
       )}
 
@@ -591,11 +607,12 @@ const Inspector: React.FC<{
   setJunction: (i: number, o: OutroId, e: IntroId) => void;
   cues: Cue[];
   onNudge: (id: string, ms: number) => void;
-}> = ({sel, scenes, prep, patch, setJunction, cues: list, onNudge}) => {
+  onSetSrc: (id: string, src: string | null) => void;
+}> = ({sel, scenes, prep, patch, setJunction, cues: list, onNudge, onSetSrc}) => {
   if (!sel) return null;
   if (sel.t === 'cue') {
     const c = list.find((x) => x.id === sel.id);
-    return c ? <CueInspector cue={c} prep={prep} onNudge={onNudge} /> : null;
+    return c ? <CueInspector cue={c} prep={prep} onNudge={onNudge} onSetSrc={onSetSrc} /> : null;
   }
   if (sel.t === 'junc') return <JunctionInspector i={sel.i} h={sel.h} scenes={scenes} setJunction={setJunction} />;
   const s = scenes[sel.i];
@@ -603,35 +620,165 @@ const Inspector: React.FC<{
   return <TextInspector i={sel.i} s={s} scenes={scenes} prep={prep} patch={patch} />;
 };
 
-/** The cue panel. Phase E scope: identity, derived timing, and the nudge. The waveform, audition
- *  and drop-to-fill arrive in Phase F — this deliberately loads no audio at all. */
-const CueInspector: React.FC<{cue: Cue; prep: Prepared; onNudge: (id: string, ms: number) => void}> = ({cue, prep, onNudge}) => {
-  const anchor = cue.frame; // already nudged
+/* ── cue audio ──────────────────────────────────────────────────────────────
+ * One AudioContext for the whole page, created lazily on first use. Browsers cap how many can
+ * exist, and one per cue would exhaust that after a few dozen clicks. Decoded buffers are cached
+ * by src so re-selecting a cue does not re-fetch and re-decode. */
+let audioCtx: AudioContext | null = null;
+const ctx = () => (audioCtx ??= new AudioContext());
+const bufCache = new Map<string, AudioBuffer>();
+
+type Loaded = {state: 'empty' | 'loading' | 'ready' | 'error'; buffer?: AudioBuffer; error?: string};
+
+const useCueAudio = (src: string | null): Loaded => {
+  const [st, setSt] = useState<Loaded>({state: src ? 'loading' : 'empty'});
+  useEffect(() => {
+    if (!src) return setSt({state: 'empty'});
+    const hit = bufCache.get(src);
+    if (hit) return setSt({state: 'ready', buffer: hit});
+    let alive = true;
+    setSt({state: 'loading'});
+    fetch(`/${src}`)
+      .then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(`${r.status} — file not found in public/`))))
+      .then((ab) => ctx().decodeAudioData(ab))
+      .then((b) => {
+        bufCache.set(src, b);
+        if (alive) setSt({state: 'ready', buffer: b});
+      })
+      .catch((e) => alive && setSt({state: 'error', error: String((e as Error).message)}));
+    return () => {
+      alive = false;
+    };
+  }, [src]);
+  return st;
+};
+
+/** Peak-per-column, so a short transient is still visible instead of averaging away. */
+const wavePath = (buf: AudioBuffer, cols: number, h: number): string => {
+  const d = buf.getChannelData(0);
+  const per = Math.max(1, Math.floor(d.length / cols));
+  const top: string[] = [];
+  const bot: string[] = [];
+  for (let c = 0; c < cols; c++) {
+    let peak = 0;
+    for (let i = c * per; i < Math.min(d.length, (c + 1) * per); i++) {
+      const v = d[i] < 0 ? -d[i] : d[i];
+      if (v > peak) peak = v;
+    }
+    const y = (peak * h) / 2;
+    top.push(`${c},${h / 2 - y}`);
+    bot.push(`${c},${h / 2 + y}`);
+  }
+  return `M${top.join(' L')} L${bot.reverse().join(' L')} Z`;
+};
+
+/** The cue panel: what plays, when, and how to change both. */
+const CueInspector: React.FC<{
+  cue: Cue;
+  prep: Prepared;
+  onNudge: (id: string, ms: number) => void;
+  onSetSrc: (id: string, src: string | null) => void;
+}> = ({cue, prep, onNudge, onSetSrc}) => {
+  const audio = useCueAudio(cue.src);
+  const [drop, setDrop] = useState(false);
+  const [busy, setBusy] = useState('');
+  const [have, setHave] = useState<string[]>([]);
+
+  useEffect(() => {
+    fetch('/__audio').then((r) => r.json()).then((d) => setHave(d.files ?? [])).catch(() => setHave([]));
+  }, [cue.src]);
+
+  const upload = async (file: File) => {
+    setBusy('uploading');
+    const safe = file.name.replace(/[^\w.-]+/g, '-');
+    const r = await fetch(`/__audio?f=${encodeURIComponent(safe)}`, {method: 'POST', body: file})
+      .then((x) => x.json())
+      .catch((e) => ({ok: false, error: String(e)}));
+    setBusy('');
+    if (r.ok) onSetSrc(cue.id, r.src);
+    else setBusy(`rejected: ${r.error}`);
+  };
+
+  /** A CLICK grants user activation, so this is allowed to make noise. The hover-preview law that
+   *  bans play() applies to `mouseenter`, which never grants activation — do NOT "fix" this into
+   *  a hover, and do not route it through the Player. */
+  const audition = () => {
+    if (audio.state !== 'ready' || !audio.buffer) return;
+    const c = ctx();
+    void c.resume(); // a context created before any gesture starts suspended
+    const s = c.createBufferSource();
+    const g = c.createGain();
+    s.buffer = audio.buffer;
+    g.gain.value = cue.gain;
+    s.connect(g).connect(c.destination);
+    s.start();
+  };
+
+  const W = 460;
+  const H = 54;
   return (
     <div className="ed-insp">
       <div className="ed-insp-h">
-        {cue.kind} <span className="ed-cue-at mono">frame {anchor} · {(anchor / prep.fps).toFixed(2)}s</span>
+        {cue.kind} <span className="ed-cue-at mono">frame {cue.frame} · {(cue.frame / prep.fps).toFixed(2)}s · slot {cue.len}f</span>
       </div>
-      <p className={cue.src ? 'ed-note' : 'ed-note bad'}>
-        {cue.src ? (
-          <>Plays <code>public/{cue.src}</code>, trimmed to this cue’s {cue.len} frames.</>
+
+      <div
+        className={`ed-wave${drop ? ' over' : ''}${cue.src ? '' : ' empty'}`}
+        onDragOver={(e) => { e.preventDefault(); setDrop(true); }}
+        onDragLeave={() => setDrop(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          setDrop(false);
+          const f = e.dataTransfer.files?.[0];
+          if (f) void upload(f);
+        }}
+      >
+        {audio.state === 'ready' && audio.buffer ? (
+          <svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none">
+            <path d={wavePath(audio.buffer, W, H)} fill="var(--accent)" opacity="0.75" />
+          </svg>
         ) : (
-          <>
-            <strong>Empty slot.</strong> The timing is derived and exact — this cue just has no
-            sound yet. Drop an audio file here (Phase F) or name one in the doc. No audio ships with
-            this repo, so an unfilled slot is the normal starting state, not a fault.
-          </>
+          <div className="ed-wave-msg">
+            {audio.state === 'loading' && 'decoding…'}
+            {audio.state === 'error' && `can’t decode: ${audio.error}`}
+            {audio.state === 'empty' && (busy || 'Empty slot — drop an audio file here')}
+          </div>
         )}
-      </p>
+        {/* The cue instant is the LEFT edge: the sound starts here and runs for the slot's length,
+            so a centre line would imply the file is centred on the event, which it is not. */}
+        <span className="ed-wave-head" />
+      </div>
+
+      <div className="ed-row">
+        <button className="ed-tok" onClick={audition} disabled={audio.state !== 'ready'}>▶ Audition</button>
+        <label className="ed-tok ed-file">
+          {cue.src ? 'Replace…' : 'Choose file…'}
+          <input type="file" accept="audio/*" onChange={(e) => e.target.files?.[0] && void upload(e.target.files[0])} />
+        </label>
+        {have.length > 0 && (
+          <select
+            value={cue.src ?? ''}
+            onChange={(e) => onSetSrc(cue.id, e.target.value || null)}
+            title="Reuse a file already in public/sfx/"
+          >
+            <option value="">— empty —</option>
+            {have.map((h) => <option key={h} value={h}>{h.replace(/^sfx\//, '')}</option>)}
+          </select>
+        )}
+        {cue.src && <button className="ed-linkbtn" onClick={() => onSetSrc(cue.id, null)}>clear</button>}
+      </div>
+
       <div className="ed-row">
         <span className="ed-lab mono">NUDGE</span>
         {[-40, -5, 5, 40].map((d) => (
           <button key={d} className="ed-tok" onClick={() => onNudge(cue.id, d)}>{d > 0 ? `+${d}` : d}ms</button>
         ))}
-        <span className="ed-frame-hint">drag the dot, or use arrow keys on it</span>
+        <span className="ed-frame-hint">or drag the dot / arrow-key it</span>
       </div>
+
       <p className="ed-note mono" style={{fontSize: 11}}>
         id <code>{cue.id}</code> — stable across copy edits, so a nudge survives rewriting the words.
+        {cue.src && <> · plays <code>public/{cue.src}</code>, trimmed to {cue.len} frames</>}
       </p>
     </div>
   );
