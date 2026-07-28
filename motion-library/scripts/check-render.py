@@ -13,6 +13,7 @@ Usage: python scripts/check-render.py out/hf-agents.mp4
 Exit 1 on failure.
 """
 import json
+import re
 import shutil
 import subprocess
 import sys
@@ -171,9 +172,11 @@ def _loudnorm(path: str):
     for base, sh in _ffmpegs():
         try:
             r = subprocess.run(base + args, capture_output=True, text=True, timeout=600, shell=sh)
-            blob = r.stderr[r.stderr.rfind("{"):] if "{" in r.stderr else ""
-            if blob:
-                d = json.loads(blob)
+            # ffmpeg prints its own summary AFTER the JSON, so slicing from the last '{' to the
+            # end hands json.loads trailing garbage. Match the flat object holding input_tp.
+            hits = re.findall(r'\{[^{}]*"input_tp"[^{}]*\}', r.stderr or "")
+            if hits:
+                d = json.loads(hits[-1])
                 return float(d.get("input_tp", 0.0)), float(d.get("input_i", 0.0))
         except Exception:
             continue

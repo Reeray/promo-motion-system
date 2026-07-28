@@ -273,12 +273,56 @@ explicitly-labelled invented one, levels inside the T26 ceiling.
   read perfectly muted); add the law **SOUND FOLLOWS MOTION**; extend NO DERIVED NUMBERS with the
   `nudge` carve-out and its P6 proof.
 
+## T26 record — headroom calibration (the Phase A abort point)
+
+`scripts/bench-audio-headroom.mjs` replicates Remotion's real audio chain — per-asset
+`-ac 2` → `amix=inputs=N:normalize=0` → AAC 320k — on 0.5 s 1 kHz bursts and measures true peak
+with `loudnorm`. **Phase A did not abort**: a workable ceiling exists.
+
+**1. The mono/stereo question is settled by measurement, not inference.**
+
+| authored | through `-ac 2` | measured |
+|---|---|---|
+| mono, −6.02 dBFS | forced stereo upmix | **−9.03 dBTP** |
+| stereo, −6.02 dBFS | no-op | **−6.02 dBTP** |
+
+Mono costs exactly **3.01 dB**. The editor's `<Player>` up-mixes through Web Audio, which does a
+straight copy — so mono assets would make **preview 3 dB louder than render**. That is a
+preview≠render defect, not a quality preference. **SFX are authored STEREO (dual-mono).**
+
+**2. The spec's −6 dBFS ceiling is measurably wrong.** `normalize=0` is a straight sum, so N
+coincident cues add 20·log₁₀(N):
+
+| authored | N=1 | N=2 | N=3 | N=4 |
+|---|---|---|---|---|
+| −6 dBFS | −5.97 | **+0.08** ✗ | **+0.27** ✗ | **+0.32** ✗ |
+| −9 dBFS | −8.98 | −2.96 | **+0.10** ✗ | **+0.26** ✗ |
+| −12 dBFS | −11.98 | −5.96 | −2.43 | **+0.10** ✗ |
+| **−15 dBFS** | −14.99 | −8.96 | −5.43 | **−2.95** ✓ |
+
+(dBTP after AAC. ✗ = over the −1.0 dBTP limit; the −6 dBFS row is over **full scale** at N=2.)
+
+**3. AAC's transient overshoot is small here** — 0.01–0.17 dB, not the ~2.6 dB the plan assumed.
+Worth correcting: the dominant term is the sum, not the codec.
+
+**Derived constants** — arithmetic, so they move together if the budget changes:
+
+```
+PEAK_CEIL_DBFS = -15    # -1.0 (limit) - 12.04 (20·log10(4)) - 0.2 (AAC) = -13.24; -15 keeps ~1.8 dB spare
+MIX_BUDGET     = 4      # max concurrent audio elements assumed by the ceiling
+TAG_BUDGET     = 8      # numberOfSharedAudioTags. Player's DEFAULT IS 5 and it THROWS past it;
+                        # 4 cues + 1 music bed is exactly 5, so the default has zero margin.
+```
+
+These are a **coherent-sum worst case** (identical signals). Real cues are different sounds and
+sum incoherently at roughly +3 dB per doubling, so −15 dBFS is conservative by design.
+
 ## Open questions
 
-| # | Question | Recommendation |
+| # | Question | Status |
 |---|---|---|
-| 1 | Per-cue peak ceiling — the spec's -6 dBFS is measurably wrong | derive it in T26; do not restate a number |
-| 2 | `TAG_BUDGET` / `MIX_BUDGET` values | 4 (one bed + three cues); drop to 3 rather than raising the ceiling |
+| 1 | Per-cue peak ceiling | **resolved in T26**: −15 dBFS, measured |
+| 2 | `TAG_BUDGET` / `MIX_BUDGET` | **resolved in T26**: 8 / 4 |
 | 3 | A1's -40 dBFS floor is invented | keep as a *presence* check, record the measured actual beside it |
 | 4 | LUFS as a gate | **measure and record every render, never gate** — a music-less doc measures -inf |
 | 5 | Do the four promos get sound this stage? | yes, but as the last task, for the reason in T50 |
