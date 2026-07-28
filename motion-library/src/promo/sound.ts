@@ -102,6 +102,16 @@ type PreparedLike = {
   fps: number;
 };
 
+/**
+ * The frame a scene's outro fires — the instant the object is thrown.
+ *
+ * Exported because the editor needs it too (clicking a junction seeks here), and two independent
+ * copies of this expression would eventually disagree: the dot would sit at one frame and the
+ * playhead jump to another. Gate R6 forbids recomputing it anywhere else.
+ */
+export const outroFrame = (p: {frames: number; start: number; scene: Scene}): number =>
+  p.start + p.frames - OUTRO[p.scene.exit].frames;
+
 const clampNudgeFrames = (nudgeMs: number, fps: number) => Math.round((nudgeMs / 1000) * fps);
 
 /**
@@ -140,9 +150,7 @@ export const cues = (prep: PreparedLike): Cue[] => {
     if (i > 0) push(`${s.id}:${s.enter}:in`, s.enter as CueKind, p.start);
 
     // The outro: fires where the throw starts, which prepare() already located.
-    if (i < scenes.length - 1) {
-      push(`${s.id}:${s.exit}:out`, s.exit as CueKind, p.start + p.frames - OUTRO[s.exit].frames);
-    }
+    if (i < scenes.length - 1) push(`${s.id}:${s.exit}:out`, s.exit as CueKind, outroFrame(p));
 
     // UI cues, published by the surface, rebased onto the timeline.
     if (s.kind === 'ui') {

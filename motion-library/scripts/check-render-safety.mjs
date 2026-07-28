@@ -150,6 +150,49 @@ for (const file of walk(SRC)) {
   }
 }
 
+/* R6 — CUE TIMING LIVES IN EXACTLY ONE PLACE.
+ *
+ * The editor's dots, the Player's audio and the rendered MP4 must be the same list, or they drift
+ * and only the render is right. That holds because all three call cues() — so a second derivation
+ * anywhere is the bug, not the drift it later causes.
+ *
+ * Detected by its signature move: combining a transition's measured frame count with a scene's
+ * start. Anywhere but sound.ts, that is somebody recomputing a cue frame by hand. */
+{
+  const files = [];
+  const walk = (dir) => {
+    for (const e of readdirSync(dir, {withFileTypes: true})) {
+      if (e.name === 'node_modules' || e.name.startsWith('.')) continue;
+      const p = join(dir, e.name);
+      if (e.isDirectory()) walk(p);
+      else if (/\.(ts|tsx)$/.test(e.name)) files.push(p);
+    }
+  };
+  for (const d of ['src', 'site']) {
+    try { walk(join(ROOT, d)); } catch { /* dir may not exist */ }
+  }
+  const OWNER = join(ROOT, 'src', 'promo', 'sound.ts');
+  for (const p of files) {
+    if (p === OWNER) continue;
+    const src = readFileSync(p, 'utf8');
+    const rel = p.slice(ROOT.length).replace(/\\/g, '/');
+    const lines = src.split('\n');
+    lines.forEach((line, n) => {
+      // `.frames` off an INTRO/OUTRO lookup on a line that also touches `.start` — the shape of a
+      // hand-rolled cue frame. `r6-ok:` marks a reviewed non-cue use, so an exception has to be
+      // written down and can be grepped, rather than the rule being quietly weakened for everyone.
+      if (!/(INTRO|OUTRO)\[[^\]]+\]\.frames/.test(line) || !/\.start\b/.test(line)) return;
+      // The marker may sit on the expression or in the comment immediately above it, because the
+      // expression is usually the tail of a multi-line arrow body.
+      if (lines.slice(Math.max(0, n - 3), n + 1).some((l) => /r6-ok:/.test(l))) return;
+      failures.push(`${rel}:${n + 1}: derives a cue frame outside src/promo/sound.ts (an ` +
+        `INTRO/OUTRO .frames combined with a scene .start). Call cues() — the editor, the Player ` +
+        `and the render must read ONE list or they drift and only the render is right. If this is ` +
+        `genuinely not a cue, append a "r6-ok: <why>" comment.`);
+    });
+  }
+}
+
 if (failures.length) {
   console.error(`\n✗ render-safety: ${failures.length} problem(s) — these look FINE in the gallery and wrong in the render:\n`);
   for (const f of failures) console.error('  • ' + f);

@@ -220,3 +220,24 @@
   margin-top: 18px; padding: 12px 14px; border-radius: 9px; background: var(--code-bg);
   font-size: 11.5px; white-space: pre-wrap; max-height: 300px; overflow: auto;
 }
+
+/* ── cue rail ───────────────────────────────────────────────────────────── */
+/* The rail shares a relatively-positioned wrapper with the strip, so a dot's `left` is in the
+   same coordinate space as a segment's offsetLeft — which is what makes MEASURED placement work
+   on a flex timeline whose junctions take space frames cannot account for. */
+.ed-tl { position: relative; }
+.ed-rail { position: relative; height: 16px; margin-bottom: 2px; }
+.ed-dot {
+  position: absolute; bottom: 0; width: 11px !important; height: 11px !important;
+  margin-left: -5.5px; padding: 0 !important; border-radius: 50% !important;
+  background: var(--card) !important; border: 1.5px solid var(--faint) !important;
+  cursor: grab; touch-action: none; transition: transform .12s, border-color .12s, background .12s;
+}
+.ed-dot:hover { transform: scale(1.25); border-color: var(--accent) !important; }
+.ed-dot:active { cursor: grabbing; }
+/* A FILLED slot is solid; an empty one is a hollow ring. The difference has to be visible at 11px
+   from across the timeline, so it is fill-vs-hollow rather than a colour shift. */
+.ed-dot.filled { background: var(--accent) !important; border-color: var(--accent) !important; }
+.ed-dot.on { border-color: var(--fg) !important; transform: scale(1.35); }
+.ed-dot:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-bg); }
+.ed-cue-at { font-size: 11px; color: var(--muted); font-weight: 400; margin-left: 6px; }

@@ -11,6 +11,7 @@ import {
   SIZE, SizeTok, HoldTok, SceneRaw, clampFraming, fullTroFor, isIdentity,
 } from '../src/promo/schema';
 import {SURFACES} from '../src/promo/surfaces';
+import {Cue, cues, outroFrame} from '../src/promo/sound';
 import {TRANSITION_BLOCKS} from '../src/blocks/transitions';
 import {PreviewStrip, blockTile, effectTile, useEffectProbes} from './preview';
 
@@ -31,7 +32,7 @@ import {PreviewStrip, blockTile, effectTile, useEffectProbes} from './preview';
  * earlier draft did) changes the hook count between selections and crashes React.
  * ========================================================================== */
 
-type Sel = {t: 'scene'; i: number} | {t: 'junc'; i: number; h: 'o' | 'i'} | null;
+type Sel = {t: 'scene'; i: number} | {t: 'junc'; i: number; h: 'o' | 'i'} | {t: 'cue'; id: string} | null;
 type DocEntry = {f: string; doc: PromoDocRaw | null; error?: string};
 
 const useDocs = () => {
@@ -68,6 +69,7 @@ const App: React.FC = () => {
   const [log, setLog] = useState<string[]>([]);
   const [dirty, setDirty] = useState(false);
   const player = useRef<PlayerRef>(null);
+  const strip = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!name && docs.length && docs[0].doc) load(docs[0].f);
@@ -109,6 +111,20 @@ const App: React.FC = () => {
     setDirty(true);
   };
 
+  /** Nudge is a DELTA the user applies by dragging, so it accumulates onto whatever is stored
+   *  rather than replacing it — otherwise a second drag would start from zero and jump. */
+  const patchNudge = (id: string, deltaMs: number) => {
+    setRaw((d) => {
+      if (!d) return d;
+      const cur = d.sound?.cues?.[id] ?? {};
+      return {
+        ...d,
+        sound: {...d.sound, cues: {...(d.sound?.cues ?? {}), [id]: {...cur, nudge: (cur.nudge ?? 0) + deltaMs}}},
+      };
+    });
+    setDirty(true);
+  };
+
   const setJunction = (i: number, exit: OutroId, enter: IntroId) => {
     setRaw((d) =>
       d ? {...d, scenes: d.scenes.map((s, n) => (n === i ? {...s, exit} : n === i + 1 ? {...s, enter} : s))} : d
@@ -129,9 +145,11 @@ const App: React.FC = () => {
   const save = async () => {
     if (!raw || error) return;
     setBusy('saving');
-    const r = await writeDoc().then((x) => x.json());
+    const r = await writeDoc().then((x) => x.json()).catch((e) => ({ok: false, error: String(e)}));
     setBusy('');
-    setDirty(false);
+    // Only on SUCCESS. Clearing it regardless told you your work was safe when the write had
+    // failed, and then load() would discard it without even prompting.
+    if (r.ok) setDirty(false);
     setLog([r.ok ? `saved docs/${name}` : `save failed: ${r.error}`]);
   };
 
@@ -139,7 +157,12 @@ const App: React.FC = () => {
     if (!raw || error) return;
     setBusy('rendering');
     setLog(['saving doc…']);
-    await writeDoc();
+    const w = await writeDoc().then((x) => x.json()).catch((e) => ({ok: false, error: String(e)}));
+    if (!w.ok) {
+      setBusy('');
+      setLog([`save failed, not rendering: ${w.error}`]);
+      return;
+    }
     setDirty(false);
     const r = await fetch(`/__render?f=${encodeURIComponent(name)}&frames=${prep?.durationInFrames ?? 0}`)
       .then((x) => x.json())
@@ -160,6 +183,8 @@ const App: React.FC = () => {
 
   const scenes = raw.scenes;
   const total = prep?.durationInFrames ?? 0;
+  // The SAME function the render and the gates call, so the dots and the audio cannot disagree.
+  const cueList: Cue[] = prep ? cues(prep) : [];
   const selUi =
     prep && sel?.t === 'scene' && scenes[sel.i]?.kind === 'ui'
       ? {i: sel.i, bleed: !!SURFACES[(scenes[sel.i] as {surface: string}).surface]?.bleed, committed: (prep.scenes[sel.i].scene as {framing: Framing}).framing}
@@ -188,7 +213,16 @@ const App: React.FC = () => {
         <>
           <FramingStage prep={prep} player={player} selUi={selUi} onCommit={patchFraming} />
 
-          <div className="ed-strip">
+          <div className="ed-tl">
+          <CueRail
+            prep={prep}
+            list={cueList}
+            sel={sel}
+            onPick={(id) => { setSel({t: 'cue', id}); setOpenJ(-1); }}
+            onNudge={patchNudge}
+            onSeek={seek}
+          />
+          <div className="ed-strip" ref={strip}>
             {prep.scenes.map((p, i) => {
               const s = scenes[i];
               const dull = s.kind === 'ui';
@@ -232,7 +266,7 @@ const App: React.FC = () => {
                                 setOpenJ(i); setSplit(i); setSel({t: 'junc', i, h: 'i'});
                                 window.setTimeout(() => setSplit(-1), 380);
                               } else setSel({t: 'junc', i, h: half});
-                              seek(p.start + p.frames - OUTRO[j.o].frames);
+                              seek(outroFrame(p));
                             }}
                             title={ft ?? `${j.o} → ${j.i}`}
                           >
@@ -247,8 +281,9 @@ const App: React.FC = () => {
               );
             })}
           </div>
+          </div>
 
-          <Inspector sel={sel} scenes={scenes} prep={prep} patch={patchScene} setJunction={setJunction} />
+          <Inspector sel={sel} scenes={scenes} prep={prep} patch={patchScene} setJunction={setJunction} cues={cueList} onNudge={patchNudge} />
         </>
       )}
 
@@ -263,6 +298,8 @@ const App: React.FC = () => {
  * to the doc once, on pointerup / slider commit. Clamp runs on BOTH the live value fed to the
  * Player and the committed value, so preview and render can never disagree. */
 const settledFrame = (p: {start: number; frames: number; scene: {enter: IntroId; exit: OutroId}}): number =>
+  // r6-ok: not a cue — the midpoint where BOTH the intro and outro transforms are identity, so the
+  // framing gesture previews the surface at rest rather than mid-fly-in.
   Math.floor(p.start + (INTRO[p.scene.enter].frames + (p.frames - OUTRO[p.scene.exit].frames)) / 2);
 
 const withFraming = (prep: Prepared, i: number, fr: Framing): Prepared => ({
@@ -335,8 +372,14 @@ const FramingStage: React.FC<{
   const onUp = (e: React.PointerEvent) => {
     if (!drag.current) return;
     drag.current = null;
-    (e.target as HTMLElement).releasePointerCapture?.(e.pointerId);
+    // Commit before releasing capture — see the CueRail note: releasePointerCapture throws when
+    // capture was never granted, which would swallow the commit.
     commit(liveRef.current);
+    try {
+      (e.target as HTMLElement).releasePointerCapture?.(e.pointerId);
+    } catch {
+      /* capture was never held */
+    }
   };
 
   return (
@@ -410,6 +453,135 @@ const FramingStage: React.FC<{
   );
 };
 
+/* ── THE CUE RAIL ───────────────────────────────────────────────────────────
+ * A dot above the timeline for every derived cue.
+ *
+ * Position is MEASURED, never computed from the model. The strip is a flex row whose segments are
+ * sized `flex: <frames> 1 0` and whose junctions are fixed-width, so a cue's x is not a simple
+ * fraction of the total: it is (the segment's own left) + (position within that segment). Working
+ * it out from frame counts alone would misplace every dot by however much the junctions occupy.
+ *
+ * Phase E deliberately carries NO AUDIO. Dots place, select and drag with nothing loaded, so a
+ * geometry bug can never be mistaken for a sound bug.
+ */
+const CueRail: React.FC<{
+  prep: Prepared;
+  list: Cue[];
+  sel: Sel;
+  onPick: (id: string) => void;
+  onNudge: (id: string, ms: number) => void;
+  onSeek: (f: number) => void;
+}> = ({prep, list, sel, onPick, onNudge, onSeek}) => {
+  const [geo, setGeo] = useState<{left: number; width: number}[]>([]);
+  const [live, setLive] = useState<{id: string; dx: number} | null>(null);
+  const liveRef = useRef<{id: string; dx: number} | null>(null);
+  const drag = useRef<{id: string; x0: number; msPerPx: number; base: number} | null>(null);
+  const rail = useRef<HTMLDivElement>(null);
+
+  // Re-measure whenever the strip resizes. The rail sits inside the same relatively-positioned
+  // wrapper as the strip, so segment offsetLeft is already in the right coordinate space.
+  useEffect(() => {
+    const measure = () => {
+      const wrap = rail.current?.parentElement;
+      const segs = wrap ? Array.from(wrap.querySelectorAll<HTMLElement>('.ed-seg')) : [];
+      setGeo(segs.map((s) => ({left: s.offsetLeft, width: s.offsetWidth})));
+    };
+    measure();
+    const wrap = rail.current?.parentElement;
+    if (!wrap) return;
+    const ro = new ResizeObserver(measure);
+    ro.observe(wrap);
+    return () => ro.disconnect();
+  }, [prep.scenes.length, prep.durationInFrames]);
+
+  /** Absolute frame -> x, via the segment that owns it.
+   *
+   * The end is EXCLUSIVE, and that is not a detail. A scene's last frame and the next scene's
+   * first frame are the same number, and an intro cue fires on exactly that frame. With an
+   * inclusive end the earlier scene claims it, so every intro dot rendered at the previous
+   * segment's right edge — visually before the junction — instead of at the arriving scene's left
+   * edge. The last scene keeps an inclusive end so its final frame still lands. */
+  const xFor = (frame: number): number | null => {
+    for (let i = 0; i < prep.scenes.length; i++) {
+      const p = prep.scenes[i];
+      const g = geo[i];
+      if (!g) continue;
+      const last = i === prep.scenes.length - 1;
+      const inside = frame >= p.start && (last ? frame <= p.start + p.frames : frame < p.start + p.frames);
+      if (inside) return g.left + ((frame - p.start) / Math.max(1, p.frames)) * g.width;
+    }
+    return null;
+  };
+
+  const onDown = (e: React.PointerEvent, c: Cue) => {
+    const wrap = rail.current?.parentElement;
+    const seg = prep.scenes.findIndex((p) => c.frame >= p.start && c.frame <= p.start + p.frames);
+    const g = geo[seg];
+    if (!wrap || !g) return;
+    // Lock the scale at pointerdown, exactly as FramingStage does: a mid-drag relayout must not
+    // change how far a pixel moves you.
+    const framesPerPx = prep.scenes[seg].frames / Math.max(1, g.width);
+    drag.current = {id: c.id, x0: e.clientX, msPerPx: (framesPerPx / prep.fps) * 1000, base: 0};
+    liveRef.current = {id: c.id, dx: 0};
+    setLive({id: c.id, dx: 0});
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    e.preventDefault();
+  };
+  const onMove = (e: React.PointerEvent) => {
+    const d = drag.current;
+    if (!d) return;
+    const next = {id: d.id, dx: e.clientX - d.x0};
+    liveRef.current = next;
+    setLive(next);
+  };
+  const onUp = (e: React.PointerEvent) => {
+    const d = drag.current;
+    if (!d) return;
+    const l = liveRef.current;
+    drag.current = null;
+    liveRef.current = null;
+    setLive(null);
+    // COMMIT FIRST. releasePointerCapture throws InvalidPointerId when capture was never granted,
+    // and doing it first meant the throw swallowed the commit — the dot moved under the cursor and
+    // then silently snapped back on release, losing the edit.
+    if (l) onNudge(d.id, Math.round(l.dx * d.msPerPx)); // read the REF, not the closed-over state
+    try {
+      (e.target as HTMLElement).releasePointerCapture?.(e.pointerId);
+    } catch {
+      /* capture was never held — nothing to release */
+    }
+  };
+
+  return (
+    <div className="ed-rail" ref={rail}>
+      {list.map((c) => {
+        const drift = live?.id === c.id && drag.current ? live.dx : 0;
+        const x = xFor(c.frame);
+        if (x === null) return null;
+        const on = sel?.t === 'cue' && sel.id === c.id;
+        return (
+          <button
+            key={c.id}
+            className={`ed-dot${on ? ' on' : ''}${c.src ? ' filled' : ''}`}
+            style={{left: x + drift}}
+            title={`${c.id}\n${c.src ?? 'empty slot — drop audio in the inspector'}`}
+            onPointerDown={(e) => onDown(e, c)}
+            onPointerMove={onMove}
+            onPointerUp={onUp}
+            onClick={() => { onPick(c.id); onSeek(c.frame); }}
+            onKeyDown={(e) => {
+              const step = e.shiftKey ? 40 : 5;
+              if (e.key === 'ArrowLeft') { e.preventDefault(); onNudge(c.id, -step); }
+              if (e.key === 'ArrowRight') { e.preventDefault(); onNudge(c.id, step); }
+            }}
+            aria-label={`${c.kind} cue at frame ${c.frame}${c.src ? '' : ', empty'}`}
+          />
+        );
+      })}
+    </div>
+  );
+};
+
 /* ── Inspector: pure dispatcher, no hooks ───────────────────────────────────── */
 const Inspector: React.FC<{
   sel: Sel;
@@ -417,12 +589,52 @@ const Inspector: React.FC<{
   prep: Prepared;
   patch: (i: number, p: Partial<SceneRaw>) => void;
   setJunction: (i: number, o: OutroId, e: IntroId) => void;
-}> = ({sel, scenes, prep, patch, setJunction}) => {
+  cues: Cue[];
+  onNudge: (id: string, ms: number) => void;
+}> = ({sel, scenes, prep, patch, setJunction, cues: list, onNudge}) => {
   if (!sel) return null;
+  if (sel.t === 'cue') {
+    const c = list.find((x) => x.id === sel.id);
+    return c ? <CueInspector cue={c} prep={prep} onNudge={onNudge} /> : null;
+  }
   if (sel.t === 'junc') return <JunctionInspector i={sel.i} h={sel.h} scenes={scenes} setJunction={setJunction} />;
   const s = scenes[sel.i];
   if (s.kind === 'ui') return <UiInspector s={s} />;
   return <TextInspector i={sel.i} s={s} scenes={scenes} prep={prep} patch={patch} />;
+};
+
+/** The cue panel. Phase E scope: identity, derived timing, and the nudge. The waveform, audition
+ *  and drop-to-fill arrive in Phase F — this deliberately loads no audio at all. */
+const CueInspector: React.FC<{cue: Cue; prep: Prepared; onNudge: (id: string, ms: number) => void}> = ({cue, prep, onNudge}) => {
+  const anchor = cue.frame; // already nudged
+  return (
+    <div className="ed-insp">
+      <div className="ed-insp-h">
+        {cue.kind} <span className="ed-cue-at mono">frame {anchor} · {(anchor / prep.fps).toFixed(2)}s</span>
+      </div>
+      <p className={cue.src ? 'ed-note' : 'ed-note bad'}>
+        {cue.src ? (
+          <>Plays <code>public/{cue.src}</code>, trimmed to this cue’s {cue.len} frames.</>
+        ) : (
+          <>
+            <strong>Empty slot.</strong> The timing is derived and exact — this cue just has no
+            sound yet. Drop an audio file here (Phase F) or name one in the doc. No audio ships with
+            this repo, so an unfilled slot is the normal starting state, not a fault.
+          </>
+        )}
+      </p>
+      <div className="ed-row">
+        <span className="ed-lab mono">NUDGE</span>
+        {[-40, -5, 5, 40].map((d) => (
+          <button key={d} className="ed-tok" onClick={() => onNudge(cue.id, d)}>{d > 0 ? `+${d}` : d}ms</button>
+        ))}
+        <span className="ed-frame-hint">drag the dot, or use arrow keys on it</span>
+      </div>
+      <p className="ed-note mono" style={{fontSize: 11}}>
+        id <code>{cue.id}</code> — stable across copy edits, so a nudge survives rewriting the words.
+      </p>
+    </div>
+  );
 };
 
 const UiInspector: React.FC<{s: Extract<SceneRaw, {kind: 'ui'}>}> = ({s}) => (
