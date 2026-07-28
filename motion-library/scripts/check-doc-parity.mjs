@@ -135,7 +135,14 @@ for (const f of docs) {
   }
   const mus = a.doc.sound?.music?.src;
   if (mus && !existsSync(join(ROOT, 'public', mus))) {
-    warn.push(`${f}: music "${mus}" is missing — the promo will render with no bed (user music is gitignored).`);
+    // This was a WARNING until a render proved otherwise: Remotion downloads every asset up front
+    // and dies on a 404 ("Error while downloading ... status code 404"), so a warning here would
+    // promise a silent render that cannot happen. "No music is never an error" still holds — it
+    // means a doc with NO music field, which renders fine. Naming a file that isn't there is a
+    // broken reference, and the honest place to catch it is before a render starts.
+    fail.push(`${f}: A4 music "${mus}" does not exist at public/${mus}. A named bed must be present ` +
+      `or the render fails with a 404. User music is gitignored, so a shared doc should either omit ` +
+      `the music field or the bed must be re-supplied locally.`);
   }
 
   /* The SOUND FOLLOWS MOTION law, checked rather than asserted: a transition cue's length must

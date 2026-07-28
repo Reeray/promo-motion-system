@@ -1,5 +1,5 @@
 import React from 'react';
-import {AbsoluteFill, Series, interpolate, useCurrentFrame} from 'remotion';
+import {AbsoluteFill, Html5Audio, Sequence, Series, interpolate, staticFile, useCurrentFrame} from 'remotion';
 import '../lib/fonts';
 import {EASE, lerp} from '../lib/ease';
 import {ELEV, FONT, PD, PS, PX} from '../lib/palette';
@@ -14,6 +14,8 @@ import {SURFACES} from './surfaces';
 import {FRAMING_ID, HEIGHT, INTRO, OUTRO, SIZE, Scene, TextScene, UiScene, WIDTH, isIdentity} from './schema';
 import {Prepared, PreparedScene} from './prepare';
 import {StageCtx} from './stage-ctx';
+import {Cue, cues} from './sound';
+import {MUSIC_LEVEL} from './sound-kinds';
 
 /* ============================================================================
  * THE GENERIC PROMO — one composition renders any PromoDoc.
@@ -123,22 +125,78 @@ const SceneView: React.FC<{p: PreparedScene; pal: Pal}> = ({p, pal}) => {
   );
 };
 
-export const Promo: React.FC<Prepared> = ({doc, scenes}) => {
+/* ── THE CUE LAYER ──────────────────────────────────────────────────────────
+ * Mounted as a SIBLING of the <Series>, not inside it: a Series.Sequence rebases the frame for
+ * everything under it, and cues need ABSOLUTE frames. Each cue gets its own <Sequence from={}>,
+ * because <Audio> has no `from` prop — Remotion places media purely by its wrapping Sequence.
+ *
+ * `durationInFrames={cue.len}` is NOT optional. Sequence defaults it to Infinity, so a cue would
+ * mount at its frame and never unmount; mounts accumulate across the whole composition and
+ * Remotion throws hard once they pass numberOfSharedAudioTags. Verified in the installed tree:
+ * Sequence.js:22 sets the default, shared-audio-tags.js:348 throws.
+ *
+ * A cue whose file is missing simply renders silent — the gate refuses the doc long before this,
+ * and a preview that throws on a half-authored doc would be worse than one that is quiet. */
+const CueLayer: React.FC<{list: Cue[]}> = ({list}) => (
+  <>
+    {list.map((c) => (
+      <Sequence key={c.id} from={c.frame} durationInFrames={c.len} layout="none" name={`sfx ${c.kind}`}>
+        <Html5Audio src={staticFile(c.src)} volume={c.gain} />
+      </Sequence>
+    ))}
+  </>
+);
+
+/* ── THE MUSIC BED ──────────────────────────────────────────────────────────
+ * One element for the whole film, with volume as a function of frame doing fade in/out and
+ * ducking under the cues.
+ *
+ * THE TRAP, read out of Remotion's source: AudioForRendering registers a render asset per frame
+ * and EARLY-RETURNS when the evaluated volume is <= 0. A fade that reaches exactly zero therefore
+ * deletes the asset for those frames rather than silencing it, which truncates the track and can
+ * split it into pieces. So the envelope floors at an epsilon and never at 0. */
+const MUSIC_EPS = 0.0025;
+const FADE = 45; // frames — the bed arrives and leaves under the first and last transition
+
+const MusicBed: React.FC<{src: string; level: number; total: number; list: Cue[]}> = ({src, level, total, list}) => {
+  // Duck windows are DERIVED from the cue list, never hand-placed: a bed that dips where the
+  // sounds are is the whole reason the cues stay audible at -15 dBFS.
+  const ducks = list.map((c) => [c.frame - 6, c.frame + c.len + 10] as const);
+  const volume = (f: number) => {
+    const fade = Math.min(1, f / FADE, Math.max(0, total - f) / FADE);
+    const ducked = ducks.some(([a, b]) => f >= a && f <= b) ? 0.45 : 1;
+    return Math.max(MUSIC_EPS, level * fade * ducked);
+  };
+  return <Html5Audio src={staticFile(src)} volume={volume} />;
+};
+
+export const Promo: React.FC<Prepared> = (prep) => {
+  const {doc, scenes} = prep;
   const pal = doc.theme === 'dark' ? PD : doc.theme === 'light' ? PX : PS;
   /* Only SOFT LIGHT separates by shadow. The other two put the card at a different luminance
    * from the stage, where an added shadow reads as heavy — the classic fake-product-shot tell. */
   const stage = {elev: doc.theme === 'soft-light' ? ELEV.card : null};
+
+  // Derived here from the SAME function the gates and the editor call, so the dots you drag, the
+  // sounds you hear in preview, and the audio in the MP4 are one list rather than three.
+  const list = cues(prep);
+  const music = doc.sound?.music;
+
   return (
     <StageCtx.Provider value={stage}>
-    <Series>
-      {scenes.map((p) => (
-        // The SAME array prepare() summed, so the composition length and the sum of these
-        // sequences agree by construction — a rounding divergence cannot truncate the last scene.
-        <Series.Sequence key={p.scene.id} durationInFrames={p.frames}>
-          <SceneView p={p} pal={pal} />
-        </Series.Sequence>
-      ))}
-    </Series>
+      <Series>
+        {scenes.map((p) => (
+          // The SAME array prepare() summed, so the composition length and the sum of these
+          // sequences agree by construction — a rounding divergence cannot truncate the last scene.
+          <Series.Sequence key={p.scene.id} durationInFrames={p.frames}>
+            <SceneView p={p} pal={pal} />
+          </Series.Sequence>
+        ))}
+      </Series>
+      <CueLayer list={list} />
+      {music && (
+        <MusicBed src={music.src} level={MUSIC_LEVEL[music.level ?? 'soft']} total={prep.durationInFrames} list={list} />
+      )}
     </StageCtx.Provider>
   );
 };
