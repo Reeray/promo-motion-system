@@ -85,6 +85,106 @@ def _ffprobes():
         yield [npx, "remotion", "ffprobe"], True
 
 
+def _ffmpegs():
+    """Same ladder as _ffprobes(), for the binary that can DECODE.
+
+    NOTE, because it constrains every audio gate below: Remotion's bundled ffmpeg is a STRIPPED
+    build. It was configured with `--disable-filters` and re-enables only a working set — there is
+    no `volumedetect`, no `astats`, no `ebur128`, and no `md5` muxer. Verified against the shipped
+    binary. What survives that matters here: the `loudnorm` filter (whose JSON reports true peak
+    and integrated loudness), `silencedetect`, and the `wav` / `adts` / `null` muxers.
+
+    So the meter decodes to WAV and measures with numpy — already a dependency for the pixel
+    checks above — rather than leaning on analysis filters that are not present."""
+    here = Path(__file__).resolve().parent.parent
+    for pkg in sorted((here / "node_modules" / "@remotion").glob("compositor-*")):
+        for name in ("ffmpeg.exe", "ffmpeg"):
+            exe = pkg / name
+            if exe.exists():
+                yield [str(exe)], False
+    on_path = shutil.which("ffmpeg")
+    if on_path:
+        yield [on_path], False
+
+
+def _parse_wav_s16(buf: bytes):
+    """Walk a RIFF/WAVE container of 16-bit PCM -> (samples[n, ch] in [-1, 1), sample_rate).
+
+    A chunk walker, not a fixed 44-byte skip: ffmpeg writing to a PIPE cannot seek back to patch
+    the RIFF/data sizes, so those fields hold placeholders and the real payload is simply 'the rest
+    of the buffer'. A walker also survives any extra chunk the muxer decides to emit."""
+    if len(buf) < 12 or buf[0:4] != b"RIFF" or buf[8:12] != b"WAVE":
+        return None, 0
+    pos, rate, ch = 12, 0, 0
+    while pos + 8 <= len(buf):
+        cid = buf[pos:pos + 4]
+        size = int.from_bytes(buf[pos + 4:pos + 8], "little")
+        body = pos + 8
+        if cid == b"fmt " and body + 16 <= len(buf):
+            ch = int.from_bytes(buf[body + 2:body + 4], "little")
+            rate = int.from_bytes(buf[body + 4:body + 8], "little")
+        elif cid == b"data":
+            if not ch:
+                return None, 0
+            end = len(buf) if (size in (0, 0xFFFFFFFF) or body + size > len(buf)) else body + size
+            a = np.frombuffer(buf[body:end - ((end - body) % 2)], dtype="<i2").astype(np.float64) / 32768.0
+            usable = (a.size // ch) * ch
+            return a[:usable].reshape(-1, ch), rate
+        pos = body + size + (size & 1)  # chunks are word-aligned
+    return None, 0
+
+
+def _decode_audio(path: str):
+    """Decode the first audio stream to samples in [-1, 1), shaped (n, channels).
+
+    Returns (samples, sample_rate), or (None, 0) when there is no audio stream or no ffmpeg.
+
+    TWO constraints from the stripped bundled build, both verified against the shipped binary:
+      - muxers: only webm/opus/mp4/wav/mp3/mov/matroska/hevc/h264/gif/image2/adts/m4a/mpegts/
+        null/avi survive, so a raw `-f f32le` output does not exist -> decode through `wav`.
+      - encoders: only aac/libfdk_aac/libmp3lame/opus/libopus/pcm_s16le/pcm_s24le survive, so
+        `pcm_f32le` does not exist either -> 16-bit it is.
+
+    16-bit is sufficient for what this path measures. Exact silence is still exactly 0, and the
+    -90 dBFS quantisation floor sits far below the presence threshold. It does mean the SAMPLE
+    peak saturates at 0 dBFS and cannot see inter-sample overshoot — which is precisely why true
+    peak is read from `loudnorm` instead of computed here."""
+    args = ["-v", "error", "-i", path, "-map", "0:a:0", "-c:a", "pcm_s16le", "-f", "wav", "-"]
+    for base, sh in _ffmpegs():
+        try:
+            r = subprocess.run(base + args, capture_output=True, timeout=600, shell=sh)
+            if r.stdout:
+                return _parse_wav_s16(r.stdout)
+        except Exception:
+            continue
+    return None, 0
+
+
+def _loudnorm(path: str):
+    """True peak (dBTP) and integrated loudness (LUFS) via the one analysis filter this build has.
+
+    `loudnorm` in analysis mode prints a JSON blob to stderr containing input_tp / input_i. This is
+    the only route to a TRUE peak (inter-sample) figure here — a sample-peak from numpy cannot see
+    the overshoot that reconstruction filters and lossy codecs introduce."""
+    args = ["-v", "info", "-i", path, "-map", "0:a:0", "-af",
+            "loudnorm=print_format=json", "-f", "null", "-"]
+    for base, sh in _ffmpegs():
+        try:
+            r = subprocess.run(base + args, capture_output=True, text=True, timeout=600, shell=sh)
+            blob = r.stderr[r.stderr.rfind("{"):] if "{" in r.stderr else ""
+            if blob:
+                d = json.loads(blob)
+                return float(d.get("input_tp", 0.0)), float(d.get("input_i", 0.0))
+        except Exception:
+            continue
+    return None, None
+
+
+def _dbfs(x: float) -> float:
+    """Amplitude -> dBFS, with a floor so digital silence prints instead of raising."""
+    return -np.inf if x <= 0 else float(20.0 * np.log10(x))
+
+
 def _probe(path: str):
     """Colour tags for the video stream, or None when no ffprobe can be reached."""
     args = ["-v", "error", "-select_streams", "v:0", "-show_entries",
@@ -103,6 +203,45 @@ def _probe(path: str):
     return None
 
 
+def check_audio(path: str, mode):
+    """Audio gates. `mode` is 'silent', 'sound', or None (skip).
+
+    A3 (--expect-silent) is the FIRST audio gate this repo ever had, and it deliberately landed
+    before any audio existed: every render already carries an AAC track that Remotion adds, and
+    asserting it is EXACT digital zero is a real, falsifiable claim. It also calibrates the meter
+    against a known answer — if the decode path were broken, silence would not read as 0.0.
+
+    It checks two things SEPARATELY, because they fail for different reasons: a missing stream
+    means the render config changed; a non-zero sample means audio leaked in unintentionally.
+    """
+    if mode is None:
+        return []
+
+    samples, rate = _decode_audio(path)
+    if samples is None:
+        return [("audio     stream present", "none", "an audio stream", False)]
+
+    peak = float(np.max(np.abs(samples))) if samples.size else 0.0
+    out = [("audio     stream present", f"{samples.shape[1]}ch@{rate}", "an audio stream", True)]
+
+    if mode == "silent":
+        # Exact zero, not "quiet": Remotion's placeholder track is generated silence, so any
+        # non-zero sample means something real got mixed in.
+        out.append(("audio     digital silence", f"{peak:.1e}", "== 0.0", peak == 0.0))
+        return out
+
+    # mode == 'sound' — thresholds arrive with the phase that can calibrate them (T26/T39).
+    out.append(("audio     peak dBFS", f"{_dbfs(peak):.2f}", "> -40.0", _dbfs(peak) > -40.0))
+    tp, lufs = _loudnorm(path)
+    if tp is not None:
+        # Measured on the encoded file, so it includes AAC's transient overshoot.
+        out.append(("audio     true peak dBTP", f"{tp:.2f}", "<= -1.0", tp <= -1.0))
+        # Recorded, never gated: a promo with no music bed measures -inf and would fail any
+        # loudness floor for a reason that has nothing to do with quality.
+        print(f"  ....  audio     integrated LUFS               {lufs:8.2f}  (recorded, not gated)")
+    return out
+
+
 def check_colour(path: str):
     """-> list of (name, value, want, passed). Empty when ffprobe is unavailable."""
     st = _probe(path)
@@ -119,7 +258,7 @@ def check_colour(path: str):
     ]
 
 
-def check(path: str, expect_frames: int | None = None) -> bool:
+def check(path: str, expect_frames: int | None = None, audio_mode=None) -> bool:
     cap = cv2.VideoCapture(path)
     n = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
     if n <= 0:
@@ -161,6 +300,9 @@ def check(path: str, expect_frames: int | None = None) -> bool:
     for name, val, want, passed in checks:
         print(f"  {'PASS' if passed else 'FAIL'}  {name:30s} {val:8.2f}  (want {want})")
         ok_all &= passed
+    for name, val, want, passed in check_audio(path, audio_mode):
+        print(f"  {'PASS' if passed else 'FAIL'}  {name:30s} {str(val):>8s}  (want {want})")
+        ok_all &= passed
     for name, val, want, passed in check_colour(path):
         print(f"  {'PASS' if passed else 'FAIL'}  {name:30s} {str(val):>8s}  (want {want})")
         if not passed:
@@ -173,9 +315,16 @@ def check(path: str, expect_frames: int | None = None) -> bool:
 
 
 USAGE = """usage: check-render.py <render.mp4> [more.mp4 ...] [--expect-frames N]
+                       [--expect-silent | --expect-sound]
 
 Measures the actual encoded file. Pass the render you just produced — there is no
-default target, because a silent default means gating someone else's stale video."""
+default target, because a silent default means gating someone else's stale video.
+
+  --expect-silent   assert an audio stream exists AND every sample is exactly 0
+  --expect-sound    assert the audio is present (> -40 dBFS) and not clipping (<= -1 dBTP)
+
+Audio mode is opt-in: without a flag no audio claim is made, so a caller cannot
+accidentally assert the wrong thing about a render whose sound state it does not know."""
 
 if __name__ == "__main__":
     argv = sys.argv[1:]
@@ -189,12 +338,24 @@ if __name__ == "__main__":
             raise SystemExit(2)
         del argv[i:i + 2]
 
+    mode = None
+    if "--expect-silent" in argv and "--expect-sound" in argv:
+        print("[FAIL] --expect-silent and --expect-sound are mutually exclusive\n" + USAGE,
+              file=sys.stderr)
+        raise SystemExit(2)
+    if "--expect-silent" in argv:
+        mode = "silent"
+        argv.remove("--expect-silent")
+    elif "--expect-sound" in argv:
+        mode = "sound"
+        argv.remove("--expect-sound")
+
     targets = [a for a in argv if not a.startswith("-")]
     if not targets:
         print(USAGE, file=sys.stderr)
         raise SystemExit(2)
 
-    if not all(check(t, expect) for t in targets):
+    if not all(check(t, expect, mode) for t in targets):
         print("\n[FAIL] render gate failed — do not ship this render.\n")
         sys.exit(1)
     print("\n[OK] render gate passed.\n")

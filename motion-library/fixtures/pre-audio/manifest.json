@@ -1,0 +1,96 @@
+{
+  "note": "Pre-audio baseline. Captured before any audio code existed (Stage 2 / T22). Frame counts here must survive the audio work unchanged — audio may never alter duration (gate P6).",
+  "capturedFrom": "git rev-parse HEAD at capture time, see PLAN.md record",
+  "docs": {
+    "hf-agents": {
+      "frames": 960,
+      "bytes": 1398852,
+      "video": {
+        "codec": "h264",
+        "pix_fmt": "yuv420p",
+        "range": "tv",
+        "space": "bt709"
+      },
+      "audio": {
+        "codec": "aac",
+        "sample_rate": "48000",
+        "channels": 2
+      },
+      "videoStreamSha256": "eea2feb6f37ced6b4d224bdecebf8f80",
+      "audioStreamSha256": "67b7396224497019768424950e537efc"
+    },
+    "hf-hardware": {
+      "frames": 941,
+      "bytes": 2177902,
+      "video": {
+        "codec": "h264",
+        "pix_fmt": "yuv420p",
+        "range": "tv",
+        "space": "bt709"
+      },
+      "audio": {
+        "codec": "aac",
+        "sample_rate": "48000",
+        "channels": 2
+      },
+      "videoStreamSha256": "417f294fee5dfac60f268a345d29eb14",
+      "audioStreamSha256": "a53e53fb73d45df88cae1d6299be401c"
+    },
+    "hf-storage": {
+      "frames": 745,
+      "bytes": 1106388,
+      "video": {
+        "codec": "h264",
+        "pix_fmt": "yuv420p",
+        "range": "tv",
+        "space": "bt709"
+      },
+      "audio": {
+        "codec": "aac",
+        "sample_rate": "48000",
+        "channels": 2
+      },
+      "videoStreamSha256": "e8fead40a3fade133370ca2b4abfd5ab",
+      "audioStreamSha256": "2e021689cd76f28200d74fa114e0ce6e"
+    },
+    "hf-token-presets": {
+      "frames": 907,
+      "bytes": 1385013,
+      "video": {
+        "codec": "h264",
+        "pix_fmt": "yuv420p",
+        "range": "tv",
+        "space": "bt709"
+      },
+      "audio": {
+        "codec": "aac",
+        "sample_rate": "48000",
+        "channels": 2
+      },
+      "videoStreamSha256": "284c1a6a9b1cd9d8af56039fb4f6539c",
+      "audioStreamSha256": "7745474e62d99bf486a77cd8ed474b22"
+    },
+    "sample": {
+      "frames": 243,
+      "bytes": 259776,
+      "video": {
+        "codec": "h264",
+        "pix_fmt": "yuv420p",
+        "range": "tv",
+        "space": "bt709"
+      },
+      "audio": {
+        "codec": "aac",
+        "sample_rate": "48000",
+        "channels": 2
+      },
+      "videoStreamSha256": "b93b91a3366ce6264db89c578427d3a0",
+      "audioStreamSha256": "0959bcbee3a4a53172d4d1220539ea12"
+    }
+  },
+  "fixture": {
+    "doc": "sample",
+    "file": "silent-baseline.mp4",
+    "why": "smallest render; committed so gate A3 is non-vacuous on a fresh clone"
+  }
+}

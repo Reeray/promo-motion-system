@@ -15,12 +15,30 @@ const run = (cmd: string, args: string[]) =>
     )
   );
 
-const body = (req: IncomingMessage) =>
-  new Promise<string>((res) => {
-    let b = '';
-    req.on('data', (c) => (b += c));
-    req.on('end', () => res(b));
+/* Read a request body as BYTES.
+ *
+ * The previous version accumulated into a string (`b += c`), which decodes each chunk as UTF-8 and
+ * silently mangles any byte that is not valid UTF-8 — fine for JSON, fatal for the audio uploads
+ * the cue editor needs. A dropped WAV would arrive corrupted and look like a bad file rather than
+ * a bad server. Buffers also let us cap the size, which a growing string never did. */
+const rawBody = (req: IncomingMessage, cap = 32 * 1024 * 1024) =>
+  new Promise<Buffer>((res, rej) => {
+    const chunks: Buffer[] = [];
+    let n = 0;
+    req.on('data', (c: Buffer) => {
+      n += c.length;
+      if (n > cap) {
+        req.destroy();
+        return rej(new Error(`body exceeds ${Math.round(cap / 1024 / 1024)}MB`));
+      }
+      chunks.push(c);
+    });
+    req.on('error', rej);
+    req.on('end', () => res(Buffer.concat(chunks)));
   });
+
+/** Text bodies (JSON docs) ride on the byte reader, so there is one code path, not two. */
+const body = async (req: IncomingMessage) => (await rawBody(req)).toString('utf8');
 
 /* DEV-ONLY editor backend. The editor must write docs/*.promo.json and shell the render, and the
  * render step needs the file on disk at a known path — a browser download cannot do that.
