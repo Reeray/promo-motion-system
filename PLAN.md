@@ -127,6 +127,164 @@ is gone and `Promo` is the only composition that renders video.
 
 ---
 
+# STAGE 2 — AUDIO
+
+Synthesized SFX on derived timings, an optional user-supplied music bed, and an in-editor cue
+editor. Locked with the user: SFX are **synthesized** (ours, committed — no third-party audio in
+a public repo, works on a fresh clone); scope covers **transition + UI cues**; music is
+**user-supplied only**, gitignored; sound is **ON by default** but never load-bearing.
+
+## Measured facts this plan is built on
+
+Verified by source-reading and measurement, not assumed. Several contradict the obvious approach.
+
+| fact | consequence |
+|---|---|
+| `<Audio>` is a deprecated **alias of `<Html5Audio>`**; `@remotion/media` is NOT installed | use the installed component; adding a dep breaks fresh-clone |
+| `Sequence` defaults **`durationInFrames = Infinity`** (`Sequence.js:22`) | a cue Sequence without an explicit length **never unmounts** |
+| `shared-audio-tags.js:348` **throws** past `numberOfSharedAudioTags` (Player default **5**) | cumulative mounts crash the editor — this is a real crash, not a warning |
+| Remotion forces **`-ac 2`**; mono→stereo upmix costs exactly **3.01 dB** (measured) | **synthesize STEREO.** Mono would make preview 3 dB louder than render — a preview==render violation |
+| `amix` runs **`normalize=0`** — a straight sum, hard-clipped at s16 | the per-cue ceiling must budget N simultaneous cues; -6 dBFS is measurably too hot |
+| `volume` may be a function of frame, but **`volume <= 0` deletes the asset** for those frames | fades must floor at an epsilon, never 0, or the track is silently truncated |
+| `<Audio>` has **no `from` prop** | absolute placement requires a wrapping `<Sequence from={}>` |
+| Audio is muxed by ffmpeg **after** all frames, from a frame-sorted asset array | audio is deterministic and **concurrency-independent** — drop it from the risk list |
+| `renderStill` passes **`audioEnabled: false`** | stills have no audio; the still-vs-video determinism check cannot cover it |
+| The bundled ffmpeg is a **stripped build**: no `volumedetect`, `astats`, `ebur128`, or `md5` muxer. Only **`loudnorm`** + **`silencedetect`**; muxers `adts`/`wav`/`null` | the meter must be built from `loudnorm -print_format json` (`input_tp`, `input_i`) and/or decode-to-WAV analysed with the **numpy already installed** for the pixel gate |
+| `motion-library/out/` is **gitignored** — `git ls-files` returns 0 | there is no committed baseline; `/__render` also overwrites `out/<id>.mp4` **in place** |
+
+## Phases
+
+Ordering principle: **the measuring instrument before the thing measured.** Every later threshold
+is expressed in the meter's units, so a wrong meter certifies the wrong thing — the same failure
+that let a 40% blown-pixel threshold reject the house reference video.
+
+### Phase A — capture the baseline, then build the meter (no audio added)
+- **T21** Pin `remotion`/`@remotion/player`/`@remotion/cli`/`@remotion/google-fonts` to exact
+  `4.0.490`; declare `@remotion/media-utils` explicitly. A caret range could land a version where
+  `Audio` means something else.
+- **T22** **Capture the pre-audio baseline FIRST.** Render all five docs, copy to a *tracked*
+  path (`motion-library/fixtures/pre-audio/`), and record per-doc `durationInFrames`, ffprobe
+  stream layout and video-stream sha256 in a PLAN record. Rationale: `out/` is gitignored and
+  `/__render` overwrites in place, so the silent baseline is destroyed by the first Render click
+  after Phase D — and three later tasks assert "frame count identical to the pre-audio render".
+- **T23** Replace `vite.config.ts`'s string-accumulating `body()` with a **Buffer-based**
+  `rawBody()` (byte cap + error handler); redefine `body()` on top of it. The current helper
+  corrupts any binary upload.
+- **T24** `check-render.py` gains an ffmpeg ladder mirroring the existing `_ffprobes()`, plus an
+  audio meter built **only from what the stripped build has**: `loudnorm -print_format json` for
+  true peak / integrated LUFS, and decode-to-WAV + numpy for peak, RMS and exact-silence.
+- **T25** Gate **A3** `--expect-silent`: assert separately that an audio stream *exists* and that
+  decoded `max|sample| == 0.0`, run against the T22 fixture. A real, green, non-vacuous gate
+  before one byte of audio exists.
+- **T26** **ABORT POINT — calibrate headroom before any WAV is authored.** Bench the real chain
+  (`aformat=s16:48000 → atrim → volume → -ac 2 → amix normalize=0 → AAC 320k`) at N = 2, 3, 4 and
+  measure dBTP. Derive `PEAK_CEIL_DBFS` and the budgets from that measurement; record the
+  arithmetic. The ceiling is baked into every committed WAV, so a late answer means regenerating
+  all seven.
+
+**Exit:** `npm run check` green; A3 green on the committed fixture; the meter agrees with a
+known-amplitude fixture within 0.05 dB by two independent routes; budgets recorded with their
+arithmetic.
+
+### Phase B — deterministic synthesis
+- **T27** `scripts/gen-sfx.mjs` primitives: **16-bit STEREO** 48 kHz RIFF writer, seeded LCG
+  noise, hand-rolled one-pole/biquad — no npm audio dependency. Plus one cue so the gates are
+  non-vacuous on first commit.
+- **T28** Import `THROW_MS`/`GLIDE_MS`/`SCALE_UP_MS`/`POP_MS` and `EASE` from the real source via
+  the same esbuild-to-temp technique `check-doc-parity` already uses. Durations are never retyped.
+- **T29** The four transition recipes, where **one ease drives both amplitude and timbre** — the
+  sound accelerates the way the motion does. This is the rule that makes the feature belong to
+  this repo rather than being generic sound design.
+- **T30** The three UI cues (~60/180/90 ms) — **labelled INVENTED** in the generator docstring and
+  the record, because nothing in the repo measures them. An unlabelled invented number reads as
+  derived to the next agent and becomes load-bearing.
+- **T31** Gates **B4** (regeneration byte-identical) and **B5** (no transcendental drift: explicit
+  allow/deny list, since `Math.sin` is not IEEE-pinned across engines). Fallback if byte-identity
+  proves flaky across Node majors: downgrade to a committed sha256 manifest.
+
+**Exit:** seven stereo WAVs committed, every duration traceable to an imported constant or an
+explicitly-labelled invented one, levels inside the T26 ceiling.
+
+### Phase C — the cue model, proven duration-inert
+- **T32** `Surface` gains `cues?: {at, kind}[]`, derived in `hf-token-presets.tsx` from its
+  existing `SETTLE`/`DWELL`/`STARTS` — never duplicated. Surfaces stay opaque: they publish
+  timings, not internals.
+- **T33** `src/promo/sound.ts`: `cues(prepared): Cue[]`, headlessly importable. **`Cue` carries
+  `len`** (frames, from the same imported ms constants — no audio decode, so `prepare()` stays
+  audio-free). Split the budget in two: **`TAG_BUDGET`** (mount concurrency) and **`MIX_BUDGET`**
+  (headroom). They are different quantities and must not certify each other.
+- **T34** The optional `sound` block in `schema.ts`, with `nudge` in **milliseconds** clamped and
+  quantised inside `normalize()` — the `clampFraming` pattern, so editor and CLI agree.
+- **T35** Gate **P6**: strip `sound` *and* every surface `cues` array, re-prepare, require
+  identical totals and per-scene frames. The mechanical licence for the `nudge` carve-out under
+  NO DERIVED NUMBERS, mirroring P5. Plus **C1** (interval-overlap sweep against both budgets) and
+  **A4** (referenced files exist).
+- **T36** Exercise the schema on `docs/sample.promo.json`, including a music path that
+  deliberately does not exist, so the warn-not-throw path is real. **A4 errors on a missing SFX,
+  warns on missing music** — one rule would either reject a valid music-less doc or silently
+  accept a broken cue.
+
+**Exit:** P6 demonstrated *failing* when deliberately broken. No shipping doc declares `sound`.
+
+### Phase D — render layer (the first phase `npm run check` alone cannot close)
+- **T37** `<CueLayer>` as a sibling of `<Series>`, each cue
+  `<Sequence from={cue.frame} durationInFrames={cue.len}>` — **never the Infinity default** — and
+  `numberOfSharedAudioTags` set **in this same commit**, not later. Exit must include: open a doc
+  in the editor and play to the end without a thrown error, plus a fixture at `TAG_BUDGET+1` that
+  is *demonstrated* to throw.
+- **T38** The music bed: one `<Html5Audio>` at frame 0, volume as a function of frame doing fades
+  and cue-derived ducking, **floored at a documented epsilon** — never 0.
+- **T39** Gates **A1** (presence) and **A2** (true peak ≤ -1.0 dBTP), measured on the encoded MP4.
+- **T40** `npm run check:render:audio` — the repo's **first determinism gate of any kind**:
+  render twice, require identical audio-stream hashes via `-map 0:a -c:a copy -f adts`. Not part
+  of `npm run check` (it costs two renders); run at phase boundaries.
+
+**Exit:** explicitly not closable by `npm run check` alone — requires a measured render.
+
+### Phase E — editor geometry, with zero audio in the tree
+- **T41** The dot rail as a sibling of `.ed-strip`, x **measured** from `seg.offsetLeft` (the
+  timeline is flex-sized, so position cannot be computed from the model alone).
+- **T42** Dot drag → `nudge`, following the `FramingStage` pattern verbatim: pointer capture,
+  local live state, a mirroring **ref** for the pointerup read, scale locked at pointerdown.
+- **T43** Fix the pre-existing bug where `setDirty(false)` runs regardless of save success.
+- **T44** Static rule **R6**: the cue-frame derivation may not appear outside `sound.ts`.
+
+**Exit:** placement correct at three widths and mid-junction-animation, verified after a
+**genuine reload** (not HMR). A dot bug can never be confused with a sound bug.
+
+### Phase F — editor audio: waveform, audition, upload
+- **T45** `useCueAudio(src)` with an explicit `{state, buffer, error}` and an AudioContext cache.
+- **T46** The popover mounted conditionally **from the parent** (hooks stay unconditional — this
+  file has already crashed once that way), waveform via `getWaveformPortion`.
+- **T47** ▶ plays a WebAudio one-shot. A click grants user activation — this does *not* violate
+  the hover-preview law, and must be commented so a later agent doesn't "fix" it.
+- **T48** `POST /__audio` on T23's raw reader, its own filename guard, validated by extension
+  **and** by probing with ffprobe, written to gitignored `public/sfx/custom/`.
+
+**Exit:** uploads round-trip byte-identically; a missing file warns and never throws at any layer.
+
+### Phase G — tune, ship, write the laws
+- **T49** A **fixed** number of listen-and-tune passes (3), each ending with all gates re-run.
+  Scheduled, not assumed — no gate can judge whether it sounds good.
+- **T50** Add `sound` to the four shipping docs and re-measure. Until here they carry an explicit
+  `"sfx": "off"`, so turning sound on is **one deliberate switch** rather than a side effect of
+  Phase D — and a failure is never ambiguous between the render layer and doc authoring.
+- **T51** SKILL.md: revise §0.5 item 8 to on-by-default **but never load-bearing** (it must still
+  read perfectly muted); add the law **SOUND FOLLOWS MOTION**; extend NO DERIVED NUMBERS with the
+  `nudge` carve-out and its P6 proof.
+
+## Open questions
+
+| # | Question | Recommendation |
+|---|---|---|
+| 1 | Per-cue peak ceiling — the spec's -6 dBFS is measurably wrong | derive it in T26; do not restate a number |
+| 2 | `TAG_BUDGET` / `MIX_BUDGET` values | 4 (one bed + three cues); drop to 3 rather than raising the ceiling |
+| 3 | A1's -40 dBFS floor is invented | keep as a *presence* check, record the measured actual beside it |
+| 4 | LUFS as a gate | **measure and record every render, never gate** — a music-less doc measures -inf |
+| 5 | Do the four promos get sound this stage? | yes, but as the last task, for the reason in T50 |
+
+---
+
 ## T12 record — hand-written vs doc-driven (hf-storage)
 
 Both renders pass all seven gate checks. Accepted deltas:
