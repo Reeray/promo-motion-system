@@ -1,5 +1,5 @@
 {
-  "note": "Pre-audio baseline. Captured before any audio code existed (Stage 2 / T22). Frame counts here must survive the audio work unchanged — audio may never alter duration (gate P6).",
+  "note": "Pre-audio baseline. Captured before any audio code existed (Stage 2 / T22). Frame counts here must survive the audio work unchanged \u2014 audio may never alter duration (gate P6).",
   "capturedFrom": "git rev-parse HEAD at capture time, see PLAN.md record",
   "docs": {
     "hf-agents": {
@@ -17,7 +17,8 @@
         "channels": 2
       },
       "videoStreamSha256": "eea2feb6f37ced6b4d224bdecebf8f80",
-      "audioStreamSha256": "67b7396224497019768424950e537efc"
+      "audioStreamSha256": "67b7396224497019768424950e537efc",
+      "_hashNote": "provenance only \u2014 h264/AAC output is not byte-deterministic across renders"
     },
     "hf-hardware": {
       "frames": 941,
@@ -34,7 +35,8 @@
         "channels": 2
       },
       "videoStreamSha256": "417f294fee5dfac60f268a345d29eb14",
-      "audioStreamSha256": "a53e53fb73d45df88cae1d6299be401c"
+      "audioStreamSha256": "a53e53fb73d45df88cae1d6299be401c",
+      "_hashNote": "provenance only \u2014 h264/AAC output is not byte-deterministic across renders"
     },
     "hf-storage": {
       "frames": 745,
@@ -51,7 +53,8 @@
         "channels": 2
       },
       "videoStreamSha256": "e8fead40a3fade133370ca2b4abfd5ab",
-      "audioStreamSha256": "2e021689cd76f28200d74fa114e0ce6e"
+      "audioStreamSha256": "2e021689cd76f28200d74fa114e0ce6e",
+      "_hashNote": "provenance only \u2014 h264/AAC output is not byte-deterministic across renders"
     },
     "hf-token-presets": {
       "frames": 907,
@@ -68,7 +71,8 @@
         "channels": 2
       },
       "videoStreamSha256": "284c1a6a9b1cd9d8af56039fb4f6539c",
-      "audioStreamSha256": "7745474e62d99bf486a77cd8ed474b22"
+      "audioStreamSha256": "7745474e62d99bf486a77cd8ed474b22",
+      "_hashNote": "provenance only \u2014 h264/AAC output is not byte-deterministic across renders"
     },
     "sample": {
       "frames": 243,
@@ -85,12 +89,144 @@
         "channels": 2
       },
       "videoStreamSha256": "b93b91a3366ce6264db89c578427d3a0",
-      "audioStreamSha256": "0959bcbee3a4a53172d4d1220539ea12"
+      "audioStreamSha256": "0959bcbee3a4a53172d4d1220539ea12",
+      "_hashNote": "provenance only \u2014 h264/AAC output is not byte-deterministic across renders"
     }
   },
   "fixture": {
     "doc": "sample",
     "file": "silent-baseline.mp4",
     "why": "smallest render; committed so gate A3 is non-vacuous on a fresh clone"
-  }
+  },
+  "fingerprint": {
+    "frames": 243,
+    "step": 4,
+    "at": [
+      0,
+      4,
+      8,
+      12,
+      16,
+      20,
+      24,
+      28,
+      32,
+      36,
+      40,
+      44,
+      48,
+      52,
+      56,
+      60,
+      64,
+      68,
+      72,
+      76,
+      80,
+      84,
+      88,
+      92,
+      96,
+      100,
+      104,
+      108,
+      112,
+      116,
+      120,
+      124,
+      128,
+      132,
+      136,
+      140,
+      144,
+      148,
+      152,
+      156,
+      160,
+      164,
+      168,
+      172,
+      176,
+      180,
+      184,
+      188,
+      192,
+      196,
+      200,
+      204,
+      208,
+      212,
+      216,
+      220,
+      224,
+      228,
+      232,
+      236,
+      240
+    ],
+    "lum": [
+      12.0,
+      12.754,
+      13.523,
+      13.857,
+      13.987,
+      14.029,
+      14.036,
+      14.058,
+      14.057,
+      14.057,
+      14.054,
+      14.057,
+      14.057,
+      14.057,
+      14.057,
+      14.057,
+      14.057,
+      14.057,
+      14.057,
+      14.057,
+      14.057,
+      14.088,
+      12.061,
+      12.396,
+      12.916,
+      13.645,
+      14.363,
+      14.86,
+      15.056,
+      15.152,
+      15.177,
+      15.179,
+      15.181,
+      15.185,
+      15.186,
+      15.186,
+      15.186,
+      15.186,
+      15.186,
+      15.186,
+      15.186,
+      15.186,
+      15.2,
+      15.196,
+      12.048,
+      12.365,
+      12.518,
+      12.564,
+      12.581,
+      12.592,
+      12.647,
+      12.735,
+      12.747,
+      12.752,
+      12.753,
+      12.75,
+      12.752,
+      12.752,
+      12.752,
+      12.751,
+      12.751
+    ]
+  },
+  "fingerprintNote": "Per-frame mean luminance of the committed fixture. Byte-identity is NOT usable: h264 output here is non-deterministic, so two identical-code renders differ (measured max 0.15/255 pixel diff, 0.008 luminance). Compared with a 0.15 tolerance instead \u2014 see scripts/fingerprint.py."
 }

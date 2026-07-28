@@ -9,7 +9,9 @@
     "site:dev": "vite",
     "site:build": "vite build",
     "blocks": "node scripts/gen-blocks.mjs && npm run skill:sync",
-    "skill:sync": "node scripts/sync-skill.mjs"
+    "skill:sync": "node scripts/sync-skill.mjs",
+    "verify": "node scripts/verify.mjs",
+    "sfx": "node scripts/gen-sfx.mjs"
   },
   "dependencies": {
     "@remotion/google-fonts": "4.0.490",
