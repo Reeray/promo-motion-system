@@ -1,0 +1,161 @@
+import {INTRO, OUTRO, PromoDoc, Scene} from './schema';
+import {SURFACES} from './surfaces';
+import {CueKind, GAIN, GainTok} from './sound-kinds';
+
+/* ============================================================================
+ * THE CUE LIST — derived, never authored.
+ *
+ * A cue's frame comes from the SAME anchors prepare() already computed for the picture: a scene's
+ * start, the frame its intro lands, the frame its outro fires. Nothing here invents a time, which
+ * is what makes "on-point" a property of the system rather than of somebody's patience.
+ *
+ * WHY THIS IS A PURE FUNCTION OF `Prepared`, IN ITS OWN FILE:
+ *   - it must be callable from Node, so the gates can reason about cues without a browser
+ *   - it must be the ONLY place the derivation exists (static rule R6), so the editor's dots and
+ *     the render's audio cannot drift apart — they read one list
+ *   - it must never be reachable from sceneFrames(), which is what gate P6 proves: strip every
+ *     `sound` block and every surface cue array, re-prepare, and not one frame may move
+ *
+ * `len` matters more than it looks. A cue Sequence with no explicit duration inherits Remotion's
+ * `durationInFrames = Infinity`, so it mounts at its frame and NEVER unmounts — mounts accumulate
+ * across the whole composition and Remotion throws hard past `numberOfSharedAudioTags`. So every
+ * cue carries its length, taken from the same measured ms constants the generator used.
+ * ========================================================================== */
+
+export type Cue = {
+  /** Stable across copy edits, so an authored nudge survives re-typing the words. */
+  id: string;
+  kind: CueKind;
+  /** Absolute frame in the composition. */
+  frame: number;
+  /** Length in frames — REQUIRED, see the header. */
+  len: number;
+  src: string;
+  gain: number;
+};
+
+/** Cue lengths in ms, mirroring public/sfx/manifest.json. The four transition kinds must equal
+ *  INTRO/OUTRO's measured frames; `cueLengthDrift()` below asserts that rather than trusting it. */
+const CUE_MS: Record<CueKind, number> = {
+  'push-off-left': 150,
+  'scale-up-cut': 100,
+  'glide-in': 900,
+  'scale-pop-in': 430,
+  'ui-tick': 60,
+  'ui-swap': 180,
+  'ui-rise': 90,
+};
+
+const framesFor = (kind: CueKind, fps: number) => Math.ceil((CUE_MS[kind] / 1000) * fps);
+
+/**
+ * The four transition cues claim to be exactly as long as their transitions. This checks it
+ * instead of asserting it in a comment — if someone re-measures a transition and edits
+ * transitions.tsx, the sound is now wrong and this reports it by name.
+ * Returns [] when consistent.
+ */
+export const cueLengthDrift = (fps: number): string[] => {
+  const out: string[] = [];
+  const pairs: [CueKind, number][] = [
+    ['push-off-left', OUTRO['push-off-left'].frames],
+    ['scale-up-cut', OUTRO['scale-up-cut'].frames],
+    ['glide-in', INTRO['glide-in'].frames],
+    ['scale-pop-in', INTRO['scale-pop-in'].frames],
+  ];
+  for (const [kind, motionFrames] of pairs) {
+    const soundFrames = framesFor(kind, fps);
+    if (soundFrames !== motionFrames) {
+      out.push(
+        `cue "${kind}" is ${soundFrames}f but its transition is ${motionFrames}f — SOUND FOLLOWS ` +
+          `MOTION requires them equal. Re-run \`npm run sfx\` after changing transitions.tsx, and ` +
+          `update CUE_MS in src/promo/sound.ts.`
+      );
+    }
+  }
+  return out;
+};
+
+type PreparedLike = {
+  doc: PromoDoc;
+  scenes: {scene: Scene; frames: number; start: number}[];
+  fps: number;
+};
+
+const clampNudgeFrames = (nudgeMs: number, fps: number) => Math.round((nudgeMs / 1000) * fps);
+
+/**
+ * Every cue in a promo, in frame order.
+ *
+ * Transition cues fire where the motion does: an outro at the frame it is thrown, an intro at the
+ * frame it begins arriving. UI cues come from the surface's own published list, offset by where
+ * that surface sits in the timeline.
+ */
+export const cues = (prep: PreparedLike): Cue[] => {
+  const {doc, scenes, fps} = prep;
+  if (doc.sound?.sfx === 'off') return [];
+
+  const overrides = doc.sound?.cues ?? {};
+  const out: Cue[] = [];
+
+  const push = (id: string, kind: CueKind, frame: number) => {
+    const o = overrides[id];
+    const nudged = frame + (o?.nudge ? clampNudgeFrames(o.nudge, fps) : 0);
+    out.push({
+      id,
+      kind,
+      frame: Math.max(0, nudged),
+      len: framesFor(kind, fps),
+      src: o?.src ?? `sfx/${kind}.wav`,
+      gain: GAIN[(o?.gain ?? 'normal') as GainTok] ?? 1,
+    });
+  };
+
+  scenes.forEach((p, i) => {
+    const s = p.scene;
+
+    // The intro: it begins at the scene's first frame, so the sound starts with the movement.
+    // Scene 0 is excluded — nothing is handing off INTO the first shot, so an arrival sound there
+    // would announce a transition the viewer never saw.
+    if (i > 0) push(`${s.id}:${s.enter}:in`, s.enter as CueKind, p.start);
+
+    // The outro: fires where the throw starts, which prepare() already located.
+    if (i < scenes.length - 1) {
+      push(`${s.id}:${s.exit}:out`, s.exit as CueKind, p.start + p.frames - OUTRO[s.exit].frames);
+    }
+
+    // UI cues, published by the surface, rebased onto the timeline.
+    if (s.kind === 'ui') {
+      const surf = SURFACES[s.surface];
+      (surf?.cues ?? []).forEach((c, n) => push(`${s.id}:${c.kind}:${n}`, c.kind, p.start + c.at));
+    }
+  });
+
+  return out.sort((a, b) => a.frame - b.frame);
+};
+
+/**
+ * The most cues alive at any instant, counted by INTERVAL OVERLAP rather than by exact-frame
+ * collision.
+ *
+ * Counting collisions would be near-vacuous: two cues one frame apart never share a frame, yet
+ * both hold an audio tag and both sum into the mix. Overlap is what the two budgets actually care
+ * about, and they are different quantities:
+ *   MIX_BUDGET  headroom — how many can sum before clipping (T26 measured 4 at -15 dBFS)
+ *   TAG_BUDGET  mount concurrency — Remotion THROWS past numberOfSharedAudioTags
+ * `+1` accounts for the music bed, which is mounted for the entire composition.
+ */
+export const maxSimultaneous = (list: Cue[], hasMusic: boolean): number => {
+  const edges = list.flatMap((c) => [{at: c.frame, d: 1}, {at: c.frame + c.len, d: -1}]);
+  edges.sort((a, b) => a.at - b.at || a.d - b.d); // close before open at the same frame
+  let cur = 0;
+  let peak = 0;
+  for (const e of edges) {
+    cur += e.d;
+    if (cur > peak) peak = cur;
+  }
+  return peak + (hasMusic ? 1 : 0);
+};
+
+/** Budgets, both derived in T26 and recorded in PLAN.md with their arithmetic. */
+export const MIX_BUDGET = 4;
+export const TAG_BUDGET = 8;

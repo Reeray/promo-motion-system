@@ -1,4 +1,5 @@
 import React from 'react';
+import type {CueKind} from '../sound-kinds';
 
 /* ============================================================================
  * PRODUCT-UI SURFACES — opaque, non-editable, measured length.
@@ -27,12 +28,17 @@ export type Surface = {
    *  object centred on the stage. Bleed surfaces are absolutely positioned, so the scene has to
    *  carry the transition transform on a full-size layer or their containing block collapses. */
   bleed?: boolean;
+  /** Instants inside this surface worth hearing, in frames relative to the surface's OWN start.
+   *  The surface stays opaque: it publishes TIMINGS, not editable internals, so a cue list cannot
+   *  become a back door into the captured choreography. Derived from the surface's existing
+   *  constants — never a second hand-typed list that can drift from the motion. */
+  cues?: {at: number; kind: CueKind}[];
   Comp: React.FC;
 };
 
 import {RepositoriesSurface, SURFACE_FRAMES as HF_STORAGE_FRAMES} from './hf-storage-repositories';
 import {ModelsSurface, SURFACE_FRAMES as HF_HARDWARE_FRAMES} from './hf-hardware-filter';
-import {PresetChipsSurface, PresetCycleSurface, CHIPS_FRAMES, CYCLE_FRAMES} from './hf-token-presets';
+import {PresetChipsSurface, PresetCycleSurface, CHIPS_FRAMES, CYCLE_FRAMES, CHIPS_CUES, CYCLE_CUES} from './hf-token-presets';
 import {
   NewSpaceSurface,
   AgentSurface,
@@ -59,6 +65,7 @@ export const SURFACES: Record<string, Surface> = {
     id: 'hf-token-preset-chips',
     label: 'HF · Token preset chips rise',
     frames: CHIPS_FRAMES,
+    cues: CHIPS_CUES,
     Comp: PresetChipsSurface,
   },
   'hf-token-presets': {
@@ -66,6 +73,7 @@ export const SURFACES: Record<string, Surface> = {
     label: 'HF · Every token preset exercised',
     frames: CYCLE_FRAMES,
     bleed: true,
+    cues: CYCLE_CUES,
     Comp: PresetCycleSurface,
   },
   'hf-spaces-new': {

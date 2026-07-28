@@ -1,5 +1,7 @@
 import {TEXT_EFFECT_IDS} from '../blocks/animate-text';
 import {SURFACES} from './surfaces';
+import type {GainTok, MusicLevelTok} from './sound-kinds';
+import {GAIN, MUSIC_LEVEL} from './sound-kinds';
 
 /* ============================================================================
  * PROMODOC — a promo as data.
@@ -113,7 +115,31 @@ export type SceneRaw = TextSceneRaw | UiSceneRaw;
 export type Theme = 'soft-light' | 'light' | 'dark';
 export const THEMES: Theme[] = ['soft-light', 'light', 'dark'];
 
-export type PromoDocRaw = {v: 1; id: string; theme?: Theme; scenes: SceneRaw[]};
+/* ── SOUND ──────────────────────────────────────────────────────────────────────────────────
+ * Cue TIMES are derived (src/promo/sound.ts), so nothing here declares one. What a doc may carry
+ * is the authored part: whether sound is on, an optional music bed, and per-cue adjustments.
+ *
+ * `nudge` is the second admitted authored number, on the same footing as `framing` — it is an
+ * OFFSET to a derived anchor, not a copy of one, so it shadows nothing (gate P6 proves audio never
+ * reaches a frame count). It is MILLISECONDS, never frames: frames would make it a second source
+ * of truth for fps. Everything else is a token. */
+export type SoundCueOverride = {nudge?: number; src?: string; gain?: GainTok};
+export type PromoSound = {
+  sfx?: 'on' | 'off';
+  music?: {src: string; level?: MusicLevelTok};
+  cues?: Record<string, SoundCueOverride>;
+};
+
+/** ±500 ms, quantised to 1 ms. Beyond half a second a cue has stopped belonging to its event. */
+export const NUDGE_BOUNDS = {min: -500, max: 500, step: 1} as const;
+
+export const clampNudge = (ms: number | undefined): number => {
+  if (ms === undefined || !Number.isFinite(ms)) return 0;
+  const {min, max, step} = NUDGE_BOUNDS;
+  return Math.round(Math.min(max, Math.max(min, ms)) / step) * step;
+};
+
+export type PromoDocRaw = {v: 1; id: string; theme?: Theme; scenes: SceneRaw[]; sound?: PromoSound};
 
 /* ── Normalized: what components see. Every field present. ─────────────────── */
 type Base = {id: string; enter: IntroId; exit: OutroId; hold: HoldTok};
@@ -122,7 +148,7 @@ type Base = {id: string; enter: IntroId; exit: OutroId; hold: HoldTok};
 export type TextScene = Base & {kind: 'text'; effect: string; copy: string; sub: string | null; size: SizeTok; framing?: Framing};
 export type UiScene = Base & {kind: 'ui'; surface: string; framing: Framing};
 export type Scene = TextScene | UiScene;
-export type PromoDoc = {v: 1; id: string; theme: Theme; scenes: Scene[]};
+export type PromoDoc = {v: 1; id: string; theme: Theme; scenes: Scene[]; sound: PromoSound};
 
 export const DEFAULTS = {enter: 'glide-in' as IntroId, exit: 'push-off-left' as OutroId, hold: 'normal' as HoldTok, size: 'lg' as SizeTok};
 
@@ -130,6 +156,15 @@ export const normalize = (raw: PromoDocRaw): PromoDoc => ({
   v: 1,
   id: raw.id,
   theme: raw.theme ?? 'soft-light',
+  // Clamped HERE so the editor's live preview and the CLI render land on identical values — the
+  // clampFraming pattern. A hand-edited nudge of 9999 renders as 500, it does not render as 9999.
+  sound: {
+    sfx: raw.sound?.sfx ?? 'on',
+    ...(raw.sound?.music ? {music: raw.sound.music} : {}),
+    cues: Object.fromEntries(
+      Object.entries(raw.sound?.cues ?? {}).map(([k, v]) => [k, {...v, nudge: clampNudge(v?.nudge)}])
+    ),
+  },
   scenes: (raw.scenes ?? []).map((s) => {
     const base = {id: s.id, enter: s.enter ?? DEFAULTS.enter, exit: s.exit ?? DEFAULTS.exit, hold: s.hold ?? DEFAULTS.hold};
     // ui: clamp framing here so BOTH the render path (calculateMetadata → prepare) and the editor
@@ -162,6 +197,23 @@ export const validate = (doc: PromoDoc): string[] => {
       errs.push(`scene "${s.id}": unknown surface "${s.surface}"`);
     }
     if (!(s.hold in HOLD)) errs.push(`scene "${s.id}": unknown hold token "${s.hold}"`);
+  }
+
+  // Sound: tokens must be known, and a src must stay inside the two asset roots. The path rule is
+  // not decoration — a doc is user-editable and gets handed to staticFile(), so "../../secret"
+  // must not be expressible.
+  for (const [id, o] of Object.entries(doc.sound?.cues ?? {})) {
+    if (o?.gain && !(o.gain in GAIN)) errs.push(`sound cue "${id}": unknown gain token "${o.gain}"`);
+    if (o?.src && !/^(sfx|music)\/[\w.-]+(\/[\w.-]+)*$/.test(o.src)) {
+      errs.push(`sound cue "${id}": src "${o.src}" must be a simple path under sfx/ or music/`);
+    }
+  }
+  const music = doc.sound?.music;
+  if (music) {
+    if (music.level && !(music.level in MUSIC_LEVEL)) errs.push(`sound: unknown music level "${music.level}"`);
+    if (!/^music\/[\w.-]+(\/[\w.-]+)*$/.test(music.src)) {
+      errs.push(`sound: music src "${music.src}" must be a simple path under music/`);
+    }
   }
   return errs;
 };

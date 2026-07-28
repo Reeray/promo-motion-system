@@ -34,5 +34,18 @@
       "enter": "glide-in",
       "exit": "push-off-left"
     }
-  ]
+  ],
+  "sound": {
+    "sfx": "on",
+    "music": {
+      "src": "music/bed.mp3",
+      "level": "soft"
+    },
+    "cues": {
+      "title:scale-up-cut:out": {
+        "nudge": -40,
+        "gain": "soft"
+      }
+    }
+  }
 }

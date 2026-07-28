@@ -262,3 +262,15 @@ const PresetChipsSurface: React.FC = () => (
 );
 
 export {PresetChipsSurface, PresetCycle as PresetCycleSurface};
+
+/* ── CUES — the instants worth hearing ──────────────────────────────────────
+ * DERIVED from the choreography constants above, never a second hand-typed list. STARTS[0] is the
+ * surface settling rather than a click, so the ticks begin at STARTS[1]: the first preset is
+ * already selected when the shot opens, and sounding it would claim an interaction that never
+ * happened. RISE_STEP drives the chip stagger, so each rising chip gets its own arrival. */
+export const CHIPS_CUES = P.map((_, i) => ({at: i * RISE_STEP, kind: 'ui-rise' as const}));
+
+export const CYCLE_CUES = [
+  ...STARTS.slice(1).map((at) => ({at, kind: 'ui-tick' as const})),
+  ...STARTS.slice(1).map((at) => ({at: at + SWAP, kind: 'ui-swap' as const})),
+].sort((a, b) => a.at - b.at);

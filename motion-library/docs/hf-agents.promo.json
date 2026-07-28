@@ -45,5 +45,8 @@
       "enter": "glide-in",
       "exit": "push-off-left"
     }
-  ]
+  ],
+  "sound": {
+    "sfx": "off"
+  }
 }
