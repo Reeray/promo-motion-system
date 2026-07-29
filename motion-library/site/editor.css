@@ -43,6 +43,9 @@
   height: 30px; padding: 0 11px; font-size: 12px; border-radius: 7px; cursor: pointer;
   background: transparent; color: var(--fg); border: 1px solid var(--border);
 }
+/* Belt to color-scheme's braces: explicit option colours for engines that theme the popup from
+   the element rather than the scheme. `transparent` here would inherit whatever the popup uses. */
+.ed-head select option { background: var(--card); color: var(--fg); }
 .ed button:hover:not(:disabled) { background: var(--hover); }
 .ed button:disabled { opacity: 0.45; cursor: not-allowed; }
 .ed-primary { border-color: var(--accent) !important; color: var(--accent) !important; }
@@ -50,7 +53,8 @@
 .ed-linkbtn { height: auto !important; padding: 0 4px !important; border: none !important; color: var(--accent) !important; font-size: 11px; text-decoration: underline; }
 
 /* ── surface framing camera ─────────────────────────────────────────────── */
-.ed-stage { position: relative; }
+/* Breathing room between the video and the timeline below — the player is the hero. */
+.ed-stage { position: relative; margin-bottom: 20px; }
 .ed-frame-surface {
   position: absolute; inset: 0; z-index: 2; cursor: grab; touch-action: none; user-select: none;
   /* Rule-of-thirds guide. Dual black+white hairlines so it stays visible on ANY promo stage —
@@ -114,7 +118,40 @@
 /* Editable and fixed segments must not read as the same control. An editable segment is a solid
    card that names its effect and lights up on hover; a fixed one is hatched, dashed, lock-marked —
    the visual grammar of "this is a label, not a button" (they stay clickable, for seek). */
-.ed-strip { display: flex; align-items: stretch; height: 54px; margin: 14px 0 4px; }
+/* No margins of its own — the timeline grid's row-gap is the ONE spacing between the three rows,
+   so cues↔scenes↔music read as one instrument. (A leftover 14px top margin here is what made the
+   first gap visibly larger than the others.) */
+.ed-strip { display: flex; align-items: stretch; height: 54px; margin: 0; }
+.ed-seg-wrap { position: relative; display: flex; min-width: 0; }
+.ed-seg-wrap .ed-seg { flex: 1; width: 100%; touch-action: none; }
+/* Dragging: the grabbed segment floats over its row; a 2px bar marks where it will land. */
+.ed-seg-wrap.dragging { z-index: 6; opacity: 0.85; }
+.ed-seg-wrap.dragging .ed-seg { border-color: var(--accent) !important; cursor: grabbing; }
+.ed-seg-wrap.drop-before::before,
+.ed-seg-wrap.drop-after::after {
+  content: ''; position: absolute; top: -3px; bottom: -3px; width: 2.5px;
+  background: var(--accent); border-radius: 2px; z-index: 5;
+}
+.ed-seg-wrap.drop-before::before { left: -2px; }
+.ed-seg-wrap.drop-after::after { right: -2px; }
+/* Delete: a small circle at the segment's top-right, revealed on hover (and while selected) so
+   the strip stays quiet. Its hit area is bigger than its 16px face. */
+.ed-seg-x {
+  position: absolute; top: 3px; right: 3px; z-index: 4;
+  width: 16px !important; height: 16px !important; padding: 0 !important;
+  border-radius: 50% !important; font-size: 9px !important; line-height: 1;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--card) !important; border: 1px solid var(--card-border) !important;
+  color: #e5484d !important;
+  opacity: 0; pointer-events: none;
+  transition-property: opacity, transform, background; transition-duration: .12s;
+}
+.ed-seg-x::after { content: ''; position: absolute; inset: -6px; }
+.ed-seg-wrap:hover .ed-seg-x, .ed-seg.on ~ .ed-seg-x, .ed-seg-x:focus-visible {
+  opacity: 1; pointer-events: auto;
+}
+.ed-seg-x:hover { background: color-mix(in srgb, #e5484d 12%, var(--card)) !important; }
+.ed-seg-x:active { transform: scale(0.96); }
 .ed-seg {
   position: relative;
   display: flex; flex-direction: column; justify-content: center; gap: 3px;
@@ -233,7 +270,8 @@
   display: grid;
   grid-template-columns: 24px 1fr;
   column-gap: 10px;
-  row-gap: 2px;
+  /* The ONE vertical rhythm between the three rows — nothing inside them adds margins. */
+  row-gap: 7px;
   align-items: stretch;
 }
 .ed-gut {
@@ -249,17 +287,11 @@
 .ed-restore {
   position: absolute; right: 4px; top: 0;
   height: 18px !important; padding: 0 8px !important; font-size: 10.5px !important;
-  border: 1px dashed var(--faint) !important; border-radius: 9px !important;
+  border: 1px dashed color-mix(in srgb, var(--faint) 45%, transparent) !important; border-radius: 9px !important;
   background: var(--card) !important; color: var(--muted) !important;
   transition: color .15s, border-color .15s;
 }
 .ed-restore:hover { color: var(--fg) !important; border-color: var(--fg) !important; }
-
-.ed-ops { display: flex; align-items: center; gap: 6px; margin: 10px 0 2px; }
-.ed-ops-gap { flex: 1; }
-.ed-danger { color: #c0392b !important; border-color: color-mix(in srgb, #c0392b 35%, transparent) !important; }
-.ed-danger:hover:not(:disabled) { background: color-mix(in srgb, #c0392b 10%, transparent) !important; }
-.ed-danger:disabled { opacity: .4; }
 
 /* ── the music row ─────────────────────────────────────────────────────────── */
 .ed-music {
@@ -269,7 +301,7 @@
   background: var(--card);
   transition: border-color .15s, background .15s;
 }
-.ed-music.empty { border-style: dashed; border-color: var(--faint); background: transparent; }
+.ed-music.empty { border-style: dashed; border-color: color-mix(in srgb, var(--faint) 45%, transparent); background: transparent; }
 .ed-music.over { border-color: var(--accent); border-style: solid; background: var(--accent-bg); }
 .ed-music-drop { flex: 1; font-size: 12px; color: var(--muted); cursor: pointer; text-align: center; }
 .ed-music-drop input { display: none; }
@@ -302,13 +334,14 @@
 /* The rail is a CLICK TARGET, not just a place dots sit — it has to be tall enough to hover
    without precision. 18px was a sliver: the cursor left it constantly on the way to the timeline.
    Dots stay pinned to the bottom edge so they still read as attached to the segments below. */
-.ed-rail { position: relative; height: 28px; margin-bottom: 2px; cursor: copy; }
+.ed-rail { position: relative; height: 28px; cursor: copy; }
 .ed-dot {
   position: absolute; bottom: 1px; width: 12px !important; height: 12px !important;
   margin-left: -6px; padding: 0 !important; border-radius: 50% !important;
   /* An EMPTY slot is a DASHED ring — the visual grammar of a placeholder awaiting content,
-     matching the dashed drop target in the popover. Filled goes solid. */
-  background: var(--card) !important; border: 1.5px dashed var(--faint) !important;
+     matching the dashed drop target in the popover. Filled goes solid. Placeholders WHISPER:
+     the dash colour is well under the text greys, or a row of empties shouts over the timeline. */
+  background: var(--card) !important; border: 1.5px dashed color-mix(in srgb, var(--faint) 45%, transparent) !important;
   cursor: grab; touch-action: none; transition: transform .12s, border-color .12s, background .12s;
   font-size: 0; line-height: 1;
 }

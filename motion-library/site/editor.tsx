@@ -212,19 +212,75 @@ const App: React.FC = () => {
 
   const hiddenCues = Object.values(raw?.sound?.cues ?? {}).filter((v) => v.off).length;
 
-  /** Swap a scene with its neighbour. Ids travel with their scenes, so nudges, custom cues and
+  /** Move a scene to a new slot. Ids travel with their scenes, so nudges, custom cues and
    *  framing all follow; junction transitions re-derive from the new adjacency on prepare(). */
-  const moveScene = (i: number, dir: -1 | 1) => {
-    const j = i + dir;
+  const moveSceneTo = (from: number, to: number) => {
     setRaw((d) => {
-      if (!d || j < 0 || j >= d.scenes.length) return d;
+      if (!d || from === to || to < 0 || to >= d.scenes.length) return d;
       const scenes = [...d.scenes];
-      [scenes[i], scenes[j]] = [scenes[j], scenes[i]];
+      const [s] = scenes.splice(from, 1);
+      scenes.splice(to, 0, s);
       return {...d, scenes};
     });
     setDirty(true);
-    setSel({t: 'scene', i: j});
+    setSel({t: 'scene', i: to});
     setOpenJ(-1);
+  };
+
+  /* Segment drag-to-reorder. The gesture lives in REFS and styles the DOM imperatively — a
+   * pointermove that set React state would re-render the App (Player included) at pointer rate,
+   * which is exactly what the FramingStage note warns against. React state changes only at the
+   * commit. Same pointer laws as every other drag here: commit BEFORE releasing capture, and read
+   * the ref, never closed-over state, on pointerup. */
+  const dragSeg = useRef<{i: number; x0: number; wraps: {el: HTMLElement; mid: number}[]; to: number; moved: boolean} | null>(null);
+  const justDragged = useRef(false);
+
+  const segClearHints = () => {
+    dragSeg.current?.wraps.forEach(({el}) => el.classList.remove('drop-before', 'drop-after'));
+  };
+  const segDown = (e: React.PointerEvent, i: number) => {
+    if ((e.target as HTMLElement).closest('.ed-seg-x')) return; // the × is its own control
+    const wraps = Array.from(strip.current?.querySelectorAll<HTMLElement>('.ed-seg-wrap') ?? []).map((el) => {
+      const r = el.getBoundingClientRect();
+      return {el, mid: r.left + r.width / 2};
+    });
+    if (!wraps.length) return;
+    dragSeg.current = {i, x0: e.clientX, wraps, to: i, moved: false};
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+  };
+  const segMove = (e: React.PointerEvent) => {
+    const d = dragSeg.current;
+    if (!d) return;
+    const dx = e.clientX - d.x0;
+    if (!d.moved && Math.abs(dx) < 6) return; // a click is not a drag
+    if (!d.moved) {
+      d.moved = true;
+      d.wraps[d.i].el.classList.add('dragging');
+    }
+    d.wraps[d.i].el.style.transform = `translateX(${dx}px)`;
+    // Insertion slot = how many OTHER segments sit left of the pointer. That is the target index
+    // in the post-removal array, which is exactly what the splice in moveSceneTo wants.
+    d.to = d.wraps.filter((w, n) => n !== d.i && w.mid < e.clientX).length;
+    segClearHints();
+    if (d.to < d.i) d.wraps[d.to].el.classList.add('drop-before');
+    else if (d.to > d.i) d.wraps[d.to].el.classList.add('drop-after');
+  };
+  const segUp = (e: React.PointerEvent) => {
+    const d = dragSeg.current;
+    if (!d) return;
+    segClearHints();
+    d.wraps[d.i].el.classList.remove('dragging');
+    d.wraps[d.i].el.style.transform = '';
+    dragSeg.current = null;
+    if (d.moved) {
+      justDragged.current = true; // the browser fires click after pointerup — swallow that one
+      if (d.to !== d.i) moveSceneTo(d.i, d.to);
+    }
+    try {
+      (e.target as HTMLElement).releasePointerCapture?.(e.pointerId);
+    } catch {
+      /* capture was never held */
+    }
   };
 
   /** Delete a scene AND everything in the doc that names it: its custom cues and any cue
@@ -414,21 +470,41 @@ const App: React.FC = () => {
               const framed = s.kind === 'ui' && !isIdentity((p.scene as {framing?: Framing}).framing);
               return (
                 <React.Fragment key={s.id}>
-                  <button
-                    className={`ed-seg${dull ? ' dull' : ''}${on ? ' on' : ''}`}
-                    style={{flex: `${p.frames} 1 0`}}
-                    onClick={() => { setSel({t: 'scene', i}); setOpenJ(-1); seek(p.start); }}
-                    title={`${s.id} · ${(p.frames / prep.fps).toFixed(2)}s`}
-                  >
-                    <span className="ed-seg-l">
-                      {dull && <span className="ed-lock" aria-hidden="true" />}
-                      {s.id}
-                      {framed && <span className="ed-framed" title="Custom framing" aria-hidden="true">◳</span>}
-                    </span>
-                    <span className="ed-seg-t mono">
-                      {dull ? 'fixed surface' : s.effect} · {(p.frames / prep.fps).toFixed(2)}s
-                    </span>
-                  </button>
+                  <div className="ed-seg-wrap" style={{flex: `${p.frames} 1 0`}}>
+                    <button
+                      className={`ed-seg${dull ? ' dull' : ''}${on ? ' on' : ''}`}
+                      onPointerDown={(e) => segDown(e, i)}
+                      onPointerMove={segMove}
+                      onPointerUp={segUp}
+                      onClick={() => {
+                        // A drag ends in a click the browser fires anyway — that click already
+                        // moved the scene; letting it also re-select and SEEK would yank the
+                        // playhead the user just carefully positioned a scene around.
+                        if (justDragged.current) { justDragged.current = false; return; }
+                        setSel({t: 'scene', i}); setOpenJ(-1); seek(p.start);
+                      }}
+                      title={`${s.id} · ${(p.frames / prep.fps).toFixed(2)}s — drag to reorder`}
+                    >
+                      <span className="ed-seg-l">
+                        {dull && <span className="ed-lock" aria-hidden="true" />}
+                        {s.id}
+                        {framed && <span className="ed-framed" title="Custom framing" aria-hidden="true">◳</span>}
+                      </span>
+                      <span className="ed-seg-t mono">
+                        {dull ? 'fixed surface' : s.effect} · {(p.frames / prep.fps).toFixed(2)}s
+                      </span>
+                    </button>
+                    {scenes.length > 1 && (
+                      <button
+                        className="ed-seg-x"
+                        title="Delete this scene"
+                        aria-label={`Delete scene ${s.id}`}
+                        onClick={(e) => { e.stopPropagation(); deleteScene(i); }}
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
                   {j && (
                     <div
                       className={`ed-j${isOpen ? ' open' : ''}${split === i ? ' split' : ''}`}
@@ -465,15 +541,7 @@ const App: React.FC = () => {
           <MusicRow music={raw?.sound?.music ?? null} onSet={setMusic} onLevel={setMusicLevel} />
           </div>
 
-          <Inspector
-            sel={sel}
-            scenes={scenes}
-            prep={prep}
-            patch={patchScene}
-            setJunction={setJunction}
-            onMove={moveScene}
-            onDelete={deleteScene}
-          />
+          <Inspector sel={sel} scenes={scenes} prep={prep} patch={patchScene} setJunction={setJunction} />
         </>
       )}
 
@@ -880,33 +948,12 @@ const Inspector: React.FC<{
   prep: Prepared;
   patch: (i: number, p: Partial<SceneRaw>) => void;
   setJunction: (i: number, o: OutroId, e: IntroId) => void;
-  onMove: (i: number, dir: -1 | 1) => void;
-  onDelete: (i: number) => void;
-}> = ({sel, scenes, prep, patch, setJunction, onMove, onDelete}) => {
+}> = ({sel, scenes, prep, patch, setJunction}) => {
   if (!sel) return null;
   if (sel.t === 'junc') return <JunctionInspector i={sel.i} h={sel.h} scenes={scenes} setJunction={setJunction} />;
   const s = scenes[sel.i];
-  const ops = (
-    <div className="ed-ops">
-      <button className="ed-tok" disabled={sel.i === 0} onClick={() => onMove(sel.i, -1)} title="Swap with the previous scene">
-        ← Move
-      </button>
-      <button className="ed-tok" disabled={sel.i === scenes.length - 1} onClick={() => onMove(sel.i, 1)} title="Swap with the next scene">
-        Move →
-      </button>
-      <span className="ed-ops-gap" />
-      <button
-        className="ed-tok ed-danger"
-        disabled={scenes.length <= 1}
-        onClick={() => onDelete(sel.i)}
-        title={scenes.length <= 1 ? 'A promo needs at least one scene' : 'Remove this scene (Save persists it; Load undoes it)'}
-      >
-        Delete scene
-      </button>
-    </div>
-  );
-  if (s.kind === 'ui') return <>{ops}<UiInspector s={s} /></>;
-  return <>{ops}<TextInspector i={sel.i} s={s} scenes={scenes} prep={prep} patch={patch} /></>;
+  if (s.kind === 'ui') return <UiInspector s={s} />;
+  return <TextInspector i={sel.i} s={s} scenes={scenes} prep={prep} patch={patch} />;
 };
 
 /* ── cue audio ──────────────────────────────────────────────────────────────
