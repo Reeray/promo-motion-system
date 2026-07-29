@@ -141,7 +141,7 @@ const BlockCard: React.FC<{b: Block}> = ({b}) => {
   return (
     <div
       ref={host}
-      className="demo"
+      className={`demo${b.wide ? ' wide' : ''}`}
       onMouseEnter={() => {
         setLive(true); // a hover must never wait on the observer
         setHot(true);

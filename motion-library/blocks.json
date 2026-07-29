@@ -1,6 +1,6 @@
 {
   "generated": "npm run blocks",
-  "total": 27,
+  "total": 28,
   "orphanSpecs": [
     "depth-parallax-words",
     "kinetic-center-build",
@@ -289,6 +289,15 @@
           "desc": "The viewport pushes in ~1.6× over ~0.5s to showcase a hero component — strong ease-out that decelerates into the hold, no overshoot.",
           "durationInFrames": null,
           "fps": null
+        },
+        {
+          "name": "hf-logo-ending",
+          "category": "ui",
+          "tag": null,
+          "source": "HF logo intro · driving",
+          "desc": "The brand resolve that closes every promo: the four product icons hold a two-beat silence, squeeze 55% toward centre (easeInCubic, no fade), then hard-cut into the HF logo landing its own downbeat with one ~3% overshoot. The third accent version (\"driving\") of the HF logo intro, final two keyframes.",
+          "durationInFrames": null,
+          "fps": 60
         }
       ]
     }

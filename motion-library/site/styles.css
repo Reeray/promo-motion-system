@@ -259,6 +259,9 @@ h1.title {
     grid-template-columns: 1fr;
   }
 }
+/* Full-width set piece: spans both gallery columns so its composition renders at legible size. */
+.demo.wide { grid-column: 1 / -1; }
+
 .group-label {
   grid-column: 1 / -1;
   background: var(--bg);

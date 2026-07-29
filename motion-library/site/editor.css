@@ -225,7 +225,80 @@
 /* The rail shares a relatively-positioned wrapper with the strip, so a dot's `left` is in the
    same coordinate space as a segment's offsetLeft — which is what makes MEASURED placement work
    on a flex timeline whose junctions take space frames cannot account for. */
-.ed-tl { position: relative; }
+/* Three labelled rows — cues, timeline, music — each with an icon gutter saying what it is.
+   The rail/strip/music cells share one grid column, so their x-axes stay pixel-aligned; the cue
+   geometry measures rects relative to the rail, so the gutter never shifts a dot. */
+.ed-tl {
+  position: relative;
+  display: grid;
+  grid-template-columns: 24px 1fr;
+  column-gap: 10px;
+  row-gap: 2px;
+  align-items: stretch;
+}
+.ed-gut {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  cursor: help;
+  transition: color .15s;
+}
+.ed-gut:hover { color: var(--fg); }
+
+.ed-restore {
+  position: absolute; right: 4px; top: 0;
+  height: 18px !important; padding: 0 8px !important; font-size: 10.5px !important;
+  border: 1px dashed var(--faint) !important; border-radius: 9px !important;
+  background: var(--card) !important; color: var(--muted) !important;
+  transition: color .15s, border-color .15s;
+}
+.ed-restore:hover { color: var(--fg) !important; border-color: var(--fg) !important; }
+
+.ed-ops { display: flex; align-items: center; gap: 6px; margin: 10px 0 2px; }
+.ed-ops-gap { flex: 1; }
+.ed-danger { color: #c0392b !important; border-color: color-mix(in srgb, #c0392b 35%, transparent) !important; }
+.ed-danger:hover:not(:disabled) { background: color-mix(in srgb, #c0392b 10%, transparent) !important; }
+.ed-danger:disabled { opacity: .4; }
+
+/* ── the music row ─────────────────────────────────────────────────────────── */
+.ed-music {
+  display: flex; align-items: center; gap: 10px;
+  min-height: 34px; padding: 3px 10px;
+  border: 1px solid var(--card-border); border-radius: 9px;
+  background: var(--card);
+  transition: border-color .15s, background .15s;
+}
+.ed-music.empty { border-style: dashed; border-color: var(--faint); background: transparent; }
+.ed-music.over { border-color: var(--accent); border-style: solid; background: var(--accent-bg); }
+.ed-music-drop { flex: 1; font-size: 12px; color: var(--muted); cursor: pointer; text-align: center; }
+.ed-music-drop input { display: none; }
+.ed-music-name { font-size: 11px; color: var(--fg); white-space: nowrap; }
+.ed-music-wave { flex: 1; height: 26px; min-width: 0; }
+.ed-music-msg { font-size: 11px; color: var(--muted); }
+.ed-lvl { display: flex; border: 1px solid var(--card-border); border-radius: 7px; overflow: hidden; }
+.ed-lvl-b {
+  height: 24px !important; padding: 0 10px !important; font-size: 11px !important;
+  border: none !important; border-radius: 0 !important; background: transparent !important;
+  color: var(--muted) !important;
+  transition: background .15s, color .15s;
+}
+.ed-lvl-b.on { background: var(--accent-bg) !important; color: var(--fg) !important; }
+
+/* ── feel (make-interfaces-feel-better) ────────────────────────────────────
+   Press feedback on every small control: 0.96, interruptible, transform only. */
+.ed-tok:active:not(:disabled),
+.ed-lvl-b:active,
+.ed-pop-x:active,
+.ed-restore:active { transform: scale(0.96); }
+.ed-tok, .ed-lvl-b, .ed-pop-x, .ed-restore { transition-property: transform, background, color, border-color; transition-duration: .12s; }
+/* Numbers that change while dragging must not make their row breathe. */
+.ed-cue-at, .ed-restore, .ed-seg-t { font-variant-numeric: tabular-nums; }
+/* The popover × and the dots are visually small; their HIT areas are not. The dot's reach is
+   mirrored by NEAR_DOT in editor.tsx — if one changes, change both. */
+.ed-pop-x { position: relative; }
+.ed-pop-x::after { content: ''; position: absolute; inset: -6px; }
+.ed-dot:not(.ghost)::after { content: ''; position: absolute; inset: -8px; border-radius: 50%; }
 /* The rail is a CLICK TARGET, not just a place dots sit — it has to be tall enough to hover
    without precision. 18px was a sliver: the cursor left it constantly on the way to the timeline.
    Dots stay pinned to the bottom edge so they still read as attached to the segments below. */

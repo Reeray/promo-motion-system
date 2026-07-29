@@ -176,12 +176,95 @@ const App: React.FC = () => {
     if (woke) setLog([`sound was off for this doc — turned on, so cues can exist. Empty slots make no noise; the derived cue dots are now visible too.`]);
   };
 
-  const removeCustomCue = (id: string) => {
-    setRaw((d) =>
-      d ? {...d, sound: {...d.sound, custom: (d.sound?.custom ?? []).filter((c) => c.id !== id)}} : d
-    );
+  /** Delete ANY cue. Routed by ownership: a custom cue's entry is genuinely removed; a derived
+   *  cue would just derive back on the next prepare(), so "delete" for it means `off: true` in
+   *  its override — nudge and src stay, making restore lossless. */
+  const removeCue = (id: string) => {
+    setRaw((d) => {
+      if (!d) return d;
+      const custom = d.sound?.custom ?? [];
+      if (custom.some((c) => c.id === id)) {
+        return {...d, sound: {...d.sound, custom: custom.filter((c) => c.id !== id)}};
+      }
+      const cur = d.sound?.cues?.[id] ?? {};
+      return {...d, sound: {...d.sound, cues: {...(d.sound?.cues ?? {}), [id]: {...cur, off: true}}}};
+    });
     setDirty(true);
     setOpenCue(null);
+  };
+
+  /** Bring back every hidden derived cue. All-at-once on purpose: once a dot is gone there is no
+   *  per-cue handle left to click, and a management list for n≤a-dozen cues is more UI than the
+   *  job. The count on the button says exactly what will happen. */
+  const restoreCues = () => {
+    setRaw((d) => {
+      if (!d) return d;
+      const cues = Object.fromEntries(
+        Object.entries(d.sound?.cues ?? {}).map(([k, v]) => {
+          const {off: _drop, ...rest} = v;
+          return [k, rest];
+        }).filter(([, v]) => Object.keys(v).length) // an entry that was ONLY off disappears
+      );
+      return {...d, sound: {...d.sound, cues}};
+    });
+    setDirty(true);
+  };
+
+  const hiddenCues = Object.values(raw?.sound?.cues ?? {}).filter((v) => v.off).length;
+
+  /** Swap a scene with its neighbour. Ids travel with their scenes, so nudges, custom cues and
+   *  framing all follow; junction transitions re-derive from the new adjacency on prepare(). */
+  const moveScene = (i: number, dir: -1 | 1) => {
+    const j = i + dir;
+    setRaw((d) => {
+      if (!d || j < 0 || j >= d.scenes.length) return d;
+      const scenes = [...d.scenes];
+      [scenes[i], scenes[j]] = [scenes[j], scenes[i]];
+      return {...d, scenes};
+    });
+    setDirty(true);
+    setSel({t: 'scene', i: j});
+    setOpenJ(-1);
+  };
+
+  /** Delete a scene AND everything in the doc that names it: its custom cues and any cue
+   *  overrides keyed under its id. Leaving those behind would fail validate() (unknown scene) or
+   *  silently resurrect on a future scene reusing the id. */
+  const deleteScene = (i: number) => {
+    setRaw((d) => {
+      if (!d || d.scenes.length <= 1) return d; // a promo with zero scenes cannot prepare()
+      const dead = d.scenes[i].id;
+      const cues = Object.fromEntries(Object.entries(d.sound?.cues ?? {}).filter(([k]) => !k.startsWith(`${dead}:`)));
+      return {
+        ...d,
+        scenes: d.scenes.filter((_, n) => n !== i),
+        sound: {...d.sound, cues, custom: (d.sound?.custom ?? []).filter((c) => c.scene !== dead)},
+      };
+    });
+    setDirty(true);
+    setSel({t: 'scene', i: Math.max(0, i - 1)});
+    setOpenJ(-1);
+    setOpenCue(null); // its dot may be gone; a popover on a vanished cue would strand
+  };
+
+  /** Background music: one file, looping under the whole video at a token level. Setting it does
+   *  NOT touch sfx — the two halves of sound are independent, and the mix budget already counts
+   *  the bed (maxSimultaneous +1). */
+  const setMusic = (src: string | null) => {
+    setRaw((d) => {
+      if (!d) return d;
+      if (!src) {
+        const {music: _drop, ...rest} = d.sound ?? {};
+        return {...d, sound: rest};
+      }
+      return {...d, sound: {...d.sound, music: {src, level: d.sound?.music?.level ?? 'soft'}}};
+    });
+    setDirty(true);
+  };
+
+  const setMusicLevel = (level: 'soft' | 'normal') => {
+    setRaw((d) => (d?.sound?.music ? {...d, sound: {...d.sound, music: {...d.sound.music, level}}} : d));
+    setDirty(true);
   };
 
   /** Fill or clear a slot. Clearing DELETES the src key rather than storing null, so an emptied
@@ -303,18 +386,22 @@ const App: React.FC = () => {
           <FramingStage prep={prep} player={player} selUi={selUi} onCommit={patchFraming} />
 
           <div className="ed-tl">
+          <div className="ed-gut" title="Sound cues — hover the rail and click to add one"><SfxIcon /></div>
           <CueRail
             prep={prep}
             list={cueList}
             openCue={openCue}
+            hidden={hiddenCues}
+            onRestore={restoreCues}
             onPick={(id) => setOpenCue(id)}
             onNudge={patchNudge}
             onSeek={seek}
             onSetSrc={patchCueSrc}
             onAdd={addCustomCue}
-            onRemove={removeCustomCue}
+            onRemove={removeCue}
             onClose={() => setOpenCue(null)}
           />
+          <div className="ed-gut" title="Timeline — scenes and the transitions between them"><TimelineIcon /></div>
           <div className="ed-strip" ref={strip}>
             {prep.scenes.map((p, i) => {
               const s = scenes[i];
@@ -374,9 +461,19 @@ const App: React.FC = () => {
               );
             })}
           </div>
+          <div className="ed-gut" title="Background music — one file, looping under the whole video"><MusicIcon /></div>
+          <MusicRow music={raw?.sound?.music ?? null} onSet={setMusic} onLevel={setMusicLevel} />
           </div>
 
-          <Inspector sel={sel} scenes={scenes} prep={prep} patch={patchScene} setJunction={setJunction} />
+          <Inspector
+            sel={sel}
+            scenes={scenes}
+            prep={prep}
+            patch={patchScene}
+            setJunction={setJunction}
+            onMove={moveScene}
+            onDelete={deleteScene}
+          />
         </>
       )}
 
@@ -561,6 +658,8 @@ const CueRail: React.FC<{
   prep: Prepared;
   list: Cue[];
   openCue: string | null;
+  hidden: number;
+  onRestore: () => void;
   onPick: (id: string) => void;
   onNudge: (id: string, ms: number) => void;
   onSeek: (f: number) => void;
@@ -568,7 +667,7 @@ const CueRail: React.FC<{
   onAdd: (sceneId: string, atMs: number) => void;
   onRemove: (id: string) => void;
   onClose: () => void;
-}> = ({prep, list, openCue, onPick, onNudge, onSeek, onSetSrc, onAdd, onRemove, onClose}) => {
+}> = ({prep, list, openCue, hidden, onRestore, onPick, onNudge, onSeek, onSetSrc, onAdd, onRemove, onClose}) => {
   const [geo, setGeo] = useState<{left: number; width: number}[]>([]);
   /** Ghost "+" position while the cursor hovers the rail, or null. */
   const [ghost, setGhost] = useState<number | null>(null);
@@ -577,13 +676,19 @@ const CueRail: React.FC<{
   const drag = useRef<{id: string; x0: number; msPerPx: number; base: number} | null>(null);
   const rail = useRef<HTMLDivElement>(null);
 
-  // Re-measure whenever the strip resizes. The rail sits inside the same relatively-positioned
-  // wrapper as the strip, so segment offsetLeft is already in the right coordinate space.
+  // Re-measure whenever the strip resizes. Rects RELATIVE TO THE RAIL, not offsetLeft: the
+  // timeline is a grid with an icon gutter now, so offsetLeft is relative to the grid and would
+  // carry the gutter width — the dots (absolute inside the rail) would all sit one gutter to the
+  // right. rect-minus-rect is coordinate-space-proof.
   useEffect(() => {
     const measure = () => {
       const wrap = rail.current?.parentElement;
-      const segs = wrap ? Array.from(wrap.querySelectorAll<HTMLElement>('.ed-seg')) : [];
-      setGeo(segs.map((s) => ({left: s.offsetLeft, width: s.offsetWidth})));
+      const r0 = rail.current?.getBoundingClientRect();
+      const segs = wrap && r0 ? Array.from(wrap.querySelectorAll<HTMLElement>('.ed-seg')) : [];
+      setGeo(segs.map((s) => {
+        const r = s.getBoundingClientRect();
+        return {left: r.left - (r0 as DOMRect).left, width: r.width};
+      }));
     };
     measure();
     const wrap = rail.current?.parentElement;
@@ -591,7 +696,9 @@ const CueRail: React.FC<{
     const ro = new ResizeObserver(measure);
     ro.observe(wrap);
     return () => ro.disconnect();
-  }, [prep.scenes.length, prep.durationInFrames]);
+    // The id-order key matters: a REORDER keeps both the count and the total duration, but the
+    // segments trade widths — the observer watches the wrap, which never resizes on a swap.
+  }, [prep.scenes.length, prep.durationInFrames, prep.scenes.map((p) => p.scene.id).join('|')]);
 
   /** Absolute frame -> x, via the segment that owns it.
    *
@@ -683,7 +790,7 @@ const CueRail: React.FC<{
       onPointerMove={(e) => {
         if (drag.current) return setGhost(null); // dragging a dot is not placing a new one
         const el = e.target as HTMLElement;
-        if (el.closest('.ed-pop')) return setGhost(null);
+        if (el.closest('.ed-pop') || el.closest('.ed-restore')) return setGhost(null);
         const box = rail.current?.getBoundingClientRect();
         if (!box) return;
         const x = e.clientX - box.left;
@@ -741,6 +848,13 @@ const CueRail: React.FC<{
         <span className="ed-dot ghost" style={{left: ghost}} aria-hidden="true">+</span>
       )}
 
+      {/* Deleted derived cues have no dot left to click, so the way back lives on the rail. */}
+      {hidden > 0 && (
+        <button className="ed-restore mono" onClick={(e) => { e.stopPropagation(); onRestore(); }}>
+          ↺ {hidden} hidden
+        </button>
+      )}
+
       {/* The editor widget, anchored over the selected dot. Persistent: it stays until the user
           closes it (X or Esc) — selection elsewhere moves it, but a stray click does not eat it. */}
       {selCue && selX !== null && (
@@ -766,12 +880,33 @@ const Inspector: React.FC<{
   prep: Prepared;
   patch: (i: number, p: Partial<SceneRaw>) => void;
   setJunction: (i: number, o: OutroId, e: IntroId) => void;
-}> = ({sel, scenes, prep, patch, setJunction}) => {
+  onMove: (i: number, dir: -1 | 1) => void;
+  onDelete: (i: number) => void;
+}> = ({sel, scenes, prep, patch, setJunction, onMove, onDelete}) => {
   if (!sel) return null;
   if (sel.t === 'junc') return <JunctionInspector i={sel.i} h={sel.h} scenes={scenes} setJunction={setJunction} />;
   const s = scenes[sel.i];
-  if (s.kind === 'ui') return <UiInspector s={s} />;
-  return <TextInspector i={sel.i} s={s} scenes={scenes} prep={prep} patch={patch} />;
+  const ops = (
+    <div className="ed-ops">
+      <button className="ed-tok" disabled={sel.i === 0} onClick={() => onMove(sel.i, -1)} title="Swap with the previous scene">
+        ← Move
+      </button>
+      <button className="ed-tok" disabled={sel.i === scenes.length - 1} onClick={() => onMove(sel.i, 1)} title="Swap with the next scene">
+        Move →
+      </button>
+      <span className="ed-ops-gap" />
+      <button
+        className="ed-tok ed-danger"
+        disabled={scenes.length <= 1}
+        onClick={() => onDelete(sel.i)}
+        title={scenes.length <= 1 ? 'A promo needs at least one scene' : 'Remove this scene (Save persists it; Load undoes it)'}
+      >
+        Delete scene
+      </button>
+    </div>
+  );
+  if (s.kind === 'ui') return <>{ops}<UiInspector s={s} /></>;
+  return <>{ops}<TextInspector i={sel.i} s={s} scenes={scenes} prep={prep} patch={patch} /></>;
 };
 
 /* ── cue audio ──────────────────────────────────────────────────────────────
@@ -808,6 +943,15 @@ const useCueAudio = (src: string | null): Loaded => {
 };
 
 /** Peak-per-column, so a short transient is still visible instead of averaging away. */
+/** One upload path for both audio kinds: filename sanitised the same way, validated server-side
+ *  the same way (ffprobe after write, delete on failure), landing in public/<dir>/. */
+const uploadAudio = (file: File, dir: 'sfx' | 'music'): Promise<{ok: boolean; src?: string; error?: string}> => {
+  const safe = file.name.replace(/[^\w.-]+/g, '-');
+  return fetch(`/__audio?f=${encodeURIComponent(safe)}&d=${dir}`, {method: 'POST', body: file})
+    .then((x) => x.json())
+    .catch((e) => ({ok: false, error: String(e)}));
+};
+
 const wavePath = (buf: AudioBuffer, cols: number, h: number): string => {
   const d = buf.getChannelData(0);
   const per = Math.max(1, Math.floor(d.length / cols));
@@ -827,9 +971,33 @@ const wavePath = (buf: AudioBuffer, cols: number, h: number): string => {
 };
 
 const POP_W = 400;
-/** How close to an existing dot suppresses the add-affordance, in px. Wide enough that the two
- *  gestures never contend at the scale dots are actually drawn. */
-const NEAR_DOT = 12;
+/** How close to an existing dot suppresses the add-affordance, in px. Matches the dot's expanded
+ *  hit area in editor.css (12px dot + 8px ::after reach = 14px from centre) — if the ghost showed
+ *  inside the dot's reach, the click would hit the dot while the cursor promised an add. */
+const NEAR_DOT = 14;
+
+/* ── row gutter icons — each timeline row says what it is ─────────────────── */
+const SfxIcon: React.FC = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M11 5 6 9H2v6h4l5 4z" />
+    <path d="M15.5 8.5a5 5 0 0 1 0 7" />
+    <path d="M18.6 5.4a9.5 9.5 0 0 1 0 13.2" />
+  </svg>
+);
+const TimelineIcon: React.FC = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
+    <rect x="2" y="9" width="7.5" height="6" rx="1.5" />
+    <rect x="12" y="9" width="6" height="6" rx="1.5" />
+    <rect x="20.5" y="9" width="2" height="6" rx="1" />
+  </svg>
+);
+const MusicIcon: React.FC = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M9 18V5l12-2v13" />
+    <circle cx="6" cy="18" r="3" />
+    <circle cx="18" cy="16" r="3" />
+  </svg>
+);
 
 /** The cue widget: a container that pops up OVER the floating dot and stays until closed.
  *  Everything about one cue lives here — waveform, audition, replace, nudge — so the timeline
@@ -865,12 +1033,9 @@ const CuePopover: React.FC<{
 
   const upload = async (file: File) => {
     setBusy('uploading');
-    const safe = file.name.replace(/[^\w.-]+/g, '-');
-    const r = await fetch(`/__audio?f=${encodeURIComponent(safe)}`, {method: 'POST', body: file})
-      .then((x) => x.json())
-      .catch((e) => ({ok: false, error: String(e)}));
+    const r = await uploadAudio(file, 'sfx');
     setBusy('');
-    if (r.ok) onSetSrc(cue.id, r.src);
+    if (r.ok && r.src) onSetSrc(cue.id, r.src);
     else setBusy(`rejected: ${r.error}`);
   };
 
@@ -897,9 +1062,13 @@ const CuePopover: React.FC<{
         <span className="ed-pop-t">{cue.custom ? 'custom cue' : cue.kind}</span>
         <span className="ed-cue-at mono">frame {cue.frame} · {(cue.frame / prep.fps).toFixed(2)}s</span>
         <span style={{marginLeft: 'auto'}} />
-        {cue.custom && (
-          <button className="ed-pop-x" title="Delete this cue" onClick={() => onRemove(cue.id)}>🗑</button>
-        )}
+        <button
+          className="ed-pop-x"
+          title={cue.custom ? 'Delete this cue' : 'Delete this cue (derived — restore it later from the ↺ button on the rail)'}
+          onClick={() => onRemove(cue.id)}
+        >
+          🗑
+        </button>
         <button className="ed-pop-x" title="Close (Esc)" onClick={onClose}>×</button>
       </div>
 
@@ -956,6 +1125,76 @@ const CuePopover: React.FC<{
         ))}
         <span className="ed-frame-hint">ms · or drag the dot</span>
       </div>
+    </div>
+  );
+};
+
+/* ── the music row: one file under the whole video ──────────────────────────
+ * Deliberately a ROW and not a popover: unlike a cue (an instant), the bed spans the entire
+ * timeline, so its editor lives at timeline width — the shape of the control mirrors the shape
+ * of the thing. Same rules as cues: user-supplied, git-ignored, silent until filled. */
+const MusicRow: React.FC<{
+  music: {src: string; level?: 'soft' | 'normal'} | null;
+  onSet: (src: string | null) => void;
+  onLevel: (l: 'soft' | 'normal') => void;
+}> = ({music, onSet, onLevel}) => {
+  const audio = useCueAudio(music?.src ?? null);
+  const [drop, setDrop] = useState(false);
+  const [busy, setBusy] = useState('');
+
+  const pick = async (f: File) => {
+    setBusy('uploading…');
+    const r = await uploadAudio(f, 'music');
+    setBusy(r.ok ? '' : `rejected: ${r.error}`);
+    if (r.ok && r.src) onSet(r.src);
+  };
+
+  return (
+    <div
+      className={`ed-music${music ? '' : ' empty'}${drop ? ' over' : ''}`}
+      onDragOver={(e) => { e.preventDefault(); setDrop(true); }}
+      onDragLeave={() => setDrop(false)}
+      onDrop={(e) => {
+        e.preventDefault();
+        setDrop(false);
+        const f = e.dataTransfer.files?.[0];
+        if (f) void pick(f);
+      }}
+    >
+      {music ? (
+        <>
+          <span className="ed-music-name mono" title={`public/${music.src}`}>{music.src.replace(/^music\//, '')}</span>
+          <div className="ed-music-wave" title="Drop a different file to replace">
+            {audio.state === 'ready' && audio.buffer ? (
+              <svg width="100%" height="26" viewBox="0 0 480 26" preserveAspectRatio="none">
+                <path d={wavePath(audio.buffer, 480, 26)} fill="var(--accent)" opacity="0.5" />
+              </svg>
+            ) : (
+              <span className="ed-music-msg">
+                {audio.state === 'loading' ? 'decoding…' : audio.state === 'error' ? `can’t decode: ${audio.error}` : ''}
+              </span>
+            )}
+          </div>
+          <div className="ed-lvl" role="radiogroup" aria-label="Music level">
+            {(['soft', 'normal'] as const).map((l) => (
+              <button
+                key={l}
+                className={`ed-lvl-b${(music.level ?? 'soft') === l ? ' on' : ''}`}
+                aria-pressed={(music.level ?? 'soft') === l}
+                onClick={() => onLevel(l)}
+              >
+                {l}
+              </button>
+            ))}
+          </div>
+          <button className="ed-linkbtn" onClick={() => onSet(null)}>clear</button>
+        </>
+      ) : (
+        <label className="ed-music-drop">
+          {busy || 'Drop background music here — or click to choose. Loops quietly under the whole video.'}
+          <input type="file" accept="audio/*" onChange={(e) => e.target.files?.[0] && void pick(e.target.files[0])} />
+        </label>
+      )}
     </div>
   );
 };

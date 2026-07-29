@@ -1,5 +1,6 @@
 import {Block} from './types';
 import {ChipTokenize, LogTheater, LogTheaterZoomed, CameraPush} from '../clips/C';
+import {LogoEndingSurface, ENDING_FRAMES} from '../promo/surfaces/hf-logo-ending';
 
 /* UI-motion blocks (GPT-5.5 house standard) — same Block shape as the typography and
  * transition sets.
@@ -39,5 +40,16 @@ export const UI_BLOCKS: Block[] = [
     poster: 50,
     desc: 'The viewport pushes in ~1.6× over ~0.5s to showcase a hero component — strong ease-out that decelerates into the hold, no overshoot.',
     Comp: CameraPush,
+  },
+  {
+    name: 'hf-logo-ending',
+    category: 'ui',
+    source: 'HF logo intro · driving',
+    poster: 46, // logo mid-overshoot — the money frame
+    durationInFrames: ENDING_FRAMES,
+    fps: 60,
+    wide: true,
+    desc: 'The brand resolve that closes every promo: the four product icons hold a two-beat silence, squeeze 55% toward centre (easeInCubic, no fade), then hard-cut into the HF logo landing its own downbeat with one ~3% overshoot. The third accent version ("driving") of the HF logo intro, final two keyframes.',
+    Comp: LogoEndingSurface,
   },
 ];

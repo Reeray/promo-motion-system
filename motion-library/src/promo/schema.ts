@@ -123,7 +123,11 @@ export const THEMES: Theme[] = ['soft-light', 'light', 'dark'];
  * OFFSET to a derived anchor, not a copy of one, so it shadows nothing (gate P6 proves audio never
  * reaches a frame count). It is MILLISECONDS, never frames: frames would make it a second source
  * of truth for fps. Everything else is a token. */
-export type SoundCueOverride = {nudge?: number; src?: string; gain?: GainTok};
+/** `off` is how a DERIVED cue is "deleted": its time comes from the motion, so it cannot be
+ *  removed from the doc the way a custom cue can — it would just derive back on the next
+ *  prepare(). The flag suppresses it while keeping any nudge/src it carried, so restoring is
+ *  lossless rather than a re-authoring job. */
+export type SoundCueOverride = {nudge?: number; src?: string; gain?: GainTok; off?: boolean};
 
 /** A USER-ADDED cue — the third authored number, same footing as `framing` and `nudge`.
  *

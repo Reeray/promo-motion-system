@@ -123,7 +123,12 @@ const editorApi = (): Plugin => ({
         }
         if (!buf.length) return json({ok: false, error: 'empty upload'}, 400);
 
-        const dir = resolve(__dirname, 'public', 'sfx');
+        // `d` picks the kind: cue one-shots vs the looping bed. A whitelist, not a path — the
+        // two names are the only ones the schema's src rule accepts, so anything else would
+        // upload a file no doc could ever legally reference.
+        const kind = url.searchParams.get('d') ?? 'sfx';
+        if (kind !== 'sfx' && kind !== 'music') return json({ok: false, error: 'd must be sfx or music'}, 400);
+        const dir = resolve(__dirname, 'public', kind);
         mkdirSync(dir, {recursive: true});
         const dest = resolve(dir, f);
         if (!dest.startsWith(dir)) return json({ok: false, error: 'path escape'}, 400);
@@ -138,7 +143,7 @@ const editorApi = (): Plugin => ({
           return json({ok: false, error: 'not a decodable audio file'}, 400);
         }
         const dur = Number(/"duration"\s*:\s*"([\d.]+)"/.exec(probe.out)?.[1] ?? 0);
-        return json({ok: true, src: `sfx/${f}`, seconds: dur});
+        return json({ok: true, src: `${kind}/${f}`, seconds: dur});
       }
 
       /* What is already in public/sfx/, so the editor can offer existing files instead of making

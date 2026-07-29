@@ -136,6 +136,7 @@ export const cues = (prep: PreparedLike): Cue[] => {
 
   const push = (id: string, kind: CueKind, frame: number) => {
     const o = overrides[id];
+    if (o?.off) return; // "deleted" in the editor — see SoundCueOverride.off
     const nudged = frame + (o?.nudge ? clampNudgeFrames(o.nudge, fps) : 0);
     out.push({
       id,

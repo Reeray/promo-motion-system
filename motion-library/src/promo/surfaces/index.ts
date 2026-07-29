@@ -47,6 +47,7 @@ import {
   AGENT_LOG_FRAMES,
   LIVE_SPACE_FRAMES,
 } from './hf-spaces-agents';
+import {LogoEndingSurface, ENDING_FRAMES, ENDING_CUES} from './hf-logo-ending';
 
 export const SURFACES: Record<string, Surface> = {
   'hf-storage-repositories': {
@@ -94,6 +95,16 @@ export const SURFACES: Record<string, Surface> = {
     label: 'HF · The Space is running',
     frames: LIVE_SPACE_FRAMES,
     Comp: LiveSpace,
+  },
+  'hf-logo-ending': {
+    id: 'hf-logo-ending',
+    label: 'HF · Logo ending (driving resolve)',
+    frames: ENDING_FRAMES,
+    // Full-frame brand card with its own declared canvas — the transition must carry it on a
+    // full-size layer, same as the other edge-to-edge surfaces.
+    bleed: true,
+    cues: ENDING_CUES,
+    Comp: LogoEndingSurface,
   },
 };
 

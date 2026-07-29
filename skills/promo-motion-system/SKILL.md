@@ -688,6 +688,31 @@ body(ui)   = the surface's own measured `frames`
 - Guardrails: `SCENE_WARN` 240f, `SCENE_MAX` 480f, `TOTAL_MAX` 1200f. **`ui` scenes are exempt** —
   a surface's length is measured choreography, not a pacing choice.
 
+### ⚑ LAW — EVERY PROMO ENDS ON THE HF LOGO ENDING
+
+The final scene of every future promo is the brand resolve, appended AFTER the CTA copy:
+
+```json
+{ "id": "ending", "kind": "ui", "surface": "hf-logo-ending", "enter": "scale-up-cut... }
+```
+
+`hf-logo-ending` is the ported ending of the HF Logo Intro (source of truth:
+`D:/Memofree/HF Logo Intro animation/handoff/hf-intro-spec.json` — self-contained, spec + assets),
+specifically its THIRD accent version, **driving** (3+3+2+2 with downbeat resolve): the four
+product icons (hug-hands, model, dataset, space) hold a two-beat silence, squeeze 55% toward
+centre easing in, then HARD-CUT into the HF logo landing its own downbeat with one ~3% overshoot.
+Raw material → product → brand, in 1.8s.
+
+What is locked vs free follows the block law: the spec's formulas (swapEnter, accentPulse,
+iconGather, logoEnter backOut s=3.3, global zoom 1.00→1.03) and the white canvas are LOCKED —
+they are the measured motion. The surface publishes two cue slots (kf9 landing, logo downbeat)
+that stay empty until the user supplies drums; the spec's percussion is described in its
+`assets.audio` synthesis notes but, per the sound law, never ships.
+
+Why "driving" and not the other three: it is the only version whose ending carries a written
+silence before the logo lands — an arrival, not just a stop. That reads as an ENDING even when
+the nine preceding hits of the full intro are absent.
+
 ### ⚑ LAW — SOUND: THE SYSTEM TIMES IT, THE USER SUPPLIES IT
 
 **No audio ships with this system, and none is ever auto-filled.** What the system owns is WHEN a
@@ -713,14 +738,24 @@ silence. A doc must never NAME a file that is absent (gate A4 fails hard, becaus
 a 404 mid-render), and a COMMITTED doc must not name audio at all: `public/sfx/` and
 `public/music/` are git-ignored user content, so a named file cannot exist on a fresh clone.
 
-**The editor grammar:** dashed dot = empty slot, solid = filled (purple = user-added). Hovering
-the rail shows a low-opacity **+** that adds an empty container at that instant. Clicking a dot
-opens a **persistent popover** over it — waveform (playhead at the LEFT edge, because a cue
-STARTS at its instant), audition (a click, which grants user activation — the hover-play ban is
-about `mouseenter`), replace / drop-to-fill, nudge — which stays until closed with × or Esc.
-Selecting scenes or junctions underneath must not dismiss it. Dragging a derived cue's dot writes
-a `nudge`; dragging a custom cue's dot moves its `at` — one gesture, routed by ownership, never
-two numbers describing one moment.
+**The editor grammar:** three icon-labelled rows — cues, timeline, background music. Dashed dot
+= empty slot, solid = filled (purple = user-added). Hovering the rail shows a low-opacity **+**
+that adds an empty container at that instant. Clicking a dot opens a **persistent popover** over
+it — waveform (playhead at the LEFT edge, because a cue STARTS at its instant), audition (a
+click, which grants user activation — the hover-play ban is about `mouseenter`), replace /
+drop-to-fill, nudge, delete — which stays until closed with × or Esc. Selecting scenes or
+junctions underneath must not dismiss it. Dragging a derived cue's dot writes a `nudge`; dragging
+a custom cue's dot moves its `at` — one gesture, routed by ownership, never two numbers
+describing one moment.
+
+**Deleting routes by ownership too:** a custom cue's entry is truly removed; a DERIVED cue would
+derive right back, so its "delete" is `off: true` in the override — nudge and src survive, and
+the ↺ chip on the rail restores every hidden cue at once (once a dot is gone there is no per-cue
+handle left to click). **Background music** is one user-supplied file in `sound.music` — dropped
+on the music row, looping under the whole video at a token level (`soft`/`normal`), fading over
+45 frames, ducking to 0.45 under every cue window, floored at an epsilon because a volume that
+reaches exactly 0 DELETES the asset for those frames (measured, not read). Music is independent
+of `sfx` — the bed is not an effect. `public/music/` is git-ignored exactly like `public/sfx/`.
 
 **Budgets are measured, not vibes** (T26): per-cue peak ceiling −15 dBFS (amix is an unnormalised
 straight sum), `MIX_BUDGET` 4 overlapping sounds, `TAG_BUDGET` 8 (the Player THROWS past its
