@@ -279,6 +279,17 @@ const App: React.FC = () => {
             </div>
             <Copy text={CMD} />
           </div>
+          {/* DEV ONLY. The editor is a second Vite entry and lives at /editor.html, so landing on
+              the origin — which is all a launch config can open for localhost — shows this gallery
+              and no sign the editor exists. Hence this link.
+              It must never render in the published build: `vite build` emits only index.html into
+              docs/, and the editor is useless without the dev server's /__doc, /__audio and
+              /__render endpoints. A live link here would be a 404 on GitHub Pages. */}
+          {import.meta.env.DEV && (
+            <a className="editor-link" href="/editor.html">
+              <span className="dot" /> Open the promo editor →
+            </a>
+          )}
         </div>
         <div className="panel-foot">
           <span>

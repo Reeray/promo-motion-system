@@ -139,6 +139,24 @@ h1.title {
 }
 
 /* install / copy widget */
+/* Dev-only affordance (see main.tsx): the editor is a separate entry, and the origin lands here. */
+.editor-link {
+  margin-top: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  font-weight: 500;
+  text-decoration: none;
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 9px 14px;
+  transition: border-color .15s, background .15s;
+}
+.editor-link:hover { border-color: var(--fg); background: var(--code-bg); }
+.editor-link .dot { width: 7px; height: 7px; border-radius: 50%; background: #22c55e; }
+
 .install {
   margin-top: 30px;
   display: flex;
