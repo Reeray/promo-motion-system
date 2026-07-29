@@ -149,9 +149,10 @@ const editorApi = (): Plugin => ({
       /* What is already in public/sfx/, so the editor can offer existing files instead of making
        * you re-upload the same click for every cue. */
       if (url.pathname === '/__audio') {
-        const dir = resolve(__dirname, 'public', 'sfx');
+        const kind = url.searchParams.get('d') === 'music' ? 'music' : 'sfx';
+        const dir = resolve(__dirname, 'public', kind);
         try {
-          return json({files: readdirSync(dir).filter((n) => /\.(wav|mp3|m4a|ogg|aac|flac)$/i.test(n)).map((n) => `sfx/${n}`)});
+          return json({files: readdirSync(dir).filter((n) => /\.(wav|mp3|m4a|ogg|aac|flac)$/i.test(n)).map((n) => `${kind}/${n}`)});
         } catch {
           return json({files: []}); // directory does not exist yet — no audio has been added
         }

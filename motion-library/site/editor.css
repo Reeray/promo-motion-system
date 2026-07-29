@@ -347,6 +347,16 @@
 .ed-music.empty { border-style: dashed; border-color: color-mix(in srgb, var(--faint) 45%, transparent); background: transparent; }
 .ed-music.over { border-color: var(--accent); border-style: solid; background: var(--accent-bg); }
 .ed-music-drop { flex: 1; font-size: 12px; color: var(--muted); cursor: pointer; text-align: center; }
+/* House beds, one click away while the row is empty. Chips, not a select: three known options. */
+.ed-music-kit { display: inline-flex; gap: 5px; }
+.ed-kit-chip {
+  height: 22px !important; padding: 0 9px !important; font-size: 10.5px !important;
+  border-radius: 11px !important; border: 1px solid var(--card-border) !important;
+  background: var(--card) !important; color: var(--muted) !important;
+  transition-property: color, border-color, transform; transition-duration: .12s;
+}
+.ed-kit-chip:hover { color: var(--fg) !important; border-color: var(--accent) !important; }
+.ed-kit-chip:active { transform: scale(0.96); }
 .ed-music-drop input { display: none; }
 .ed-music-name { font-size: 11px; color: var(--fg); white-space: nowrap; }
 .ed-music-wave { flex: 1; height: 26px; min-width: 0; }

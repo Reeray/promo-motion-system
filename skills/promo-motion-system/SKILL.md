@@ -713,6 +713,33 @@ Why "driving" and not the other three: it is the only version whose ending carri
 silence before the logo lands — an arrival, not just a stop. That reads as an ENDING even when
 the nine preceding hits of the full intro are absent.
 
+### ⚑ LAW — ON-BEAT IS ARITHMETIC: PICK BPMs THAT DIVIDE THE FRAME RATE
+
+At 60fps one beat is `3600 / BPM` frames. Only BPMs where that divides EXACTLY can put
+every beat on a frame — everything else drifts and gets "fixed" by ear, badly:
+
+| BPM | frames/beat | feel |
+|---|---|---|
+| 90 | 40 | calm, neo-classical |
+| 100 | 36 | relaxed walkthrough |
+| **120** | **30** | house default |
+| 144 | 25 | brisk montage |
+| 150 | 24 | driving launch |
+| 180 | 20 | sting/teaser |
+
+Music FIRST, then author scene lengths in whole beats — transition cues then land on the
+grid by construction. A hit that reads late gets pulled 10–20ms early with its `nudge`
+(sound leads the eye; audio is processed faster than the picture). Risers end in a
+WRITTEN SILENCE one beat before the downbeat — the driving-version gap.
+
+The house kit (`node motion-library/scripts/craft-audio.mjs`) generates slot-exact
+one-shots (−15 dBFS, the mix-budget ceiling), the HF percussion trio, and three beds at
+120/90/150 BPM mastered like music (the MUSIC_LEVEL tokens were calibrated for that).
+Full research — grammar, levels, licensing, sources — in `motion-library/audio/RESEARCH.md`.
+Library/AI audio may be USED in renders but never committed: only CC0 or our own
+synthesis may even touch the repo, and even those stay git-ignored. Offered, never
+auto-filled.
+
 ### ⚑ LAW — SOUND: THE SYSTEM TIMES IT, THE USER SUPPLIES IT
 
 **No audio ships with this system, and none is ever auto-filled.** What the system owns is WHEN a

@@ -13,3 +13,7 @@ motion-library/public/hf-hardware/
 motion-library/public/sfx/
 motion-library/public/music/
 __pycache__/
+# Audio work area: downloaded CC0 pack zips + extraction cache, and the generated kit manifest.
+# The kit itself regenerates from scripts/craft-audio.mjs; nothing binary belongs in the repo.
+motion-library/.cache-audio/
+motion-library/public/kit-manifest.json

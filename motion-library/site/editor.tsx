@@ -1265,6 +1265,14 @@ const MusicRow: React.FC<{
   const audio = useCueAudio(music?.src ?? null);
   const [drop, setDrop] = useState(false);
   const [busy, setBusy] = useState('');
+  /** Beds already in public/music/ (the crafted kit lands there) — offered as one-click chips so
+   *  using a house bed does not require re-finding it in a file dialog. Offered, never assigned:
+   *  the no-autofill law covers music too. */
+  const [have, setHave] = useState<string[]>([]);
+
+  useEffect(() => {
+    fetch('/__audio?d=music').then((r) => r.json()).then((d) => setHave(d.files ?? [])).catch(() => setHave([]));
+  }, [music?.src]);
 
   const pick = async (f: File) => {
     setBusy('uploading…');
@@ -1314,10 +1322,21 @@ const MusicRow: React.FC<{
           <button className="ed-linkbtn" onClick={() => onSet(null)}>clear</button>
         </>
       ) : (
-        <label className="ed-music-drop">
-          {busy || 'Drop background music here — or click to choose. Loops quietly under the whole video.'}
-          <input type="file" accept="audio/*" onChange={(e) => e.target.files?.[0] && void pick(e.target.files[0])} />
-        </label>
+        <>
+          <label className="ed-music-drop">
+            {busy || 'Drop background music here — or click to choose. Loops quietly under the whole video.'}
+            <input type="file" accept="audio/*" onChange={(e) => e.target.files?.[0] && void pick(e.target.files[0])} />
+          </label>
+          {have.length > 0 && (
+            <span className="ed-music-kit">
+              {have.map((h) => (
+                <button key={h} className="ed-kit-chip mono" title={`Use public/${h}`} onClick={() => onSet(h)}>
+                  {h.replace(/^music\//, '').replace(/\.\w+$/, '')}
+                </button>
+              ))}
+            </span>
+          )}
+        </>
       )}
     </div>
   );
