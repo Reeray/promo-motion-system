@@ -226,8 +226,10 @@
    same coordinate space as a segment's offsetLeft — which is what makes MEASURED placement work
    on a flex timeline whose junctions take space frames cannot account for. */
 .ed-tl { position: relative; }
-/* Tall enough to be a comfortable hover target: the rail is also where the ghost + lives. */
-.ed-rail { position: relative; height: 18px; margin-bottom: 2px; }
+/* The rail is a CLICK TARGET, not just a place dots sit — it has to be tall enough to hover
+   without precision. 18px was a sliver: the cursor left it constantly on the way to the timeline.
+   Dots stay pinned to the bottom edge so they still read as attached to the segments below. */
+.ed-rail { position: relative; height: 28px; margin-bottom: 2px; cursor: copy; }
 .ed-dot {
   position: absolute; bottom: 1px; width: 12px !important; height: 12px !important;
   margin-left: -6px; padding: 0 !important; border-radius: 50% !important;
@@ -244,15 +246,17 @@
 .ed-dot.custom { border-color: var(--ft) !important; }
 .ed-dot.on { border-color: var(--fg) !important; transform: scale(1.35); }
 .ed-dot:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-bg); }
-/* The ghost +: a low-opacity FILLED dot that follows the cursor along the rail. Clicking it adds
-   an empty container at that spot. Slightly larger than a real dot so the + is legible. */
+/* The ghost +: a low-opacity FILLED dot tracking the cursor. POINTER-EVENTS: NONE is load-bearing
+   — as a hit-testable element it matched its own `.ed-dot` guard on the next pointermove and
+   flickered itself in and out. The rail owns the click; this is only the picture of it. */
 .ed-dot.ghost {
-  width: 15px !important; height: 15px !important; margin-left: -7.5px; bottom: 0;
-  background: var(--accent) !important; border: none !important; opacity: .45;
-  color: #fff; font-size: 11px !important; font-weight: 700; cursor: copy;
+  width: 16px !important; height: 16px !important; margin-left: -8px; bottom: 0;
+  background: var(--accent) !important; border: none !important; opacity: .42;
+  color: #fff; font-size: 12px !important; font-weight: 700;
   display: flex; align-items: center; justify-content: center;
+  pointer-events: none;
 }
-.ed-dot.ghost:hover { opacity: .85; transform: scale(1.15); }
+.ed-rail:hover .ed-dot.ghost { opacity: .6; }
 .ed-cue-at { font-size: 11px; color: var(--muted); font-weight: 400; margin-left: 6px; }
 
 /* ── the cue popover: a persistent widget anchored over its dot ──────────── */

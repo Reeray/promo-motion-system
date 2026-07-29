@@ -149,6 +149,7 @@ const App: React.FC = () => {
    *  the next add (a reused id would resurrect the deleted cue's saved overrides). */
   const addCustomCue = (sceneId: string, atMs: number) => {
     let newId = '';
+    let woke = false;
     setRaw((d) => {
       if (!d) return d;
       const custom = d.sound?.custom ?? [];
@@ -156,10 +157,23 @@ const App: React.FC = () => {
         .filter((c) => c.scene === sceneId)
         .reduce((m, c) => Math.max(m, Number(/:custom:(\d+)$/.exec(c.id)?.[1] ?? 0)), 0);
       newId = `${sceneId}:custom:${n}`;
-      return {...d, sound: {...d.sound, custom: [...custom, {id: newId, scene: sceneId, at: atMs}]}};
+      woke = d.sound?.sfx === 'off';
+      /* Adding a cue TURNS SOUND ON. Every doc written before the audio feature carries
+       * `sfx: "off"`, and cues() returns [] on that before it ever reads custom[] — so the cue
+       * landed in the doc and then vanished: no dot, no popover, nothing. Asking the user to find
+       * a separate switch first would be asking them to fix our default. Placing a cue IS the
+       * request for sound, and it stays silent regardless until a file is dropped in — `on` with
+       * empty slots renders exact digital silence. */
+      return {
+        ...d,
+        sound: {...d.sound, sfx: 'on', custom: [...custom, {id: newId, scene: sceneId, at: atMs}]},
+      };
     });
     setDirty(true);
     setOpenCue(newId);
+    // Say so, because it also makes every DERIVED cue's dot appear at once — a big visual change
+    // that would otherwise look like a glitch.
+    if (woke) setLog([`sound was off for this doc — turned on, so cues can exist. Empty slots make no noise; the derived cue dots are now visible too.`]);
   };
 
   const removeCustomCue = (id: string) => {
@@ -659,21 +673,41 @@ const CueRail: React.FC<{
     <div
       className="ed-rail"
       ref={rail}
-      /* The ghost follows the cursor across the RAIL BACKGROUND only. Moving over a dot or the
-         popover clears it, so the + never fights an existing target for the click. */
+      /* The ghost is PURELY VISUAL (pointer-events: none) and the RAIL owns the click.
+       *
+       * It used to be a button, which made it hit-test itself: the moment it rendered under the
+       * cursor the next pointermove's target WAS the ghost, `.ed-dot` matched it, it cleared, the
+       * cursor was over bare rail again, it re-rendered — a flicker loop at pointer-event rate.
+       * Taking it out of hit-testing removes the loop by construction rather than by special-case,
+       * and lets the whole (now taller) rail be the target instead of a 15px circle. */
       onPointerMove={(e) => {
+        if (drag.current) return setGhost(null); // dragging a dot is not placing a new one
         const el = e.target as HTMLElement;
-        if (el.closest('.ed-dot') || el.closest('.ed-pop')) return setGhost(null);
+        if (el.closest('.ed-pop')) return setGhost(null);
         const box = rail.current?.getBoundingClientRect();
         if (!box) return;
         const x = e.clientX - box.left;
         const nearDot = list.some((c) => {
           const dx = xFor(c.frame);
-          return dx !== null && Math.abs(dx - x) < 9;
+          return dx !== null && Math.abs(dx - x) < NEAR_DOT;
         });
         setGhost(nearDot ? null : x);
       }}
       onPointerLeave={() => setGhost(null)}
+      onClick={(e) => {
+        // Dot clicks bubble here; they own their own handler. Only bare rail adds a cue.
+        const el = e.target as HTMLElement;
+        if (el.closest('.ed-dot') || el.closest('.ed-pop')) return;
+        const box = rail.current?.getBoundingClientRect();
+        if (!box) return;
+        const x = e.clientX - box.left;
+        if (list.some((c) => { const dx = xFor(c.frame); return dx !== null && Math.abs(dx - x) < NEAR_DOT; })) return;
+        const slot = slotAt(x);
+        if (!slot) return; // over a junction gap — no scene owns it
+        onAdd(slot.scene.scene.id, Math.round(((slot.frame - slot.scene.start) / prep.fps) * 1000));
+        onSeek(slot.frame);
+        setGhost(null);
+      }}
     >
       {list.map((c) => {
         const drift = live?.id === c.id && drag.current ? live.dx : 0;
@@ -700,23 +734,11 @@ const CueRail: React.FC<{
         );
       })}
 
-      {/* Low-opacity filled + at the cursor: click adds an EMPTY slot right here. It creates the
-          container only — the audio comes later, from the popover. Never auto-filled. */}
+      {/* Low-opacity filled + at the cursor: clicking the rail here adds an EMPTY slot. It creates
+          the container only — the audio comes later, from the popover. Never auto-filled.
+          A span, not a button: see the hit-testing note on the rail above. */}
       {ghostSlot && ghost !== null && !drag.current && (
-        <button
-          className="ed-dot ghost"
-          style={{left: ghost}}
-          title={`Add a cue in "${ghostSlot.scene.scene.id}" at frame ${ghostSlot.frame}`}
-          aria-label={`Add an empty cue at frame ${ghostSlot.frame}`}
-          onClick={() => {
-            const atMs = Math.round(((ghostSlot.frame - ghostSlot.scene.start) / prep.fps) * 1000);
-            onAdd(ghostSlot.scene.scene.id, atMs);
-            onSeek(ghostSlot.frame);
-            setGhost(null);
-          }}
-        >
-          +
-        </button>
+        <span className="ed-dot ghost" style={{left: ghost}} aria-hidden="true">+</span>
       )}
 
       {/* The editor widget, anchored over the selected dot. Persistent: it stays until the user
@@ -805,6 +827,9 @@ const wavePath = (buf: AudioBuffer, cols: number, h: number): string => {
 };
 
 const POP_W = 400;
+/** How close to an existing dot suppresses the add-affordance, in px. Wide enough that the two
+ *  gestures never contend at the scale dots are actually drawn. */
+const NEAR_DOT = 12;
 
 /** The cue widget: a container that pops up OVER the floating dot and stays until closed.
  *  Everything about one cue lives here — waveform, audition, replace, nudge — so the timeline
