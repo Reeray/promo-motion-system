@@ -134,10 +134,21 @@ const PreviewTile: React.FC<{d: TileData; scroller: React.RefObject<HTMLDivEleme
 };
 
 /** The horizontal strip: gap-scrolling tiles, a theme-aware right-edge fade that only shows when
- *  there is more to the right, and a proportional mini scroll-thumb. */
+ *  there is more to the right, and a DRAGGABLE scroll-thumb.
+ *
+ *  Two things this has to supply itself, because the native ones are unavailable here:
+ *   - the scrollbar. `.pv-scroll` hides it (scrollbar-width: none) for looks, so the thumb below
+ *     is not decoration — it is the only pointer handle the strip has, and it must drag.
+ *   - horizontal WHEEL. A trackpad emits deltaX and works already; a mouse wheel emits deltaY,
+ *     which no browser maps to horizontal scroll on its own. Without translating it, a mouse-only
+ *     user cannot reach the tiles past the fold at all. */
 export const PreviewStrip: React.FC<{tiles: TileData[]}> = ({tiles}) => {
   const scroller = useRef<HTMLDivElement>(null);
+  const bar = useRef<HTMLDivElement>(null);
   const [prog, setProg] = useState({thumb: 1, at: 0, overflow: false});
+  /** Live drag: `k` is scroll-px per thumb-px, locked at pointerdown so a mid-drag relayout
+   *  cannot change how far a pixel takes you (same rule as the framing and cue drags). */
+  const drag = useRef<{x0: number; left0: number; k: number} | null>(null);
 
   const recompute = () => {
     const el = scroller.current;
@@ -160,6 +171,73 @@ export const PreviewStrip: React.FC<{tiles: TileData[]}> = ({tiles}) => {
     // tiles.length so the bar recomputes when the option set changes (scene switch)
   }, [tiles.length]);
 
+  /* Wheel, as a NATIVE non-passive listener. React registers its onWheel at the root as passive,
+   * so preventDefault() inside a JSX onWheel is a no-op plus a console warning — the page would
+   * scroll away underneath while the strip stayed put. */
+  useEffect(() => {
+    const el = scroller.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      if (e.shiftKey || Math.abs(e.deltaX) > Math.abs(e.deltaY)) return; // already horizontal
+      const max = el.scrollWidth - el.clientWidth;
+      if (max <= 0 || e.deltaY === 0) return;
+      // At either end, hand the gesture back to the page rather than swallowing it — a strip that
+      // eats every wheel event traps the cursor in a 100px band of a scrolling inspector.
+      if ((e.deltaY < 0 && el.scrollLeft <= 0.5) || (e.deltaY > 0 && el.scrollLeft >= max - 0.5)) return;
+      e.preventDefault();
+      el.scrollLeft = Math.min(max, Math.max(0, el.scrollLeft + e.deltaY));
+    };
+    el.addEventListener('wheel', onWheel, {passive: false});
+    return () => el.removeEventListener('wheel', onWheel);
+  }, []);
+
+  const scrollBy = (dx: number) => {
+    const el = scroller.current;
+    if (!el) return;
+    el.scrollTo({left: Math.max(0, Math.min(el.scrollWidth - el.clientWidth, el.scrollLeft + dx)), behavior: 'smooth'});
+  };
+
+  const barDown = (e: React.PointerEvent) => {
+    const el = scroller.current;
+    const track = bar.current;
+    if (!el || !track) return;
+    const tr = track.getBoundingClientRect();
+    const max = el.scrollWidth - el.clientWidth;
+    if (max <= 0) return;
+    const thumbW = tr.width * prog.thumb;
+    const travel = tr.width - thumbW; // px of track the thumb can actually traverse
+    const k = travel > 0 ? max / travel : 0;
+    const thumbLeft = tr.left + prog.at * travel;
+    // Clicking the bare track jumps the thumb to the cursor; grabbing the thumb just drags.
+    if (e.clientX < thumbLeft || e.clientX > thumbLeft + thumbW) {
+      el.scrollLeft = Math.max(0, Math.min(max, (e.clientX - tr.left - thumbW / 2) * k));
+    }
+    drag.current = {x0: e.clientX, left0: el.scrollLeft, k};
+    // Snap fights a dragged thumb — it keeps yanking the strip to the nearest tile mid-gesture.
+    el.style.scrollSnapType = 'none';
+    track.classList.add('on');
+    track.setPointerCapture(e.pointerId);
+    e.preventDefault();
+  };
+  const barMove = (e: React.PointerEvent) => {
+    const d = drag.current;
+    const el = scroller.current;
+    if (!d || !el) return;
+    const max = el.scrollWidth - el.clientWidth;
+    el.scrollLeft = Math.max(0, Math.min(max, d.left0 + (e.clientX - d.x0) * d.k));
+  };
+  const barUp = (e: React.PointerEvent) => {
+    if (!drag.current) return;
+    drag.current = null;
+    if (scroller.current) scroller.current.style.scrollSnapType = '';
+    bar.current?.classList.remove('on');
+    try {
+      (e.target as HTMLElement).releasePointerCapture?.(e.pointerId);
+    } catch {
+      /* capture was never held */
+    }
+  };
+
   return (
     <div className={`pv-strip${prog.overflow ? ' has-more' : ''}`}>
       <div className="pv-scroll" ref={scroller} onScroll={recompute}>
@@ -168,7 +246,28 @@ export const PreviewStrip: React.FC<{tiles: TileData[]}> = ({tiles}) => {
         ))}
       </div>
       {prog.overflow && (
-        <div className="pv-bar" aria-hidden="true">
+        <div
+          className="pv-bar"
+          ref={bar}
+          role="scrollbar"
+          aria-orientation="horizontal"
+          aria-label="Scroll the options"
+          aria-valuenow={Math.round(prog.at * 100)}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          tabIndex={0}
+          onPointerDown={barDown}
+          onPointerMove={barMove}
+          onPointerUp={barUp}
+          onPointerCancel={barUp}
+          onKeyDown={(e) => {
+            const page = (scroller.current?.clientWidth ?? 0) * 0.7;
+            if (e.key === 'ArrowLeft') { e.preventDefault(); scrollBy(-page / 3); }
+            if (e.key === 'ArrowRight') { e.preventDefault(); scrollBy(page / 3); }
+            if (e.key === 'Home') { e.preventDefault(); scrollBy(-1e6); }
+            if (e.key === 'End') { e.preventDefault(); scrollBy(1e6); }
+          }}
+        >
           <span
             className="pv-bar-thumb"
             style={{width: `${prog.thumb * 100}%`, left: `${prog.at * (1 - prog.thumb) * 100}%`}}
