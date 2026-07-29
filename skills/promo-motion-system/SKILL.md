@@ -688,6 +688,47 @@ body(ui)   = the surface's own measured `frames`
 - Guardrails: `SCENE_WARN` 240f, `SCENE_MAX` 480f, `TOTAL_MAX` 1200f. **`ui` scenes are exempt** —
   a surface's length is measured choreography, not a pacing choice.
 
+### ⚑ LAW — SOUND: THE SYSTEM TIMES IT, THE USER SUPPLIES IT
+
+**No audio ships with this system, and none is ever auto-filled.** What the system owns is WHEN a
+sound should happen; what it plays is always a file the user chose. The two halves must never
+blur — auto-assigning a file to a cue is the audio equivalent of inventing UI.
+
+**Cue times are DERIVED**, from the same anchors the picture uses (src/promo/sound.ts, the only
+place that derivation may exist — gate R6): a scene's intro fires at its first frame, its outro at
+`start + frames − OUTRO.frames`, and a surface's interaction cues come from the timing constants
+its choreography already runs on, rebased to the timeline. Gate **P6** proves audio can never
+alter a frame count — strip the whole `sound` block and not one frame may move — which is the
+licence for the three authored numbers the doc may carry:
+
+| field | what it is | why it shadows nothing |
+|---|---|---|
+| `nudge` (ms) | offset to a DERIVED cue | the anchor stays derived; ms so it cannot shadow fps |
+| `framing` | authored camera | nothing derives a camera (gate P5) |
+| `custom[].at` (ms) | a USER-ADDED cue's instant, **anchored to its scene** | authored outright; scene-relative so it travels with its scene when earlier scenes change length |
+
+**A cue with no file is an EMPTY SLOT, not an error** — precise time, a length, a dashed dot on
+the editor rail; it simply makes no noise. `sfx: "on"` with all slots empty renders exact digital
+silence. A doc must never NAME a file that is absent (gate A4 fails hard, because Remotion dies on
+a 404 mid-render), and a COMMITTED doc must not name audio at all: `public/sfx/` and
+`public/music/` are git-ignored user content, so a named file cannot exist on a fresh clone.
+
+**The editor grammar:** dashed dot = empty slot, solid = filled (purple = user-added). Hovering
+the rail shows a low-opacity **+** that adds an empty container at that instant. Clicking a dot
+opens a **persistent popover** over it — waveform (playhead at the LEFT edge, because a cue
+STARTS at its instant), audition (a click, which grants user activation — the hover-play ban is
+about `mouseenter`), replace / drop-to-fill, nudge — which stays until closed with × or Esc.
+Selecting scenes or junctions underneath must not dismiss it. Dragging a derived cue's dot writes
+a `nudge`; dragging a custom cue's dot moves its `at` — one gesture, routed by ownership, never
+two numbers describing one moment.
+
+**Budgets are measured, not vibes** (T26): per-cue peak ceiling −15 dBFS (amix is an unnormalised
+straight sum), `MIX_BUDGET` 4 overlapping sounds, `TAG_BUDGET` 8 (the Player THROWS past its
+shared-audio-tag cap; the default 5 has zero margin over 4 cues + a music bed). Gate C1 counts by
+interval overlap, not frame collision. Known open item: the encoder adds a constant ~43 ms AAC
+priming delay (measured, PLAN.md open question 0) — not silently compensated, because a hidden
+global shift would be a second source of truth for timing.
+
 ### Swap-duration table (measured, at 60fps)
 
 | slot | id | axis | frames | swapping changes the scene by |

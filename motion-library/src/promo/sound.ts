@@ -30,6 +30,9 @@ export type Cue = {
   frame: number;
   /** Length in frames — REQUIRED, see the header. */
   len: number;
+  /** True for a user-added cue (sound.custom). Its instant is authored, so the editor's drag
+   *  edits `at` directly instead of writing a nudge, and it can be deleted. */
+  custom?: boolean;
   /**
    * The audio to play, or NULL for an empty slot.
    *
@@ -65,6 +68,9 @@ const CUE_MS: Record<CueKind, number> = {
   'ui-tick': 60,
   'ui-swap': 180,
   'ui-rise': 90,
+  // A user-added slot has no motion to inherit a length from; 1s is a generous trim window for
+  // whatever gets dropped in, and the overlap budgets (C1) still count it honestly.
+  custom: 1000,
 };
 
 const framesFor = (kind: CueKind, fps: number) => Math.ceil((CUE_MS[kind] / 1000) * fps);
@@ -158,6 +164,25 @@ export const cues = (prep: PreparedLike): Cue[] => {
       (surf?.cues ?? []).forEach((c, n) => push(`${s.id}:${c.kind}:${n}`, c.kind, p.start + c.at));
     }
   });
+
+  // USER-ADDED cues. `at` is ms from the owning scene's start; the frame is clamped INTO that
+  // scene, so a cue placed late in a scene that later gets shorter stays with its scene instead of
+  // silently landing in the next one. src/gain live on the entry itself — the overrides map is for
+  // derived cues only, so a custom cue has exactly one home in the doc.
+  for (const c of doc.sound?.custom ?? []) {
+    const p = scenes.find((x) => x.scene.id === c.scene);
+    if (!p) continue; // validate() already rejects this; stay total anyway
+    const off = Math.min(Math.round((c.at / 1000) * fps), Math.max(0, p.frames - 1));
+    out.push({
+      id: c.id,
+      kind: 'custom',
+      frame: p.start + off,
+      len: framesFor('custom', fps),
+      custom: true,
+      src: c.src ?? null,
+      gain: GAIN[(c.gain ?? 'normal') as GainTok] ?? 1,
+    });
+  }
 
   return out.sort((a, b) => a.frame - b.frame);
 };

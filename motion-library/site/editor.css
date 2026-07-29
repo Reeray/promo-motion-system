@@ -226,21 +226,53 @@
    same coordinate space as a segment's offsetLeft — which is what makes MEASURED placement work
    on a flex timeline whose junctions take space frames cannot account for. */
 .ed-tl { position: relative; }
-.ed-rail { position: relative; height: 16px; margin-bottom: 2px; }
+/* Tall enough to be a comfortable hover target: the rail is also where the ghost + lives. */
+.ed-rail { position: relative; height: 18px; margin-bottom: 2px; }
 .ed-dot {
-  position: absolute; bottom: 0; width: 11px !important; height: 11px !important;
-  margin-left: -5.5px; padding: 0 !important; border-radius: 50% !important;
-  background: var(--card) !important; border: 1.5px solid var(--faint) !important;
+  position: absolute; bottom: 1px; width: 12px !important; height: 12px !important;
+  margin-left: -6px; padding: 0 !important; border-radius: 50% !important;
+  /* An EMPTY slot is a DASHED ring — the visual grammar of a placeholder awaiting content,
+     matching the dashed drop target in the popover. Filled goes solid. */
+  background: var(--card) !important; border: 1.5px dashed var(--faint) !important;
   cursor: grab; touch-action: none; transition: transform .12s, border-color .12s, background .12s;
+  font-size: 0; line-height: 1;
 }
 .ed-dot:hover { transform: scale(1.25); border-color: var(--accent) !important; }
 .ed-dot:active { cursor: grabbing; }
-/* A FILLED slot is solid; an empty one is a hollow ring. The difference has to be visible at 11px
-   from across the timeline, so it is fill-vs-hollow rather than a colour shift. */
-.ed-dot.filled { background: var(--accent) !important; border-color: var(--accent) !important; }
+.ed-dot.filled { background: var(--accent) !important; border: 1.5px solid var(--accent) !important; }
+.ed-dot.custom.filled { background: var(--ft) !important; border-color: var(--ft) !important; }
+.ed-dot.custom { border-color: var(--ft) !important; }
 .ed-dot.on { border-color: var(--fg) !important; transform: scale(1.35); }
 .ed-dot:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-bg); }
+/* The ghost +: a low-opacity FILLED dot that follows the cursor along the rail. Clicking it adds
+   an empty container at that spot. Slightly larger than a real dot so the + is legible. */
+.ed-dot.ghost {
+  width: 15px !important; height: 15px !important; margin-left: -7.5px; bottom: 0;
+  background: var(--accent) !important; border: none !important; opacity: .45;
+  color: #fff; font-size: 11px !important; font-weight: 700; cursor: copy;
+  display: flex; align-items: center; justify-content: center;
+}
+.ed-dot.ghost:hover { opacity: .85; transform: scale(1.15); }
 .ed-cue-at { font-size: 11px; color: var(--muted); font-weight: 400; margin-left: 6px; }
+
+/* ── the cue popover: a persistent widget anchored over its dot ──────────── */
+.ed-pop {
+  position: absolute; bottom: calc(100% + 8px); width: 400px; z-index: 40;
+  background: var(--panel); border: 1px solid var(--card-border); border-radius: 11px;
+  box-shadow: var(--shadow); padding: 10px 12px 8px;
+}
+/* A small tail pointing at the dot would need per-dot alignment as the popover clamps to the
+   container edge; the anchoring proximity reads clearly enough without one. */
+.ed-pop-h { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.ed-pop-t { font-size: 12.5px; font-weight: 600; }
+.ed-pop-x {
+  height: 22px !important; width: 22px; padding: 0 !important; font-size: 13px !important;
+  border: none !important; color: var(--muted) !important; border-radius: 6px !important;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.ed-pop-x:hover { color: var(--fg) !important; background: var(--hover) !important; }
+.ed-pop .ed-wave { margin: 0 0 8px; }
+.ed-pop .ed-row { margin-bottom: 0; }
 
 /* ── cue audio panel ────────────────────────────────────────────────────── */
 .ed-wave {

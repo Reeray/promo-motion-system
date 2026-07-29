@@ -124,10 +124,20 @@ export const THEMES: Theme[] = ['soft-light', 'light', 'dark'];
  * reaches a frame count). It is MILLISECONDS, never frames: frames would make it a second source
  * of truth for fps. Everything else is a token. */
 export type SoundCueOverride = {nudge?: number; src?: string; gain?: GainTok};
+
+/** A USER-ADDED cue — the third authored number, same footing as `framing` and `nudge`.
+ *
+ * `at` is MILLISECONDS from the owning scene's start, never a frame (frames would shadow fps) and
+ * never absolute (an absolute time silently detaches from its event when an earlier scene changes
+ * length — anchoring to a scene makes the cue travel with what it belongs to). Its src/gain live
+ * HERE, not in the overrides map, so a custom cue has exactly one home in the doc. */
+export type CustomCue = {id: string; scene: string; at: number; src?: string; gain?: GainTok};
+
 export type PromoSound = {
   sfx?: 'on' | 'off';
   music?: {src: string; level?: MusicLevelTok};
   cues?: Record<string, SoundCueOverride>;
+  custom?: CustomCue[];
 };
 
 /** ±500 ms, quantised to 1 ms. Beyond half a second a cue has stopped belonging to its event. */
@@ -164,6 +174,12 @@ export const normalize = (raw: PromoDocRaw): PromoDoc => ({
     cues: Object.fromEntries(
       Object.entries(raw.sound?.cues ?? {}).map(([k, v]) => [k, {...v, nudge: clampNudge(v?.nudge)}])
     ),
+    // `at` quantised to 1ms and floored at 0 here; the upper bound is the scene's DERIVED length,
+    // which normalize() cannot know — cues() clamps the resulting frame into the scene instead.
+    custom: (raw.sound?.custom ?? []).map((c) => ({
+      ...c,
+      at: Number.isFinite(c.at) ? Math.max(0, Math.round(c.at)) : 0,
+    })),
   },
   scenes: (raw.scenes ?? []).map((s) => {
     const base = {id: s.id, enter: s.enter ?? DEFAULTS.enter, exit: s.exit ?? DEFAULTS.exit, hold: s.hold ?? DEFAULTS.hold};
@@ -206,6 +222,17 @@ export const validate = (doc: PromoDoc): string[] => {
     if (o?.gain && !(o.gain in GAIN)) errs.push(`sound cue "${id}": unknown gain token "${o.gain}"`);
     if (o?.src && !/^(sfx|music)\/[\w.-]+(\/[\w.-]+)*$/.test(o.src)) {
       errs.push(`sound cue "${id}": src "${o.src}" must be a simple path under sfx/ or music/`);
+    }
+  }
+  const sceneIds = new Set(doc.scenes.map((s) => s.id));
+  const customIds = new Set<string>();
+  for (const c of doc.sound?.custom ?? []) {
+    if (customIds.has(c.id)) errs.push(`sound custom cue "${c.id}": duplicate id`);
+    customIds.add(c.id);
+    if (!sceneIds.has(c.scene)) errs.push(`sound custom cue "${c.id}": unknown scene "${c.scene}"`);
+    if (c.gain && !(c.gain in GAIN)) errs.push(`sound custom cue "${c.id}": unknown gain token "${c.gain}"`);
+    if (c.src && !/^(sfx|music)\/[\w.-]+(\/[\w.-]+)*$/.test(c.src)) {
+      errs.push(`sound custom cue "${c.id}": src "${c.src}" must be a simple path under sfx/ or music/`);
     }
   }
   const music = doc.sound?.music;

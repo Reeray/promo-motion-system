@@ -32,7 +32,7 @@ import {PreviewStrip, blockTile, effectTile, useEffectProbes} from './preview';
  * earlier draft did) changes the hook count between selections and crashes React.
  * ========================================================================== */
 
-type Sel = {t: 'scene'; i: number} | {t: 'junc'; i: number; h: 'o' | 'i'} | {t: 'cue'; id: string} | null;
+type Sel = {t: 'scene'; i: number} | {t: 'junc'; i: number; h: 'o' | 'i'} | null;
 type DocEntry = {f: string; doc: PromoDocRaw | null; error?: string};
 
 const useDocs = () => {
@@ -63,6 +63,10 @@ const App: React.FC = () => {
   const [raw, setRaw] = useState<PromoDocRaw | null>(null);
   const [name, setName] = useState<string>('');
   const [sel, setSel] = useState<Sel>({t: 'scene', i: 0});
+  /** The cue whose popover is open. DELIBERATELY separate from `sel`: the widget sticks around
+   *  until the user closes it (× or Esc), so selecting a scene or junction underneath must not
+   *  dismiss it — only opening a different cue moves it. */
+  const [openCue, setOpenCue] = useState<string | null>(null);
   const [openJ, setOpenJ] = useState(-1);
   const [split, setSplit] = useState(-1);
   const [busy, setBusy] = useState('');
@@ -84,6 +88,7 @@ const App: React.FC = () => {
         setRaw(d);
         setName(f);
         setSel({t: 'scene', i: 0});
+        setOpenCue(null);
         setLog([]);
         setDirty(false);
       });
@@ -112,10 +117,24 @@ const App: React.FC = () => {
   };
 
   /** Nudge is a DELTA the user applies by dragging, so it accumulates onto whatever is stored
-   *  rather than replacing it — otherwise a second drag would start from zero and jump. */
+   *  rather than replacing it — otherwise a second drag would start from zero and jump.
+   *
+   *  Routed by ownership: a DERIVED cue keeps its anchor and stores the delta as a nudge in the
+   *  overrides map; a CUSTOM cue's instant IS authored, so the delta moves `at` itself — writing
+   *  a nudge on top of an authored time would be two numbers describing one moment. */
   const patchNudge = (id: string, deltaMs: number) => {
     setRaw((d) => {
       if (!d) return d;
+      const custom = d.sound?.custom ?? [];
+      if (custom.some((c) => c.id === id)) {
+        return {
+          ...d,
+          sound: {
+            ...d.sound,
+            custom: custom.map((c) => (c.id === id ? {...c, at: Math.max(0, c.at + deltaMs)} : c)),
+          },
+        };
+      }
       const cur = d.sound?.cues?.[id] ?? {};
       return {
         ...d,
@@ -125,12 +144,52 @@ const App: React.FC = () => {
     setDirty(true);
   };
 
+  /** Add an EMPTY custom cue — the container only; the audio comes later, never auto-filled.
+   *  Id numbering is per-scene and takes max+1, so deleting cue 2 of 3 never re-issues its id to
+   *  the next add (a reused id would resurrect the deleted cue's saved overrides). */
+  const addCustomCue = (sceneId: string, atMs: number) => {
+    let newId = '';
+    setRaw((d) => {
+      if (!d) return d;
+      const custom = d.sound?.custom ?? [];
+      const n = 1 + custom
+        .filter((c) => c.scene === sceneId)
+        .reduce((m, c) => Math.max(m, Number(/:custom:(\d+)$/.exec(c.id)?.[1] ?? 0)), 0);
+      newId = `${sceneId}:custom:${n}`;
+      return {...d, sound: {...d.sound, custom: [...custom, {id: newId, scene: sceneId, at: atMs}]}};
+    });
+    setDirty(true);
+    setOpenCue(newId);
+  };
+
+  const removeCustomCue = (id: string) => {
+    setRaw((d) =>
+      d ? {...d, sound: {...d.sound, custom: (d.sound?.custom ?? []).filter((c) => c.id !== id)}} : d
+    );
+    setDirty(true);
+    setOpenCue(null);
+  };
+
   /** Fill or clear a slot. Clearing DELETES the src key rather than storing null, so an emptied
    *  cue leaves no residue in the doc — a reader can tell "never filled" from "filled with
-   *  nothing", and the diff stays clean. */
+   *  nothing", and the diff stays clean. Custom cues carry src on their own entry. */
   const patchCueSrc = (id: string, src: string | null) => {
     setRaw((d) => {
       if (!d) return d;
+      const custom = d.sound?.custom ?? [];
+      if (custom.some((c) => c.id === id)) {
+        return {
+          ...d,
+          sound: {
+            ...d.sound,
+            custom: custom.map((c) => {
+              if (c.id !== id) return c;
+              const {src: _drop, ...rest} = c;
+              return src ? {...rest, src} : rest;
+            }),
+          },
+        };
+      }
       const {src: _drop, ...rest} = d.sound?.cues?.[id] ?? {};
       const next = src ? {...rest, src} : rest;
       const all = {...(d.sound?.cues ?? {}), [id]: next};
@@ -233,10 +292,14 @@ const App: React.FC = () => {
           <CueRail
             prep={prep}
             list={cueList}
-            sel={sel}
-            onPick={(id) => { setSel({t: 'cue', id}); setOpenJ(-1); }}
+            openCue={openCue}
+            onPick={(id) => setOpenCue(id)}
             onNudge={patchNudge}
             onSeek={seek}
+            onSetSrc={patchCueSrc}
+            onAdd={addCustomCue}
+            onRemove={removeCustomCue}
+            onClose={() => setOpenCue(null)}
           />
           <div className="ed-strip" ref={strip}>
             {prep.scenes.map((p, i) => {
@@ -299,7 +362,7 @@ const App: React.FC = () => {
           </div>
           </div>
 
-          <Inspector sel={sel} scenes={scenes} prep={prep} patch={patchScene} setJunction={setJunction} cues={cueList} onNudge={patchNudge} onSetSrc={patchCueSrc} />
+          <Inspector sel={sel} scenes={scenes} prep={prep} patch={patchScene} setJunction={setJunction} />
         </>
       )}
 
@@ -483,12 +546,18 @@ const FramingStage: React.FC<{
 const CueRail: React.FC<{
   prep: Prepared;
   list: Cue[];
-  sel: Sel;
+  openCue: string | null;
   onPick: (id: string) => void;
   onNudge: (id: string, ms: number) => void;
   onSeek: (f: number) => void;
-}> = ({prep, list, sel, onPick, onNudge, onSeek}) => {
+  onSetSrc: (id: string, src: string | null) => void;
+  onAdd: (sceneId: string, atMs: number) => void;
+  onRemove: (id: string) => void;
+  onClose: () => void;
+}> = ({prep, list, openCue, onPick, onNudge, onSeek, onSetSrc, onAdd, onRemove, onClose}) => {
   const [geo, setGeo] = useState<{left: number; width: number}[]>([]);
+  /** Ghost "+" position while the cursor hovers the rail, or null. */
+  const [ghost, setGhost] = useState<number | null>(null);
   const [live, setLive] = useState<{id: string; dx: number} | null>(null);
   const liveRef = useRef<{id: string; dx: number} | null>(null);
   const drag = useRef<{id: string; x0: number; msPerPx: number; base: number} | null>(null);
@@ -525,6 +594,19 @@ const CueRail: React.FC<{
       const last = i === prep.scenes.length - 1;
       const inside = frame >= p.start && (last ? frame <= p.start + p.frames : frame < p.start + p.frames);
       if (inside) return g.left + ((frame - p.start) / Math.max(1, p.frames)) * g.width;
+    }
+    return null;
+  };
+
+  /** x -> the scene under it and the frame there, or null over a junction gap. The + only appears
+   *  where a click has a well-defined home; junctions belong to the transition, not to a scene. */
+  const slotAt = (x: number): {scene: (typeof prep.scenes)[number]; frame: number} | null => {
+    for (let i = 0; i < prep.scenes.length; i++) {
+      const g = geo[i];
+      const p = prep.scenes[i];
+      if (!g || x < g.left || x > g.left + g.width) continue;
+      const frame = p.start + Math.round(((x - g.left) / Math.max(1, g.width)) * p.frames);
+      return {scene: p, frame: Math.min(frame, p.start + p.frames - 1)};
     }
     return null;
   };
@@ -568,19 +650,42 @@ const CueRail: React.FC<{
     }
   };
 
+  const selCue = openCue ? list.find((c) => c.id === openCue) ?? null : null;
+  const selX = selCue ? xFor(selCue.frame) : null;
+  const railW = rail.current?.offsetWidth ?? 0;
+  const ghostSlot = ghost !== null ? slotAt(ghost) : null;
+
   return (
-    <div className="ed-rail" ref={rail}>
+    <div
+      className="ed-rail"
+      ref={rail}
+      /* The ghost follows the cursor across the RAIL BACKGROUND only. Moving over a dot or the
+         popover clears it, so the + never fights an existing target for the click. */
+      onPointerMove={(e) => {
+        const el = e.target as HTMLElement;
+        if (el.closest('.ed-dot') || el.closest('.ed-pop')) return setGhost(null);
+        const box = rail.current?.getBoundingClientRect();
+        if (!box) return;
+        const x = e.clientX - box.left;
+        const nearDot = list.some((c) => {
+          const dx = xFor(c.frame);
+          return dx !== null && Math.abs(dx - x) < 9;
+        });
+        setGhost(nearDot ? null : x);
+      }}
+      onPointerLeave={() => setGhost(null)}
+    >
       {list.map((c) => {
         const drift = live?.id === c.id && drag.current ? live.dx : 0;
         const x = xFor(c.frame);
         if (x === null) return null;
-        const on = sel?.t === 'cue' && sel.id === c.id;
+        const on = openCue === c.id;
         return (
           <button
             key={c.id}
-            className={`ed-dot${on ? ' on' : ''}${c.src ? ' filled' : ''}`}
+            className={`ed-dot${on ? ' on' : ''}${c.src ? ' filled' : ''}${c.custom ? ' custom' : ''}`}
             style={{left: x + drift}}
-            title={`${c.id}\n${c.src ?? 'empty slot — drop audio in the inspector'}`}
+            title={`${c.id}\n${c.src ?? 'empty slot — click to open'}`}
             onPointerDown={(e) => onDown(e, c)}
             onPointerMove={onMove}
             onPointerUp={onUp}
@@ -594,6 +699,40 @@ const CueRail: React.FC<{
           />
         );
       })}
+
+      {/* Low-opacity filled + at the cursor: click adds an EMPTY slot right here. It creates the
+          container only — the audio comes later, from the popover. Never auto-filled. */}
+      {ghostSlot && ghost !== null && !drag.current && (
+        <button
+          className="ed-dot ghost"
+          style={{left: ghost}}
+          title={`Add a cue in "${ghostSlot.scene.scene.id}" at frame ${ghostSlot.frame}`}
+          aria-label={`Add an empty cue at frame ${ghostSlot.frame}`}
+          onClick={() => {
+            const atMs = Math.round(((ghostSlot.frame - ghostSlot.scene.start) / prep.fps) * 1000);
+            onAdd(ghostSlot.scene.scene.id, atMs);
+            onSeek(ghostSlot.frame);
+            setGhost(null);
+          }}
+        >
+          +
+        </button>
+      )}
+
+      {/* The editor widget, anchored over the selected dot. Persistent: it stays until the user
+          closes it (X or Esc) — selection elsewhere moves it, but a stray click does not eat it. */}
+      {selCue && selX !== null && (
+        <CuePopover
+          key={selCue.id}
+          cue={selCue}
+          prep={prep}
+          x={Math.max(4, Math.min(selX - POP_W / 2, Math.max(4, railW - POP_W - 4)))}
+          onNudge={onNudge}
+          onSetSrc={onSetSrc}
+          onRemove={onRemove}
+          onClose={onClose}
+        />
+      )}
     </div>
   );
 };
@@ -605,15 +744,8 @@ const Inspector: React.FC<{
   prep: Prepared;
   patch: (i: number, p: Partial<SceneRaw>) => void;
   setJunction: (i: number, o: OutroId, e: IntroId) => void;
-  cues: Cue[];
-  onNudge: (id: string, ms: number) => void;
-  onSetSrc: (id: string, src: string | null) => void;
-}> = ({sel, scenes, prep, patch, setJunction, cues: list, onNudge, onSetSrc}) => {
+}> = ({sel, scenes, prep, patch, setJunction}) => {
   if (!sel) return null;
-  if (sel.t === 'cue') {
-    const c = list.find((x) => x.id === sel.id);
-    return c ? <CueInspector cue={c} prep={prep} onNudge={onNudge} onSetSrc={onSetSrc} /> : null;
-  }
   if (sel.t === 'junc') return <JunctionInspector i={sel.i} h={sel.h} scenes={scenes} setJunction={setJunction} />;
   const s = scenes[sel.i];
   if (s.kind === 'ui') return <UiInspector s={s} />;
@@ -672,17 +804,35 @@ const wavePath = (buf: AudioBuffer, cols: number, h: number): string => {
   return `M${top.join(' L')} L${bot.reverse().join(' L')} Z`;
 };
 
-/** The cue panel: what plays, when, and how to change both. */
-const CueInspector: React.FC<{
+const POP_W = 400;
+
+/** The cue widget: a container that pops up OVER the floating dot and stays until closed.
+ *  Everything about one cue lives here — waveform, audition, replace, nudge — so the timeline
+ *  below never reflows while you work on a sound. */
+const CuePopover: React.FC<{
   cue: Cue;
   prep: Prepared;
+  x: number;
   onNudge: (id: string, ms: number) => void;
   onSetSrc: (id: string, src: string | null) => void;
-}> = ({cue, prep, onNudge, onSetSrc}) => {
+  onRemove: (id: string) => void;
+  onClose: () => void;
+}> = ({cue, prep, x, onNudge, onSetSrc, onRemove, onClose}) => {
   const audio = useCueAudio(cue.src);
   const [drop, setDrop] = useState(false);
   const [busy, setBusy] = useState('');
   const [have, setHave] = useState<string[]>([]);
+
+  // Persistent until dismissed: Esc is the keyboard exit, the × the pointer one. No outside-click
+  // dismissal — the whole point of the widget is that it sticks around while you audition and
+  // fiddle, and a stray click on the player must not eat it.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
 
   useEffect(() => {
     fetch('/__audio').then((r) => r.json()).then((d) => setHave(d.files ?? [])).catch(() => setHave([]));
@@ -714,12 +864,18 @@ const CueInspector: React.FC<{
     s.start();
   };
 
-  const W = 460;
-  const H = 54;
+  const W = 368;
+  const H = 48;
   return (
-    <div className="ed-insp">
-      <div className="ed-insp-h">
-        {cue.kind} <span className="ed-cue-at mono">frame {cue.frame} · {(cue.frame / prep.fps).toFixed(2)}s · slot {cue.len}f</span>
+    <div className="ed-pop" style={{left: x}} role="dialog" aria-label={`Edit cue ${cue.id}`}>
+      <div className="ed-pop-h">
+        <span className="ed-pop-t">{cue.custom ? 'custom cue' : cue.kind}</span>
+        <span className="ed-cue-at mono">frame {cue.frame} · {(cue.frame / prep.fps).toFixed(2)}s</span>
+        <span style={{marginLeft: 'auto'}} />
+        {cue.custom && (
+          <button className="ed-pop-x" title="Delete this cue" onClick={() => onRemove(cue.id)}>🗑</button>
+        )}
+        <button className="ed-pop-x" title="Close (Esc)" onClick={onClose}>×</button>
       </div>
 
       <div
@@ -749,10 +905,10 @@ const CueInspector: React.FC<{
         <span className="ed-wave-head" />
       </div>
 
-      <div className="ed-row">
-        <button className="ed-tok" onClick={audition} disabled={audio.state !== 'ready'}>▶ Audition</button>
-        <label className="ed-tok ed-file">
-          {cue.src ? 'Replace…' : 'Choose file…'}
+      <div className="ed-row" style={{marginBottom: 8}}>
+        <button className="ed-tok" onClick={audition} disabled={audio.state !== 'ready'} title="Play this sound (click — allowed to make noise)">▶</button>
+        <label className="ed-tok ed-file" title={cue.src ? 'Replace the audio file' : 'Choose an audio file'}>
+          ⇆ {cue.src ? 'Replace' : 'Choose'}
           <input type="file" accept="audio/*" onChange={(e) => e.target.files?.[0] && void upload(e.target.files[0])} />
         </label>
         {have.length > 0 && (
@@ -768,18 +924,13 @@ const CueInspector: React.FC<{
         {cue.src && <button className="ed-linkbtn" onClick={() => onSetSrc(cue.id, null)}>clear</button>}
       </div>
 
-      <div className="ed-row">
+      <div className="ed-row" style={{marginBottom: 4}}>
         <span className="ed-lab mono">NUDGE</span>
         {[-40, -5, 5, 40].map((d) => (
-          <button key={d} className="ed-tok" onClick={() => onNudge(cue.id, d)}>{d > 0 ? `+${d}` : d}ms</button>
+          <button key={d} className="ed-tok" onClick={() => onNudge(cue.id, d)}>{d > 0 ? `+${d}` : d}</button>
         ))}
-        <span className="ed-frame-hint">or drag the dot / arrow-key it</span>
+        <span className="ed-frame-hint">ms · or drag the dot</span>
       </div>
-
-      <p className="ed-note mono" style={{fontSize: 11}}>
-        id <code>{cue.id}</code> — stable across copy edits, so a nudge survives rewriting the words.
-        {cue.src && <> · plays <code>public/{cue.src}</code>, trimmed to {cue.len} frames</>}
-      </p>
     </div>
   );
 };

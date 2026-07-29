@@ -19,6 +19,10 @@ export const CUE_KINDS = [
   'ui-tick',
   'ui-swap',
   'ui-rise',
+  /** A USER-ADDED slot, placed by clicking the + on the editor's cue rail. Unlike every other
+   *  kind its instant is authored, not derived — anchored to a scene as a ms offset, so it
+   *  travels with its scene when earlier scenes change length. */
+  'custom',
 ] as const;
 
 export type CueKind = (typeof CUE_KINDS)[number];
