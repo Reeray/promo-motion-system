@@ -43,19 +43,89 @@ const useDocs = () => {
   return list;
 };
 
-/** A filename made human: "hf-token-presets · 5 scenes · 15.1s · soft-light". Duration is derived
- *  client-side through prepare(), so the picker never introduces a second duration path. */
-const docLabel = (e: DocEntry): string => {
-  if (!e.doc) return `${e.f} · unreadable`;
+/** A doc made human, in two registers the picker typesets separately: the NAME (what you scan
+ *  for) and the meta (what you confirm with). Duration is derived client-side through prepare(),
+ *  so the picker never introduces a second duration path. */
+const docMeta = (e: DocEntry): {title: string; meta: string} => {
+  if (!e.doc) return {title: e.f, meta: 'unreadable'};
   const n = e.doc.scenes?.length ?? 0;
   let dur = '';
   try {
     const p = prepare(e.doc);
-    dur = ` · ${(p.durationInFrames / p.fps).toFixed(1)}s`;
+    dur = `${(p.durationInFrames / p.fps).toFixed(1)}s`;
   } catch {
-    dur = ' · ⚠';
+    dur = '⚠';
   }
-  return `${e.doc.id} · ${n} scene${n === 1 ? '' : 's'}${dur} · ${e.doc.theme ?? 'soft-light'}`;
+  return {title: e.doc.id, meta: `${n} scene${n === 1 ? '' : 's'} · ${dur} · ${e.doc.theme ?? 'soft-light'}`};
+};
+
+/** The document picker. Custom rather than a native <select> because the label has a HIERARCHY —
+ *  a name you scan and meta you confirm — and an option element can only typeset one run of
+ *  text. Unlike the cue popover this one DOES close on outside click: it is a menu, and menus
+ *  are transient by contract. */
+const DocPicker: React.FC<{docs: DocEntry[]; name: string; onPick: (f: string) => void}> = ({docs, name, onPick}) => {
+  const [open, setOpen] = useState(false);
+  const root = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const away = (e: PointerEvent) => {
+      if (!root.current?.contains(e.target as Node)) setOpen(false);
+    };
+    const key = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    window.addEventListener('pointerdown', away);
+    window.addEventListener('keydown', key);
+    return () => {
+      window.removeEventListener('pointerdown', away);
+      window.removeEventListener('keydown', key);
+    };
+  }, [open]);
+
+  const cur = docs.find((d) => d.f === name);
+  const c = cur ? docMeta(cur) : {title: '…', meta: ''};
+  return (
+    <div className="ed-pick" ref={root}>
+      <button
+        className="ed-pick-btn"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        title="Open a document"
+        onClick={() => setOpen((v) => !v)}
+      >
+        <span className="ed-pick-t">{c.title}</span>
+        {c.meta && <span className="ed-pick-m mono">{c.meta}</span>}
+        <svg className="ed-pick-chev" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
+          <path d="M2 3.5 5 6.5 8 3.5" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+      {open && (
+        <div className="ed-pick-menu" role="listbox" aria-label="Documents">
+          {docs.map((d) => {
+            const m = docMeta(d);
+            const on = d.f === name;
+            return (
+              <button
+                key={d.f}
+                role="option"
+                aria-selected={on}
+                className={`ed-pick-row${on ? ' on' : ''}`}
+                onClick={() => {
+                  setOpen(false);
+                  if (!on) onPick(d.f);
+                }}
+              >
+                <span className="ed-pick-rt">{m.title}</span>
+                <span className="ed-pick-rm mono">{m.meta}</span>
+                {on && <span className="ed-pick-check" aria-hidden="true">✓</span>}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
 };
 
 const App: React.FC = () => {
@@ -404,7 +474,16 @@ const App: React.FC = () => {
       <div className="ed-empty">
         <div className="ed-title">Promo editor</div>
         <p>{docs.length ? 'Pick a doc to edit.' : 'No docs found. The agent writes one to docs/*.promo.json — then reload.'}</p>
-        <div className="ed-docs">{docs.map((d) => <button key={d.f} onClick={() => load(d.f)} disabled={!d.doc}>{docLabel(d)}</button>)}</div>
+        <div className="ed-docs">
+          {docs.map((d) => {
+            const m = docMeta(d);
+            return (
+              <button key={d.f} onClick={() => load(d.f)} disabled={!d.doc}>
+                {m.title} <span className="ed-pick-m mono">{m.meta}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
     );
   }
@@ -422,9 +501,7 @@ const App: React.FC = () => {
     <div className="ed">
       <header className="ed-head">
         <span className="ed-brand">Promo editor</span>
-        <select value={name} onChange={(e) => load(e.target.value)} title="Open a document">
-          {docs.map((d) => <option key={d.f} value={d.f}>{docLabel(d)}</option>)}
-        </select>
+        <DocPicker docs={docs} name={name} onPick={load} />
         <span className="mono ed-dur">{prep ? `${total}f · ${(total / prep.fps).toFixed(2)}s` : '—'}</span>
         {dirty && <span className="ed-dirty" title="Unsaved edits">● unsaved</span>}
         {prep?.warnings.map((w, i) => <span key={i} className="ed-warn" title={w}>⚠ {w.split(':')[0]}</span>)}
@@ -442,7 +519,7 @@ const App: React.FC = () => {
           <FramingStage prep={prep} player={player} selUi={selUi} onCommit={patchFraming} />
 
           <div className="ed-tl">
-          <div className="ed-gut" title="Sound cues — hover the rail and click to add one"><SfxIcon /></div>
+          <div className="ed-gut ed-gut-rail" title="Sound cues — hover the rail and click to add one"><SfxIcon /></div>
           <CueRail
             prep={prep}
             list={cueList}

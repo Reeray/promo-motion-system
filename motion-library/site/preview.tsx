@@ -120,7 +120,6 @@ const PreviewTile: React.FC<{d: TileData; scroller: React.RefObject<HTMLDivEleme
             compositionHeight={d.height}
             frameToDisplay={Math.min(frame, d.durationInFrames - 1)}
             style={{width: '100%'}}
-            acknowledgeRemotionLicense
           />
         ) : (
           <span className="pv-skel" />
@@ -227,7 +226,8 @@ export const effectTile = (
 });
 
 export const blockTile = (
-  b: {name: string; durationInFrames: number; fps: number; poster: number; Comp: React.FC},
+  // Optional length/fps mirror the Block type — the catalog's defaults (75f @30) apply here too.
+  b: {name: string; durationInFrames?: number; fps?: number; poster: number; Comp: React.FC},
   meta: string,
   role: 'out' | 'in' | 'ft',
   selected: boolean,
@@ -240,8 +240,8 @@ export const blockTile = (
   role,
   comp: b.Comp as React.FC<Record<string, unknown>>,
   inputProps: {},
-  durationInFrames: b.durationInFrames,
-  fps: b.fps,
+  durationInFrames: b.durationInFrames ?? 75,
+  fps: b.fps ?? 30,
   width: 1280,
   height: 720,
   poster: b.poster,

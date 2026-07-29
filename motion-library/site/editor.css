@@ -43,9 +43,33 @@
   height: 30px; padding: 0 11px; font-size: 12px; border-radius: 7px; cursor: pointer;
   background: transparent; color: var(--fg); border: 1px solid var(--border);
 }
-/* Belt to color-scheme's braces: explicit option colours for engines that theme the popup from
-   the element rather than the scheme. `transparent` here would inherit whatever the popup uses. */
-.ed-head select option { background: var(--card); color: var(--fg); }
+/* ── the document picker ────────────────────────────────────────────────────
+   A custom menu, not a <select>: the label has a hierarchy (name you scan, meta you confirm)
+   that an <option> cannot typeset. Rows override the .ed-head button pill with !important
+   because that rule wins on specificity-by-decree. */
+.ed-pick { position: relative; }
+.ed-pick-btn { display: inline-flex; align-items: center; gap: 9px; }
+.ed-pick-t { font-weight: 600; font-size: 12.5px; }
+.ed-pick-m { font-size: 10.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.ed-pick-chev { color: var(--muted); transition: transform .15s; flex: none; }
+.ed-pick-btn[aria-expanded='true'] .ed-pick-chev { transform: rotate(180deg); }
+.ed-pick-menu {
+  position: absolute; top: calc(100% + 6px); left: 0; min-width: 300px; z-index: 60;
+  background: var(--panel); border: 1px solid var(--card-border); border-radius: 11px;
+  box-shadow: var(--shadow); padding: 4px; display: flex; flex-direction: column; gap: 1px;
+  animation: ed-pick-in .14s ease-out;
+}
+@keyframes ed-pick-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+.ed-pick-row {
+  display: grid !important; grid-template-columns: 1fr auto; column-gap: 12px; row-gap: 1px;
+  height: auto !important; padding: 7px 10px !important; text-align: left;
+  border: none !important; border-radius: 8px !important; background: transparent;
+  align-items: center;
+}
+.ed-pick-rt { grid-column: 1; font-size: 12.5px; font-weight: 600; color: var(--fg); }
+.ed-pick-rm { grid-column: 1; grid-row: 2; font-size: 10.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.ed-pick-check { grid-column: 2; grid-row: 1 / span 2; color: var(--accent); font-size: 12px; }
+.ed-pick-row.on { background: var(--accent-bg) !important; }
 .ed button:hover:not(:disabled) { background: var(--hover); }
 .ed button:disabled { opacity: 0.45; cursor: not-allowed; }
 .ed-primary { border-color: var(--accent) !important; color: var(--accent) !important; }
@@ -134,23 +158,24 @@
 }
 .ed-seg-wrap.drop-before::before { left: -2px; }
 .ed-seg-wrap.drop-after::after { right: -2px; }
-/* Delete: a small circle at the segment's top-right, revealed on hover (and while selected) so
-   the strip stays quiet. Its hit area is bigger than its 16px face. */
+/* Delete: a bare neutral × at the segment's top-right, revealed on hover (and while selected) so
+   the strip stays quiet. No chrome of its own — the glyph is enough; danger is communicated on
+   HOVER, not shouted at rest. Its hit area is far bigger than its face. */
 .ed-seg-x {
-  position: absolute; top: 3px; right: 3px; z-index: 4;
+  position: absolute; top: 2px; right: 4px; z-index: 4;
   width: 16px !important; height: 16px !important; padding: 0 !important;
-  border-radius: 50% !important; font-size: 9px !important; line-height: 1;
+  border: none !important; background: transparent !important; border-radius: 4px !important;
+  font-size: 10px !important; line-height: 1;
   display: flex; align-items: center; justify-content: center;
-  background: var(--card) !important; border: 1px solid var(--card-border) !important;
-  color: #e5484d !important;
+  color: var(--muted) !important;
   opacity: 0; pointer-events: none;
-  transition-property: opacity, transform, background; transition-duration: .12s;
+  transition-property: opacity, transform, color; transition-duration: .12s;
 }
 .ed-seg-x::after { content: ''; position: absolute; inset: -6px; }
 .ed-seg-wrap:hover .ed-seg-x, .ed-seg.on ~ .ed-seg-x, .ed-seg-x:focus-visible {
   opacity: 1; pointer-events: auto;
 }
-.ed-seg-x:hover { background: color-mix(in srgb, #e5484d 12%, var(--card)) !important; }
+.ed-seg-x:hover { color: #e5484d !important; background: transparent !important; }
 .ed-seg-x:active { transform: scale(0.96); }
 .ed-seg {
   position: relative;
@@ -283,6 +308,9 @@
   transition: color .15s;
 }
 .ed-gut:hover { color: var(--fg); }
+/* The rail's dots sit on its BOTTOM edge (the 28px above them is hover runway) — a centred icon
+   floats above the thing it labels. Bottom-align it so icon centre ≈ dot centre. */
+.ed-gut-rail { align-items: flex-end; padding-bottom: 1px; }
 
 .ed-restore {
   position: absolute; right: 4px; top: 0;
