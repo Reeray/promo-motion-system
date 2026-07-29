@@ -12,3 +12,4 @@ motion-library/public/hf-hardware/
 # by the system, but the sounds themselves are yours to provide via the editor.
 motion-library/public/sfx/
 motion-library/public/music/
+__pycache__/
