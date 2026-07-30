@@ -9,7 +9,7 @@
     {
       "id": "intro",
       "kind": "ui",
-      "surface": "hf-logo-ending",
+      "surface": "hf-logo-intro",
       "enter": "scale-pop-in",
       "exit": "scale-up-cut"
     },

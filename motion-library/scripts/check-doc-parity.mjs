@@ -44,6 +44,10 @@ try {
     platform: 'node',
     outdir: tmp,
     external: ['react', 'react/jsx-runtime', 'remotion', '@remotion/*'],
+    // Surfaces import image assets; Vite and Remotion's webpack both resolve those natively, so
+    // this bundler must too or the gate rejects code the renderers accept. dataurl keeps the
+    // bundle self-contained (prepare() never reads the pixels — it only needs the import to link).
+    loader: {'.png': 'dataurl', '.svg': 'dataurl', '.jpg': 'dataurl', '.webp': 'dataurl'},
     logLevel: 'silent',
   });
 } catch (e) {

@@ -1,6 +1,6 @@
 import React from 'react';
-import {AbsoluteFill, useCurrentFrame, useVideoConfig} from 'remotion';
-import {FONT, PS} from '../../lib/palette';
+import {useCurrentFrame, useVideoConfig} from 'remotion';
+import {FONT} from '../../lib/palette';
 import {DATASET, HANDS, LOGO, MODEL, SPACE} from './assets/hf-ending';
 
 /* ============================================================================
@@ -72,7 +72,7 @@ const accentPulse = (f: number, hit: number, w: number) =>
 
 export const LogoEndingSurface: React.FC = () => {
   const f = useCurrentFrame();
-  const {width} = useVideoConfig();
+  const {width, height} = useVideoConfig();
   const s = width / 1920; // authored in spec space, scaled to whatever frame hosts it
 
   // Row layout: centred block of content widths at x=960.
@@ -94,10 +94,11 @@ export const LogoEndingSurface: React.FC = () => {
   const logoT = (f - LOGO_AT) / LOGO_DUR;
 
   return (
-    // The spec canvas is white; it is declared THROUGH the palette (PS.bg — the house white the
-    // render's bt709 tagging is calibrated for), with the font declared even though no glyph
-    // renders here: R1/R2 hold for every surface, no exceptions to reason about.
-    <AbsoluteFill style={{background: PS.bg, fontFamily: FONT.sans, overflow: 'hidden'}}>
+    // TRANSPARENT: the resolve plays over the video's own stage colour, so it belongs to the
+    // hosting theme (the first port painted its own white card, which read as a foreign slide).
+    // And a SIZED BLOCK, not an AbsoluteFill: this is a centred composition, and the old bleed
+    // layer made transitions scale it from the top-left corner.
+    <div style={{width, height, position: 'relative', fontFamily: FONT.sans}}>
       <div style={{width: 1920, height: 1080, transform: `scale(${s})`, transformOrigin: 'top left', position: 'relative'}}>
         <div style={{position: 'absolute', inset: 0, transform: `scale(${zoom * pulse})`, transformOrigin: '960px 540px'}}>
           {f < LOGO_AT &&
@@ -145,6 +146,6 @@ export const LogoEndingSurface: React.FC = () => {
           )}
         </div>
       </div>
-    </AbsoluteFill>
+    </div>
   );
 };

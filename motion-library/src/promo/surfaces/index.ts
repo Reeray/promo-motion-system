@@ -48,6 +48,7 @@ import {
   LIVE_SPACE_FRAMES,
 } from './hf-spaces-agents';
 import {LogoEndingSurface, ENDING_FRAMES, ENDING_CUES} from './hf-logo-ending';
+import {LogoIntroSurface, INTRO_FRAMES as LOGO_INTRO_FRAMES, INTRO_CUES as LOGO_INTRO_CUES} from './hf-logo-intro';
 
 export const SURFACES: Record<string, Surface> = {
   'hf-storage-repositories': {
@@ -100,11 +101,17 @@ export const SURFACES: Record<string, Surface> = {
     id: 'hf-logo-ending',
     label: 'HF · Logo ending (driving resolve)',
     frames: ENDING_FRAMES,
-    // Full-frame brand card with its own declared canvas — the transition must carry it on a
-    // full-size layer, same as the other edge-to-edge surfaces.
-    bleed: true,
+    // NOT bleed: a transparent centred composition — bleed made its transitions scale from the
+    // top-left corner, and its old white card fought the hosting theme.
     cues: ENDING_CUES,
     Comp: LogoEndingSurface,
+  },
+  'hf-logo-intro': {
+    id: 'hf-logo-intro',
+    label: 'HF · Logo intro — the full piece (driving, 3s-ramp)',
+    frames: LOGO_INTRO_FRAMES,
+    cues: LOGO_INTRO_CUES,
+    Comp: LogoIntroSurface,
   },
 };
 
