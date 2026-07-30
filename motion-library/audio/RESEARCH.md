@@ -129,9 +129,28 @@ A "v2" with sidechain pumping, fills, reverb and string plucks was built, measur
 paper (stereo width, crest), and rejected by ear — production layering competes with the
 picture. Propose bed changes as new variants beside the standard, never as replacements.
 
-Beds (`public/music/`): `bed-pulse-120` (16 bars, house default), `bed-calm-90`
-(12 bars, no kick, neo-classical), `bed-drive-150` (20 bars, four-on-floor). All on the
-frame grid per §3; measured −9.6..−10.2 LUFS, −1.5 dBTP.
+Beds (`public/music/`), all on the frame grid per §3, −1.5 dBTP:
+
+**The standards** (the golden sound): `bed-pulse-120` (16 bars, house default),
+`bed-calm-90` (12 bars, no kick, neo-classical), `bed-drive-150` (20 bars, four-on-floor).
+
+**The expansion set** — canon variants, each changing exactly ONE axis, standards untouched
+(verified byte-identical by hash on every regeneration):
+
+| bed | axis | what changes |
+|---|---|---|
+| `bed-walk-100` | tempo (36f/beat) | half-time kick, relaxed walkthrough |
+| `bed-brisk-144` | tempo (25f/beat) | four-kick + off-beat 8ths, no plucks — clean montage |
+| `bed-bright-120` | harmony | C major I–IV–vi–V, same voices as pulse |
+| `bed-dark-120` | harmony | Am–Em–F–Em low voicings, no plucks, half-density hats |
+| `bed-air-90` | instrumentation | pads + sub only — CTAs and endings |
+| `bed-tick-120` | instrumentation | hat + sub only — under log/typing sections |
+| `bed-pulse-120-vl` | voice-leading | the standard with common tones HELD across chords (A/B it) |
+
+The v1 CANON the variants obey: the grid is the composer (no swing, no humanization) · a bed
+is a floor, not a story (one loop, no fills, no development) · few voices, one job each ·
+simple timbres · nothing clicks · energy via instrumentation, never intensity · static mix
+(no reverb, no sidechain — space and dynamics belong to the VIDEO mix) · deterministic.
 
 `--verify` re-measures every claim above (slot fit, ceiling, DC, grid); `--prove`
 generates twice and compares bytes.

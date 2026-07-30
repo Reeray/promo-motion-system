@@ -347,8 +347,9 @@
 .ed-music.empty { border-style: dashed; border-color: color-mix(in srgb, var(--faint) 45%, transparent); background: transparent; }
 .ed-music.over { border-color: var(--accent); border-style: solid; background: var(--accent-bg); }
 .ed-music-drop { flex: 1; font-size: 12px; color: var(--muted); cursor: pointer; text-align: center; }
-/* House beds, one click away while the row is empty. Chips, not a select: three known options. */
-.ed-music-kit { display: inline-flex; gap: 5px; }
+/* House beds, one click away while the row is empty. Chips, not a select — and they WRAP:
+   the expansion set brought the count to ten. */
+.ed-music-kit { display: inline-flex; gap: 5px; flex-wrap: wrap; justify-content: flex-end; max-width: 60%; padding: 4px 0; }
 .ed-kit-chip {
   height: 22px !important; padding: 0 9px !important; font-size: 10.5px !important;
   border-radius: 11px !important; border: 1px solid var(--card-border) !important;
