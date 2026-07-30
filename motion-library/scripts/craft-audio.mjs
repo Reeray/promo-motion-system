@@ -393,370 +393,178 @@ const NOTE = (() => {
   return (n, oct) => 110 * Math.pow(2, oct - 2 + names[n] / 12);
 })();
 
-/** A kick with a BODY and a CLICK: pitch-dropped sine plus a 6ms filtered noise transient.
- *  The click is what lets the kick read at low levels — a sine drop alone disappears under pads. */
-const kick = (rnd, gain = 1) => {
-  const m = decay(sweep(buf(140), 96, 46, gain), 26);
-  mix(m, decay(onepole(noise(buf(6), rnd, gain * 0.55), 0.3), 500));
-  return m;
+/** A soft kick: pitch-dropped sine, tight. */
+const kick = (gain = 1) => decay(sweep(buf(140), 92, 44, gain), 26);
+/** A closed hat: highpassed noise blip. */
+const hat = (rnd, gain = 1) => decay(hipass(noise(buf(46), rnd, gain), 0.35), 120);
+/** A pluck: filtered triangle-ish partial stack with fast decay. */
+const pluck = (f, ms, gain = 1) => {
+  const m = buf(ms);
+  sweep(m, f, f, gain * 0.7);
+  sweep(m, f * 2, f * 2, gain * 0.18);
+  sweep(m, f * 3.01, f * 3.01, gain * 0.06);
+  onepole(m, 0.35);
+  return decay(attack(m, 3), 9);
 };
-/** A hat with METAL in it: noise through a high bandpass + highpass, parametric decay so the
- *  same voice serves closed (fast) and open (slow) articulations. */
-const hat = (rnd, gain = 1, dec = 120) => {
-  const m = noise(buf(dec > 200 ? 180 : 46), rnd, gain);
-  bandpass(m, 9200, 1.1);
-  hipass(m, 0.5);
-  return decay(m, dec);
+/** A pad voice: detuned pair per note, slow attack, gentle lowpass breathing. */
+const padNote = (f, ms, gain = 1) => {
+  const m = buf(ms);
+  sweep(m, f * 0.997, f * 0.997, gain * 0.5);
+  sweep(m, f * 1.003, f * 1.003, gain * 0.5);
+  sweep(m, f * 2.002, f * 2.002, gain * 0.12);
+  onepole(m, 0.09);
+  attack(m, ms * 0.35);
+  return fadeOut(m, ms * 0.4);
 };
-/** KARPLUS-STRONG pluck — an actual string: a noise burst circulating a damped delay line.
- *  Replaces the old additive partial stack, which sounded like a polite organ. `bright` lowpasses
- *  the excitation (0..1); the loop's averaging filter does the natural high-frequency decay. */
-const ksPluck = (seed, f, ms, gain = 1, bright = 0.55) => {
-  const rnd = mulberry32(seed);
-  const out = buf(ms);
-  const period = Math.max(2, Math.round(SR / f));
-  const line = new Float64Array(period);
-  let y = 0;
-  for (let i = 0; i < period; i++) {
-    y += bright * ((rnd() * 2 - 1) - y);
-    line[i] = y;
-  }
-  let idx = 0;
-  let prev = 0;
-  for (let i = 0; i < out.length; i++) {
-    const v = line[idx];
-    line[idx] = (v + prev) * 0.5 * 0.9965; // damped average: the string loses energy naturally
-    prev = v;
-    out[i] = v * gain;
-    idx = (idx + 1) % period;
-  }
-  return fadeOut(attack(out, 2), ms * 0.25);
-};
-/** A TRUE STEREO pad: four slightly-inharmonic partials, detuned DIFFERENTLY per channel, each
- *  channel breathing on its own slow LFO phase. This is where the width comes from — the old pad
- *  was byte-identical L/R, which measured as corr 1.000: a mono bed wearing two channels. */
-const padStereo = (f, ms, gain = 1, phase = 0) => {
-  const make = (det, lfoPhase) => {
-    const m = buf(ms);
-    const partials = [[1 * det, 0.5], [2.003 * det, 0.2], [2.997 * det, 0.11], [4.013 * det, 0.055]];
-    for (const [k, g] of partials) sweep(m, f * k, f * k, gain * g);
-    onepole(m, 0.1);
-    // slow amplitude breathing, ±12% at ~0.15Hz — per-channel phase decorrelates without chorus
-    for (let i = 0; i < m.length; i++) m[i] *= 1 + 0.12 * Math.sin(2 * Math.PI * 0.15 * (i / SR) + lfoPhase);
-    attack(m, ms * 0.3);
-    return fadeOut(m, ms * 0.4);
-  };
-  return [make(0.9965, phase), make(1.0035, phase + 1.7)];
-};
-/** A sub note: pure fundamental, slight attack so it never clicks. Mono and centred on purpose. */
+/** A sub note: pure fundamental, slight attack so it never clicks. */
 const subNote = (f, ms, gain = 1) => fadeOut(attack(sweep(buf(ms), f, f, gain), 12), ms * 0.2);
 
-/** Schroeder reverb, mono send in → decorrelated stereo out. Prime-length combs, different
- *  primes per channel, two allpasses each. Small-room settings: a launch bed wants AIR around
- *  the plucks, not a cathedral. Fully deterministic. */
-const reverbStereo = (send, decayG = 0.76) => {
-  const chan = (combs, aps) => {
-    const y = new Float64Array(send.length);
-    for (const c of combs) {
-      const d = new Float64Array(c);
-      let i = 0;
-      for (let n = 0; n < send.length; n++) {
-        const v = d[i];
-        d[i] = send[n] + v * decayG;
-        y[n] += v / combs.length;
-        i = (i + 1) % c;
-      }
-    }
-    let out = y;
-    for (const [len, g] of aps) {
-      const d = new Float64Array(len);
-      let i = 0;
-      const z = new Float64Array(out.length);
-      for (let n = 0; n < out.length; n++) {
-        const w = out[n] + g * d[i];
-        z[n] = d[i] - g * w;
-        d[i] = w;
-        i = (i + 1) % len;
-      }
-      out = z;
-    }
-    return out;
-  };
-  return [
-    chan([1687, 1931, 2053, 2251], [[347, 0.7], [113, 0.7]]),
-    chan([1723, 1997, 2089, 2293], [[359, 0.7], [127, 0.7]]),
-  ];
-};
-
-/** Render a bed from LAYER OBJECTS. Each layer: {ev, duck?, send?, hp?}
- *    ev(ctx)  -> [{at, ch}]   ch = mono Float64Array or [L, R]
- *    duck     -> the layer rides the sidechain bus (dips on kicks)
- *    send     -> fraction of the layer also feeds the reverb
- *    hp       -> one-pole highpass on the layer bus (keeps pads out of the sub's range)
- *  `sidechain: {beats, depth, relFrac}` pumps the duck bus on every beat listed — the classic
- *  glue that makes a four-on-the-floor bed breathe WITH the kick instead of beside it. */
-const renderBed = ({bpm, bars, layers, drive, sidechain}) => {
+/** Render a bed from a spec of layered event generators. totalMs must sit on the grid. */
+const renderBed = ({bpm, bars, layers, drive}) => {
   const beatMs = 60000 / bpm;
   const totalMs = beatMs * 4 * bars;
-  const main = [buf(totalMs), buf(totalMs)];
-  const duckBus = [buf(totalMs), buf(totalMs)];
-  const sendMono = buf(totalMs);
-
+  const L = buf(totalMs);
+  const R = buf(totalMs);
   for (const layer of layers) {
-    const tmp = [buf(totalMs), buf(totalMs)];
-    for (const ev of layer.ev({beatMs, bars})) {
-      const [l, r] = Array.isArray(ev.ch) && (ev.ch[0] instanceof Float64Array) ? ev.ch : [ev.ch, ev.ch];
-      mix(tmp[0], l, ev.at);
-      mix(tmp[1], r, ev.at);
-    }
-    if (layer.hp) {
-      hipass(tmp[0], layer.hp);
-      hipass(tmp[1], layer.hp);
-    }
-    const target = layer.duck ? duckBus : main;
-    for (let i = 0; i < tmp[0].length; i++) {
-      target[0][i] += tmp[0][i];
-      target[1][i] += tmp[1][i];
-      if (layer.send) sendMono[i] += (tmp[0][i] + tmp[1][i]) * 0.5 * layer.send;
+    for (const ev of layer({beatMs, bars})) {
+      const [l, r] = Array.isArray(ev.ch[0]) || ev.ch[0] instanceof Float64Array ? ev.ch : [ev.ch, ev.ch];
+      mix(L, l, ev.at);
+      mix(R, r, ev.at);
     }
   }
-
-  if (sidechain) {
-    const env = new Float64Array(main[0].length).fill(1);
-    const att = Math.round(SR * 0.004);
-    const rel = Math.round((sidechain.relFrac * beatMs * SR) / 1000);
-    for (const tMs of sidechain.beats) {
-      const s0 = Math.round((tMs / 1000) * SR);
-      for (let i = 0; i < att + rel * 4 && s0 + i < env.length; i++) {
-        const x = i < att ? i / att : Math.exp(-(i - att) / rel);
-        const g = 1 - sidechain.depth * x;
-        if (g < env[s0 + i]) env[s0 + i] = g;
-      }
-    }
-    for (let i = 0; i < env.length; i++) {
-      duckBus[0][i] *= env[i];
-      duckBus[1][i] *= env[i];
-    }
-  }
-
-  const wet = reverbStereo(sendMono);
-  const out = main.map((c, ch) => {
-    for (let i = 0; i < c.length; i++) c[i] += duckBus[ch][i] + wet[ch][i];
-    return saturate(c, drive);
-  });
-  return out;
+  saturate(L, drive);
+  saturate(R, drive);
+  return [L, R];
 };
 
 const at = (bar, sixteenth, beatMs) => bar * 4 * beatMs + (sixteenth * beatMs) / 4;
-/** Every beat instant of the piece, in ms — the sidechain key for four-on-the-floor beds. */
-const allBeats = (bars, beatMs) => Array.from({length: bars * 4}, (_, n) => n * beatMs);
 
 const BEDS = {
-  /* 120 BPM = exactly 30 frames/beat. The house default: sidechained sub + pads breathing
-   * with a soft four-kick, humanized off-beat air, KS plucks trading two motifs. The bars are
-   * ARRANGED, not tiled: hats sit out the first bar of each 8-bar phrase, and bars 3/7/11/15
-   * end with a two-tick fill — the loop has a shape now. */
+  /* 120 BPM = exactly 30 frames/beat. The house default: sub pulse, soft four-kick,
+   * off-beat air, sparse A-minor plucks. Quiet confidence, GPT-5.5 school. */
   'bed-pulse-120': {
     bpm: 120,
     bars: 16,
     drive: 1.25,
-    sidechain: {beats: allBeats(16, 500), depth: 0.35, relFrac: 0.5},
     layers: [
-      {
-        duck: true,
-        ev: ({beatMs, bars}) => {
-          const out = [];
-          const roots = ['A', 'A', 'F', 'G'];
-          for (let b = 0; b < bars; b++)
-            out.push({at: at(b, 0, beatMs), ch: panTo(subNote(NOTE(roots[b % 4], 1), beatMs * 4, 0.5), 0)});
-          return out;
-        },
+      ({beatMs, bars}) => {
+        const out = [];
+        const roots = ['A', 'A', 'F', 'G'];
+        for (let b = 0; b < bars; b++) {
+          out.push({at: at(b, 0, beatMs), ch: panTo(subNote(NOTE(roots[b % 4], 1), beatMs * 4, 0.5), 0)});
+        }
+        return out;
       },
-      {
-        ev: ({beatMs, bars}) => {
-          const rnd = mulberry32(203);
-          const out = [];
-          for (let b = 0; b < bars; b++)
-            for (let q = 0; q < 4; q++) out.push({at: at(b, q * 4, beatMs), ch: panTo(kick(rnd, 0.55), 0)});
-          return out;
-        },
+      ({beatMs, bars}) => {
+        const out = [];
+        for (let b = 0; b < bars; b++)
+          for (let q = 0; q < 4; q++) out.push({at: at(b, q * 4, beatMs), ch: panTo(kick(0.55), 0)});
+        return out;
       },
-      {
-        duck: true,
-        send: 0.05,
-        ev: ({beatMs, bars}) => {
-          const rnd = mulberry32(201);
-          const out = [];
-          for (let b = 0; b < bars; b++) {
-            if (b % 8 === 0) continue; // breathe at the top of each phrase
-            for (let q = 0; q < 4; q++)
-              out.push({at: at(b, q * 4 + 2, beatMs), ch: panTo(hat(rnd, 0.16 * (0.85 + 0.3 * rnd())), 0.35)});
-            if (b % 4 === 3) {
-              // the fill: two extra ticks walking into the next bar
-              out.push({at: at(b, 14, beatMs), ch: panTo(hat(rnd, 0.13), -0.3)});
-              out.push({at: at(b, 15, beatMs), ch: panTo(hat(rnd, 0.18), 0.3)});
-            }
-          }
-          return out;
-        },
+      ({beatMs, bars}) => {
+        const rnd = mulberry32(201);
+        const out = [];
+        for (let b = 0; b < bars; b++)
+          for (let q = 0; q < 4; q++) out.push({at: at(b, q * 4 + 2, beatMs), ch: panTo(hat(rnd, 0.16), 0.35)});
+        return out;
       },
-      {
-        duck: true,
-        send: 0.3,
-        ev: ({beatMs, bars}) => {
-          const out = [];
-          const motifA = [['A', 3, 0], ['C', 3, 6], ['E', 3, 8], ['G', 3, 14]];
-          const motifB = [['E', 3, 0], ['C', 3, 6], ['B', 2, 8], ['A', 2, 12]];
-          for (let b = 1; b < bars; b += 2) {
-            const motif = (b - 1) % 8 < 4 ? motifA : motifB; // trade phrases every 4 bars
-            for (const [n, o, s] of motif)
-              out.push({at: at(b, s, beatMs), ch: panTo(ksPluck(300 + b * 16 + s, NOTE(n, o), 460, 0.3, 0.5), s % 4 === 0 ? -0.3 : 0.3)});
-          }
-          return out;
-        },
+      ({beatMs, bars}) => {
+        const out = [];
+        const line = [['A', 3, 0], ['C', 3, 6], ['E', 3, 8], ['G', 3, 14]];
+        for (let b = 1; b < bars; b += 2) {
+          for (const [n, o, s] of line) out.push({at: at(b, s, beatMs), ch: panTo(pluck(NOTE(n, o), 420, 0.22), s % 4 === 0 ? -0.3 : 0.3)});
+        }
+        return out;
       },
-      {
-        duck: true,
-        send: 0.22,
-        hp: 0.015,
-        ev: ({beatMs, bars}) => {
-          const out = [];
-          const chords = [
-            [['A', 2], ['C', 3], ['E', 3]],
-            [['F', 2], ['A', 2], ['C', 3]],
-          ];
-          for (let b = 0; b < bars; b += 4) {
-            const chd = chords[(b / 4) % 2];
-            chd.forEach(([n, o], i) => out.push({at: at(b, 0, beatMs), ch: padStereo(NOTE(n, o), beatMs * 16, 0.14, i * 0.9)}));
-          }
-          return out;
-        },
+      ({beatMs, bars}) => {
+        const out = [];
+        const chords = [
+          [['A', 2], ['C', 3], ['E', 3]],
+          [['F', 2], ['A', 2], ['C', 3]],
+        ];
+        for (let b = 0; b < bars; b += 4) {
+          const ch = chords[(b / 4) % 2];
+          for (const [n, o] of ch) out.push({at: at(b, 0, beatMs), ch: panTo(padNote(NOTE(n, o), beatMs * 16, 0.16), 0)});
+        }
+        return out;
       },
     ],
   },
 
-  /* 90 BPM = exactly 40 frames/beat. No kick, no sidechain — a calm neo-classical pulse:
-   * wide breathing pads on I–VI–III–VII, a KS heartbeat, and an answering arpeggio that only
-   * speaks on the even bars. */
+  /* 90 BPM = exactly 40 frames/beat. No kick — a calm neo-classical pulse for soft-light
+   * pieces: warm pads on a I–VI–III–VII loop, gentle plucked heartbeat. */
   'bed-calm-90': {
     bpm: 90,
     bars: 12,
     drive: 1.15,
     layers: [
-      {
-        send: 0.3,
-        hp: 0.015,
-        ev: ({beatMs, bars}) => {
-          const out = [];
-          const prog = [
-            [['A', 2], ['E', 3], ['A', 3]],
-            [['F', 2], ['C', 3], ['A', 3]],
-            [['C', 3], ['G', 3], ['E', 4]],
-            [['G', 2], ['D', 3], ['B', 3]],
-          ];
-          for (let b = 0; b < bars; b++) {
-            prog[b % 4].forEach(([n, o], i) => out.push({at: at(b, 0, beatMs), ch: padStereo(NOTE(n, o), beatMs * 4.2, 0.17, i * 1.1)}));
-          }
-          return out;
-        },
+      ({beatMs, bars}) => {
+        const out = [];
+        const prog = [
+          [['A', 2], ['E', 3], ['A', 3]],
+          [['F', 2], ['C', 3], ['A', 3]],
+          [['C', 3], ['G', 3], ['E', 4]],
+          [['G', 2], ['D', 3], ['B', 3]],
+        ];
+        for (let b = 0; b < bars; b++) {
+          const ch = prog[b % 4];
+          for (const [n, o] of ch) out.push({at: at(b, 0, beatMs), ch: panTo(padNote(NOTE(n, o), beatMs * 4.2, 0.2), 0)});
+        }
+        return out;
       },
-      {
-        send: 0.35,
-        ev: ({beatMs, bars}) => {
-          const out = [];
-          for (let b = 0; b < bars; b++) {
-            out.push({at: at(b, 0, beatMs), ch: panTo(ksPluck(410 + b, NOTE('A', 2), 700, 0.26, 0.4), -0.15)});
-            out.push({at: at(b, 8, beatMs), ch: panTo(ksPluck(430 + b, NOTE('E', 3), 700, 0.17, 0.45), 0.15)});
-            if (b % 2 === 1) {
-              // the answer: a rising figure through the back half of odd bars
-              const run = [['A', 3, 10], ['C', 4, 12], ['E', 4, 14]];
-              for (const [n, o, s] of run)
-                out.push({at: at(b, s, beatMs), ch: panTo(ksPluck(450 + b * 8 + s, NOTE(n, o), 520, 0.12, 0.6), (s - 12) / 8)});
-            }
-          }
-          return out;
-        },
+      ({beatMs, bars}) => {
+        const out = [];
+        for (let b = 0; b < bars; b++) {
+          out.push({at: at(b, 0, beatMs), ch: panTo(pluck(NOTE('A', 2), 500, 0.2), -0.15)});
+          out.push({at: at(b, 8, beatMs), ch: panTo(pluck(NOTE('E', 3), 500, 0.13), 0.15)});
+        }
+        return out;
       },
-      {
-        ev: ({beatMs, bars}) => {
-          const out = [];
-          const roots = ['A', 'F', 'C', 'G'];
-          for (let b = 0; b < bars; b++)
-            out.push({at: at(b, 0, beatMs), ch: panTo(subNote(NOTE(roots[b % 4], 1), beatMs * 4, 0.32), 0)});
-          return out;
-        },
+      ({beatMs, bars}) => {
+        const out = [];
+        const roots = ['A', 'F', 'C', 'G'];
+        for (let b = 0; b < bars; b++) out.push({at: at(b, 0, beatMs), ch: panTo(subNote(NOTE(roots[b % 4], 1), beatMs * 4, 0.32), 0)});
+        return out;
       },
     ],
   },
 
-  /* 150 BPM = exactly 24 frames/beat. The driving bed: hard sidechain, 16th hats with
-   * humanized accents and an OPEN hat closing every 4-bar phrase, dark stereo pad, sparse
-   * syncopated KS stabs. */
+  /* 150 BPM = exactly 24 frames/beat. The driving bed: tight four-kick, 16th hats with
+   * alternating accents, dark minimal pad. For high-energy launches. */
   'bed-drive-150': {
     bpm: 150,
     bars: 20,
     drive: 1.35,
-    sidechain: {beats: allBeats(20, 400), depth: 0.42, relFrac: 0.55},
     layers: [
-      {
-        ev: ({beatMs, bars}) => {
-          const rnd = mulberry32(204);
-          const out = [];
-          for (let b = 0; b < bars; b++)
-            for (let q = 0; q < 4; q++) out.push({at: at(b, q * 4, beatMs), ch: panTo(kick(rnd, 0.6), 0)});
-          return out;
-        },
+      ({beatMs, bars}) => {
+        const out = [];
+        for (let b = 0; b < bars; b++)
+          for (let q = 0; q < 4; q++) out.push({at: at(b, q * 4, beatMs), ch: panTo(kick(0.6), 0)});
+        return out;
       },
-      {
-        duck: true,
-        ev: ({beatMs, bars}) => {
-          const out = [];
-          const roots = ['A', 'A', 'C', 'G'];
-          for (let b = 0; b < bars; b++)
-            out.push({at: at(b, 0, beatMs), ch: panTo(subNote(NOTE(roots[b % 4], 1), beatMs * 4, 0.5), 0)});
-          return out;
-        },
-      },
-      {
-        duck: true,
-        send: 0.04,
-        ev: ({beatMs, bars}) => {
-          const rnd = mulberry32(202);
-          const out = [];
-          for (let b = 0; b < bars; b++) {
-            for (let s = 0; s < 16; s += 2) {
-              const accent = s % 4 === 2 ? 0.2 : 0.09;
-              out.push({at: at(b, s, beatMs), ch: panTo(hat(rnd, accent * (0.85 + 0.3 * rnd())), s % 4 === 2 ? 0.4 : -0.25)});
-            }
-            if (b % 4 === 3) out.push({at: at(b, 14, beatMs), ch: panTo(hat(rnd, 0.16, 400), 0.45)}); // open hat closes the phrase
+      ({beatMs, bars}) => {
+        const rnd = mulberry32(202);
+        const out = [];
+        for (let b = 0; b < bars; b++)
+          for (let s = 0; s < 16; s += 2) {
+            const accent = s % 4 === 2 ? 0.2 : 0.09;
+            out.push({at: at(b, s, beatMs), ch: panTo(hat(rnd, accent), s % 4 === 2 ? 0.4 : -0.25)});
           }
-          return out;
-        },
+        return out;
       },
-      {
-        duck: true,
-        send: 0.18,
-        hp: 0.015,
-        ev: ({beatMs, bars}) => {
-          const out = [];
-          for (let b = 0; b < bars; b += 2) {
-            out.push({at: at(b, 0, beatMs), ch: padStereo(NOTE('A', 2), beatMs * 8, 0.11, 0)});
-            out.push({at: at(b, 0, beatMs), ch: padStereo(NOTE('E', 3), beatMs * 8, 0.08, 2.1)});
-          }
-          return out;
-        },
+      ({beatMs, bars}) => {
+        const out = [];
+        const roots = ['A', 'A', 'C', 'G'];
+        for (let b = 0; b < bars; b++) out.push({at: at(b, 0, beatMs), ch: panTo(subNote(NOTE(roots[b % 4], 1), beatMs * 4, 0.5), 0)});
+        return out;
       },
-      {
-        duck: true,
-        send: 0.25,
-        ev: ({beatMs, bars}) => {
-          const out = [];
-          for (let b = 0; b < bars; b += 2) {
-            out.push({at: at(b, 3, beatMs), ch: panTo(ksPluck(500 + b, NOTE('A', 3), 300, 0.2, 0.65), -0.2)});
-            out.push({at: at(b, 11, beatMs), ch: panTo(ksPluck(520 + b, NOTE('E', 3), 300, 0.16, 0.6), 0.25)});
-          }
-          return out;
-        },
+      ({beatMs, bars}) => {
+        const out = [];
+        for (let b = 0; b < bars; b += 2) {
+          out.push({at: at(b, 0, beatMs), ch: panTo(padNote(NOTE('A', 2), beatMs * 8, 0.13), 0)});
+          out.push({at: at(b, 0, beatMs), ch: panTo(padNote(NOTE('E', 3), beatMs * 8, 0.09), 0)});
+        }
+        return out;
       },
     ],
   },

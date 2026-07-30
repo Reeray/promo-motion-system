@@ -124,6 +124,11 @@ DC-blocked and demeaned, 48 kHz stereo, byte-deterministic (`--prove`):
 | `kit-drum-dum/-tek/-ghost` | 160/90/50 | HF ending, accent tiers ≥.9 / .5–.9 / <.5 | the handoff spec's synthesis, verbatim |
 | `kit-drum-dum-deep` | 195 | the HF logo downbeat | dum at 0.82 rate, pre-rendered (cues have no rate param) |
 
+**The v1 beds are the GOLDEN STANDARD** (user judgment, July 2026): smooth, simple, sparse.
+A "v2" with sidechain pumping, fills, reverb and string plucks was built, measured better on
+paper (stereo width, crest), and rejected by ear — production layering competes with the
+picture. Propose bed changes as new variants beside the standard, never as replacements.
+
 Beds (`public/music/`): `bed-pulse-120` (16 bars, house default), `bed-calm-90`
 (12 bars, no kick, neo-classical), `bed-drive-150` (20 bars, four-on-floor). All on the
 frame grid per §3; measured −9.6..−10.2 LUFS, −1.5 dBTP.
