@@ -160,13 +160,35 @@ const CueLayer: React.FC<{list: Cue[]}> = ({list}) => (
 const MUSIC_EPS = 0.0025;
 const FADE = 45; // frames — the bed arrives and leaves under the first and last transition
 
+/* Duck geometry. IN/OUT are the eased edges: a gain that STEPS between two frames is a waveform
+ * discontinuity — an audible click, worst on sustained bass — and 22 windows of instant
+ * 1→0.45→1 was measured in a real render as exactly the "glitch + volume weirdness" it sounds
+ * like. Release is slower than attack, the standard ducking asymmetry: the dip must clear the
+ * cue's transient fast, but the bed swelling back is itself audible if it hurries. */
+const DUCK = 0.45;
+const DUCK_IN = 8; // frames to reach full duck (~130ms)
+const DUCK_OUT = 16; // frames to recover (~270ms)
+const easeInOut = (t: number) => {
+  const u = Math.min(1, Math.max(0, t));
+  return u * u * (3 - 2 * u);
+};
+
 const MusicBed: React.FC<{src: string; level: number; total: number; list: Cue[]}> = ({src, level, total, list}) => {
   // Duck windows are DERIVED from the cue list, never hand-placed: a bed that dips where the
-  // sounds are is the whole reason the cues stay audible at -15 dBFS.
-  const ducks = list.map((c) => [c.frame - 6, c.frame + c.len + 10] as const);
+  // sounds are is the whole reason the cues stay audible at -15 dBFS. FILLED cues only — an
+  // empty slot makes no noise, so a bed that dips for it pumps around pure silence.
+  const ducks = list.filter((c) => c.src).map((c) => [c.frame - 6, c.frame + c.len + 10] as const);
   const volume = (f: number) => {
     const fade = Math.min(1, f / FADE, Math.max(0, total - f) / FADE);
-    const ducked = ducks.some(([a, b]) => f >= a && f <= b) ? 0.45 : 1;
+    // The deepest window wins; edges ease in and out so the envelope is continuous everywhere.
+    let ducked = 1;
+    for (const [a, b] of ducks) {
+      let g = 1;
+      if (f >= a && f <= b) g = DUCK;
+      else if (f >= a - DUCK_IN && f < a) g = 1 - (1 - DUCK) * easeInOut((f - (a - DUCK_IN)) / DUCK_IN);
+      else if (f > b && f <= b + DUCK_OUT) g = DUCK + (1 - DUCK) * easeInOut((f - b) / DUCK_OUT);
+      if (g < ducked) ducked = g;
+    }
     return Math.max(MUSIC_EPS, level * fade * ducked);
   };
   return <Html5Audio src={staticFile(src)} volume={volume} />;

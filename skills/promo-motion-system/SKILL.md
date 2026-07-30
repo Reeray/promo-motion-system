@@ -795,8 +795,11 @@ derive right back, so its "delete" is `off: true` in the override — nudge and 
 the ↺ chip on the rail restores every hidden cue at once (once a dot is gone there is no per-cue
 handle left to click). **Background music** is one user-supplied file in `sound.music` — dropped
 on the music row, looping under the whole video at a token level (`soft`/`normal`), fading over
-45 frames, ducking to 0.45 under every cue window, floored at an epsilon because a volume that
-reaches exactly 0 DELETES the asset for those frames (measured, not read). Music is independent
+45 frames, ducking to 0.45 under every FILLED cue's window — never an empty slot's, or the bed
+pumps around pure silence — with EASED edges (8f in, 16f out), because a stepped gain is a
+waveform discontinuity: 22 instant 1→0.45→1 steps measured in a real render as audible glitches.
+Floored at an epsilon because a volume that reaches exactly 0 DELETES the asset for those frames
+(measured, not read). Music is independent
 of `sfx` — the bed is not an effect. `public/music/` is git-ignored exactly like `public/sfx/`.
 
 **Budgets are measured, not vibes** (T26): per-cue peak ceiling −15 dBFS (amix is an unnormalised
