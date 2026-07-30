@@ -17,10 +17,15 @@ import duckPng from './assets/hf-photos/duck_4x.png';
  * the objects are refined into HF product icons, the row squeezes inward and hard-cuts
  * into the logo. Raw material → product → brand. Ten keyframes on a 10-hit rhythm.
  *
- * Cut/version: 3s-ramp (the hero — geometric accelerando, "the story reads and the rush
- * builds"), DRIVING accents (3+3+2+2 with downbeat resolve). All timing is the spec's
- * table converted 30fps → 60fps: hits at [12,32,50,66,80,92,104,114,122,134], gather 12,
- * hold-after 46, total 180 — which at the 120bpm grid is EXACTLY six beats.
+ * Cut/version: the handoff's DEFAULTS — `2s-uniform` (60 frames at 30fps; metronomic
+ * pulse, no accelerando) with `opening` accents (2+2+3+3). Both are declared in the spec
+ * (`meta.defaultCut` / `meta.defaultVersion`, and `rhythm.cuts.2s-uniform.isDefault`), and
+ * the README is explicit that this is the deliverable unless the 3s version is asked for.
+ *
+ * All timing is the spec's `standard` table ×2 for our 60fps: hits at
+ * [8,18,26,36,44,54,62,72,80,90], gather 4, hold-after 30, total 120 = EXACTLY 2.0s.
+ * (The alternate 3s-ramp/driving cut is [12,32,50,66,80,92,104,114,122,134], gather 12,
+ * total 180 — reinstate by swapping the four constants below, nothing else.)
  *
  * TRANSPARENT on purpose: the piece plays over the video's own stage colour, so it
  * belongs to whatever theme hosts it. (The wordmark ink is the brand's #000B1B and the
@@ -44,11 +49,11 @@ const backOut = (t: number, s: number) => {
   return 1 + (s + 1) * u * u * u + s * u * u;
 };
 
-/* ── timing (60fps; spec's 3s-ramp driving table ×2) ─────────────────────── */
-const HITS = [12, 32, 50, 66, 80, 92, 104, 114, 122, 134];
-const WEIGHTS = [1.0, 0.35, 0.35, 0.95, 0.35, 0.35, 0.85, 0.35, 1.0, 1.25];
-const GATHER = 12;
-export const ANIM_FRAMES = 180;
+/* ── timing (60fps; spec's DEFAULT 2s-uniform `standard` table ×2) ───────── */
+const HITS = [8, 18, 26, 36, 44, 54, 62, 72, 80, 90];
+const WEIGHTS = [1.0, 0.2, 0.65, 0.2, 1.0, 0.2, 0.2, 1.0, 0.2, 1.15]; // opening, 2+2+3+3
+const GATHER = 4;
+export const ANIM_FRAMES = 120; // 2.0s at 60fps — the handoff's stated deliverable
 const LOGO_HIT = HITS[9];
 const RELAYOUT = 14; // rowRelayout ease window (7 spec frames)
 

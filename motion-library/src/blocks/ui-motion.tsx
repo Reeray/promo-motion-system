@@ -44,12 +44,12 @@ export const UI_BLOCKS: Block[] = [
   {
     name: 'hf-logo-animation',
     category: 'ui',
-    source: 'HF logo intro · driving',
-    poster: 84, // mid-story: photo objects standing in for letters — reads as the whole idea
+    source: 'HF logo intro · 2s-uniform / opening',
+    poster: 40, // mid-story: photo objects standing in for letters — reads as the whole idea
     durationInFrames: ANIM_FRAMES,
     fps: 60,
     wide: true,
-    desc: 'The complete brand animation, ten keyframes on a ten-hit rhythm: the “Hugging Face” wordmark degrades letter-by-letter into real photo objects (waving hand, stone, oil barrel, rubber duck), the objects are refined into HF product icons, then the row squeezes inward and hard-cuts into the logo landing its own downbeat with one ~3% overshoot. Raw material → product → brand. Transparent, so it plays over the video’s own theme; the “driving” accent version, 3s-ramp cut.',
+    desc: 'The complete brand animation, ten keyframes on a ten-hit rhythm: the “Hugging Face” wordmark degrades letter-by-letter into real photo objects (waving hand, stone, oil barrel, rubber duck), the objects are refined into HF product icons, then the row squeezes inward and hard-cuts into the logo landing its own downbeat with one ~3% overshoot. Raw material → product → brand. Transparent, so it plays over the video’s own theme. The handoff’s default build: 2s-uniform cut, “opening” accents (2+2+3+3) — 120 frames, exactly 2.0s.',
     Comp: LogoAnimationSurface,
   },
 ];

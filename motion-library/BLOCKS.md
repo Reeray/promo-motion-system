@@ -58,7 +58,7 @@ _GPT-5.5 house standard_
 | `log-theater` | — | — | C · GPT-5.5 | Agent work as an accumulating checklist with app icons; the “Using X” header swaps as tools change; “Thinking” shimmers. |
 | `log-theater-zoomed` | — | — | C · GPT-5.5 | The same log framed as a static macro crop — the window is bigger than the viewport, pinned to the top-left; the feed auto-scrolls inside. |
 | `camera macro-push` | — | — | C · GPT-5.5 | The viewport pushes in ~1.6× over ~0.5s to showcase a hero component — strong ease-out that decelerates into the hold, no overshoot. |
-| `hf-logo-animation` | — | — | HF logo intro · driving | The complete brand animation, ten keyframes on a ten-hit rhythm: the “Hugging Face” wordmark degrades letter-by-letter into real photo objects (waving hand, stone, oil barrel, rubber duck), the objects are refined into HF product icons, then the row squeezes inward and hard-cuts into the logo landing its own downbeat with one ~3% overshoot. Raw material → product → brand. Transparent, so it plays over the video’s own theme; the “driving” accent version, 3s-ramp cut. |
+| `hf-logo-animation` | — | — | HF logo intro · 2s-uniform / opening | The complete brand animation, ten keyframes on a ten-hit rhythm: the “Hugging Face” wordmark degrades letter-by-letter into real photo objects (waving hand, stone, oil barrel, rubber duck), the objects are refined into HF product icons, then the row squeezes inward and hard-cuts into the logo landing its own downbeat with one ~3% overshoot. Raw material → product → brand. Transparent, so it plays over the video’s own theme. The handoff’s default build: 2s-uniform cut, “opening” accents (2+2+3+3) — 120 frames, exactly 2.0s. |
 
 ## ⚠ Unregistered specs (7)
 

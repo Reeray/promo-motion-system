@@ -294,8 +294,8 @@
           "name": "hf-logo-animation",
           "category": "ui",
           "tag": null,
-          "source": "HF logo intro · driving",
-          "desc": "The complete brand animation, ten keyframes on a ten-hit rhythm: the “Hugging Face” wordmark degrades letter-by-letter into real photo objects (waving hand, stone, oil barrel, rubber duck), the objects are refined into HF product icons, then the row squeezes inward and hard-cuts into the logo landing its own downbeat with one ~3% overshoot. Raw material → product → brand. Transparent, so it plays over the video’s own theme; the “driving” accent version, 3s-ramp cut.",
+          "source": "HF logo intro · 2s-uniform / opening",
+          "desc": "The complete brand animation, ten keyframes on a ten-hit rhythm: the “Hugging Face” wordmark degrades letter-by-letter into real photo objects (waving hand, stone, oil barrel, rubber duck), the objects are refined into HF product icons, then the row squeezes inward and hard-cuts into the logo landing its own downbeat with one ~3% overshoot. Raw material → product → brand. Transparent, so it plays over the video’s own theme. The handoff’s default build: 2s-uniform cut, “opening” accents (2+2+3+3) — 120 frames, exactly 2.0s.",
           "durationInFrames": null,
           "fps": 60
         }

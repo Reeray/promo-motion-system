@@ -4,14 +4,13 @@ import {FONT} from '../../lib/palette';
 import {DATASET, HANDS, LOGO, MODEL, SPACE} from './assets/hf-ending';
 
 /* ============================================================================
- * SURFACE — HF logo ending (the DRIVING version's resolve).
+ * SURFACE — HF logo animation, RESOLVE ONLY (icons → logo).
  *
  * Ported from the HF Logo Intro handoff ("D:/Memofree/HF Logo Intro animation/handoff/
- * hf-intro-spec.json"), which specifies four accent versions of the intro. The THIRD —
- * "driving", 3+3+2+2 with downbeat resolve — is the one whose ending carries a silent gap
- * before the logo lands its own downbeat, and that resolve is what this surface is: the
- * final two keyframes (kf9 icon row → kf10 logo) as a standalone end card that closes a
- * promo. Metaphor intact: the products gather back into the brand.
+ * hf-intro-spec.json"): the final two keyframes (kf9 icon row → kf10 logo) as a standalone
+ * end card that closes a promo without replaying the whole story. Metaphor intact: the
+ * products gather back into the brand. Derived from the handoff's DEFAULT cut/version
+ * (2s-uniform, opening) like hf-logo-animation — gatherFrames 2 @30fps → 4 here.
  *
  * Everything numeric is the SPEC's math, converted 30fps → 60fps (this library runs 60):
  *   swapEnter    scale(f) = 1 + (s0−1)·(1 − easeOutCubic(f/dur)); s0 = 1.03+0.17w, dur = (6+3w)·2
@@ -23,12 +22,13 @@ import {DATASET, HANDS, LOGO, MODEL, SPACE} from './assets/hf-ending';
  * fades, nothing anticipates" is the spec's whole motion style.
  *
  * The one adaptation (documented, not silent): standalone, the row must READ before it
- * resolves, so the silent gap holds ~700ms — two beats at the driving cut's 175bpm — where
- * the intro, arriving from nine prior hits, needs only 200ms. Layout, formulas and the
- * white canvas are otherwise verbatim.
+ * resolves, so the icon row holds ~700ms before the logo beat, where the full animation —
+ * arriving from eight prior hits — needs only its gather window. Layout and formulas are
+ * otherwise verbatim, and the total stays 108f (1.8s) so a closing card is shorter than
+ * the 120f animation it is a subset of.
  *
- * White is DECLARED (spec canvas #ffffff), not themed: a brand end card is the one surface
- * that renders identically on every stage.
+ * TRANSPARENT, not the spec's white canvas: this plays over the hosting video's stage so it
+ * belongs to whatever theme runs it (see the render note on the root element below).
  * ========================================================================== */
 
 const easeOutCubic = (t: number) => 1 - Math.pow(1 - Math.min(1, Math.max(0, t)), 3);
@@ -38,8 +38,10 @@ const backOut = (t: number, s: number) => {
   return 1 + (s + 1) * u * u * u + s * u * u;
 };
 
-/* kf9 row, left→right, at spec metrics. Advance width is the CONTENT box (photo PNGs carry
- * transparent padding); adjacency gap 32; content centres sit on y=536. */
+/* kf9 row, left→right, at spec metrics. Advance width is the CONTENT box — hand-icon.png
+ * carries real alpha padding, the three icons are SVGs; adjacency gap 32; centres on y=536.
+ * (The four PHOTO pngs used by the full animation did NOT carry alpha — see
+ * scripts/strip-photo-bg.py — but none of them appear in this row.) */
 const ROW = [
   {src: HANDS, w: 124, h: 124, fx0: 0.04, fx1: 0.955, fy0: 0.085, fy1: 0.92},
   {src: MODEL, w: 148.7, h: 148.7, fx0: 0, fx1: 1, fy0: 0, fy1: 1},
@@ -55,8 +57,8 @@ const LOGO_CY = 523;
 
 /* Timing, in 60fps frames. */
 const POP_DUR = 18; // swapEnter at w=1.0: (6+3)·2
-const LOGO_AT = 42; // the downbeat: ~two beats of silent gap at 175bpm
-const GATHER = 12; // spec gatherFrames 6 @30
+const LOGO_AT = 42; // the downbeat, after a ~700ms read of the icon row (see the note above)
+const GATHER = 4; // spec gatherFrames 2 @30 (2s-uniform standard)
 const LOGO_DUR = 9; // backOut settle, 4.5 spec frames
 export const ENDING_FRAMES = 108;
 
