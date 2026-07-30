@@ -9,7 +9,7 @@ import brickPng from './assets/hf-photos/brick_4x.png';
 import duckPng from './assets/hf-photos/duck_4x.png';
 
 /* ============================================================================
- * SURFACE — the FULL HF logo intro (driving version, 3s-ramp cut).
+ * SURFACE — the HF LOGO ANIMATION, complete (driving version, 3s-ramp cut).
  *
  * The complete piece from the handoff ("D:/Memofree/HF Logo Intro animation/handoff/
  * hf-intro-spec.json"), not just its resolve: the "Hugging Face" wordmark degrades
@@ -48,13 +48,13 @@ const backOut = (t: number, s: number) => {
 const HITS = [12, 32, 50, 66, 80, 92, 104, 114, 122, 134];
 const WEIGHTS = [1.0, 0.35, 0.35, 0.95, 0.35, 0.35, 0.85, 0.35, 1.0, 1.25];
 const GATHER = 12;
-export const INTRO_FRAMES = 180;
+export const ANIM_FRAMES = 180;
 const LOGO_HIT = HITS[9];
 const RELAYOUT = 14; // rowRelayout ease window (7 spec frames)
 
 /** The ten hits as EMPTY slots, sized by accent tier: dum-weight hits get the 180ms slot,
  *  teks the 90ms, ghosts the 60ms — the kit's spec-exact drums drop straight in. */
-export const INTRO_CUES: {at: number; kind: 'ui-swap' | 'ui-rise' | 'ui-tick'}[] = HITS.map((at, n) => ({
+export const ANIM_CUES: {at: number; kind: 'ui-swap' | 'ui-rise' | 'ui-tick'}[] = HITS.map((at, n) => ({
   at,
   kind: WEIGHTS[n] >= 0.9 ? 'ui-swap' : WEIGHTS[n] >= 0.5 ? 'ui-rise' : 'ui-tick',
 }));
@@ -143,7 +143,7 @@ const accentPulse = (f: number) => {
   return s;
 };
 
-export const LogoIntroSurface: React.FC = () => {
+export const LogoAnimationSurface: React.FC = () => {
   const f = useCurrentFrame();
   const {width, height} = useVideoConfig();
   const s = width / 1920;
@@ -158,7 +158,7 @@ export const LogoIntroSurface: React.FC = () => {
   const s0 = 1.03 + 0.17 * w;
   const enterDur = (6 + 3 * w) * 2;
   const enterScale = 1 + (s0 - 1) * (1 - easeOutCubic(since / enterDur));
-  const zoom = 1 + 0.03 * (f / INTRO_FRAMES);
+  const zoom = 1 + 0.03 * (f / ANIM_FRAMES);
   const pulse = accentPulse(f);
   const gatherT = k === 8 ? easeInCubic((f - (LOGO_HIT - GATHER)) / GATHER) : 0;
 

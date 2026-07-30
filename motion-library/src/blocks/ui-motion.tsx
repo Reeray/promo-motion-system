@@ -1,6 +1,6 @@
 import {Block} from './types';
 import {ChipTokenize, LogTheater, LogTheaterZoomed, CameraPush} from '../clips/C';
-import {LogoEndingSurface, ENDING_FRAMES} from '../promo/surfaces/hf-logo-ending';
+import {LogoAnimationSurface, ANIM_FRAMES} from '../promo/surfaces/hf-logo-animation';
 
 /* UI-motion blocks (GPT-5.5 house standard) — same Block shape as the typography and
  * transition sets.
@@ -42,14 +42,14 @@ export const UI_BLOCKS: Block[] = [
     Comp: CameraPush,
   },
   {
-    name: 'hf-logo-ending',
+    name: 'hf-logo-animation',
     category: 'ui',
     source: 'HF logo intro · driving',
-    poster: 46, // logo mid-overshoot — the money frame
-    durationInFrames: ENDING_FRAMES,
+    poster: 84, // mid-story: photo objects standing in for letters — reads as the whole idea
+    durationInFrames: ANIM_FRAMES,
     fps: 60,
     wide: true,
-    desc: 'The brand resolve that closes every promo: the four product icons hold a two-beat silence, squeeze 55% toward centre (easeInCubic, no fade), then hard-cut into the HF logo landing its own downbeat with one ~3% overshoot. The third accent version ("driving") of the HF logo intro, final two keyframes.',
-    Comp: LogoEndingSurface,
+    desc: 'The complete brand animation, ten keyframes on a ten-hit rhythm: the “Hugging Face” wordmark degrades letter-by-letter into real photo objects (waving hand, stone, oil barrel, rubber duck), the objects are refined into HF product icons, then the row squeezes inward and hard-cuts into the logo landing its own downbeat with one ~3% overshoot. Raw material → product → brand. Transparent, so it plays over the video’s own theme; the “driving” accent version, 3s-ramp cut.',
+    Comp: LogoAnimationSurface,
   },
 ];

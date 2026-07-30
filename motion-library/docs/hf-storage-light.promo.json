@@ -9,7 +9,7 @@
     {
       "id": "intro",
       "kind": "ui",
-      "surface": "hf-logo-intro",
+      "surface": "hf-logo-animation",
       "enter": "scale-pop-in",
       "exit": "scale-up-cut"
     },
@@ -19,7 +19,7 @@
       "effect": "blur-out-up",
       "copy": "Every repository's storage, visualized",
       "size": "lg",
-      "hold": "long",
+      "hold": "normal",
       "enter": "scale-pop-in",
       "exit": "push-off-left"
     },
@@ -54,7 +54,7 @@
     {
       "id": "ending",
       "kind": "ui",
-      "surface": "hf-logo-ending",
+      "surface": "hf-logo-animation",
       "enter": "scale-pop-in",
       "exit": "scale-up-cut"
     }

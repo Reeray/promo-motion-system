@@ -291,11 +291,11 @@
           "fps": null
         },
         {
-          "name": "hf-logo-ending",
+          "name": "hf-logo-animation",
           "category": "ui",
           "tag": null,
           "source": "HF logo intro · driving",
-          "desc": "The brand resolve that closes every promo: the four product icons hold a two-beat silence, squeeze 55% toward centre (easeInCubic, no fade), then hard-cut into the HF logo landing its own downbeat with one ~3% overshoot. The third accent version (\"driving\") of the HF logo intro, final two keyframes.",
+          "desc": "The complete brand animation, ten keyframes on a ten-hit rhythm: the “Hugging Face” wordmark degrades letter-by-letter into real photo objects (waving hand, stone, oil barrel, rubber duck), the objects are refined into HF product icons, then the row squeezes inward and hard-cuts into the logo landing its own downbeat with one ~3% overshoot. Raw material → product → brand. Transparent, so it plays over the video’s own theme; the “driving” accent version, 3s-ramp cut.",
           "durationInFrames": null,
           "fps": 60
         }

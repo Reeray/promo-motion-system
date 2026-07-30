@@ -48,7 +48,7 @@ import {
   LIVE_SPACE_FRAMES,
 } from './hf-spaces-agents';
 import {LogoEndingSurface, ENDING_FRAMES, ENDING_CUES} from './hf-logo-ending';
-import {LogoIntroSurface, INTRO_FRAMES as LOGO_INTRO_FRAMES, INTRO_CUES as LOGO_INTRO_CUES} from './hf-logo-intro';
+import {LogoAnimationSurface, ANIM_FRAMES, ANIM_CUES} from './hf-logo-animation';
 
 export const SURFACES: Record<string, Surface> = {
   'hf-storage-repositories': {
@@ -97,21 +97,26 @@ export const SURFACES: Record<string, Surface> = {
     frames: LIVE_SPACE_FRAMES,
     Comp: LiveSpace,
   },
-  'hf-logo-ending': {
-    id: 'hf-logo-ending',
-    label: 'HF · Logo ending (driving resolve)',
-    frames: ENDING_FRAMES,
+  /** THE brand animation: wordmark → objects → icons → logo, the complete piece. Use this at
+   *  both ends of a promo (the bookend law) — it is what "HF logo animation" means. */
+  'hf-logo-animation': {
+    id: 'hf-logo-animation',
+    label: 'HF · Logo animation (wordmark → logo)',
+    frames: ANIM_FRAMES,
     // NOT bleed: a transparent centred composition — bleed made its transitions scale from the
     // top-left corner, and its old white card fought the hosting theme.
+    cues: ANIM_CUES,
+    Comp: LogoAnimationSurface,
+  },
+  /** The last two keyframes only — the icons-gather-into-logo resolve. Kept because a CLOSING
+   *  card often wants the payoff without replaying the whole story; it is a subset of the
+   *  animation above, never a rival implementation of it. */
+  'hf-logo-resolve': {
+    id: 'hf-logo-resolve',
+    label: 'HF · Logo animation — resolve only (icons → logo)',
+    frames: ENDING_FRAMES,
     cues: ENDING_CUES,
     Comp: LogoEndingSurface,
-  },
-  'hf-logo-intro': {
-    id: 'hf-logo-intro',
-    label: 'HF · Logo intro — the full piece (driving, 3s-ramp)',
-    frames: LOGO_INTRO_FRAMES,
-    cues: LOGO_INTRO_CUES,
-    Comp: LogoIntroSurface,
   },
 };
 
