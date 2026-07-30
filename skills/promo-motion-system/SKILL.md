@@ -727,10 +727,25 @@ every beat on a frame — everything else drifts and gets "fixed" by ear, badly:
 | 150 | 24 | driving launch |
 | 180 | 20 | sting/teaser |
 
-Music FIRST, then author scene lengths in whole beats — transition cues then land on the
-grid by construction. A hit that reads late gets pulled 10–20ms early with its `nudge`
-(sound leads the eye; audio is processed faster than the picture). Risers end in a
-WRITTEN SILENCE one beat before the downbeat — the driving-version gap.
+Music FIRST, then declare the grid IN THE DOC and the system does the rest:
+
+```json
+{ "grid": { "bpm": 120 }, ... }
+```
+
+prepare() rounds every scene UP to whole beats (the padding extends the settle before the
+outro), so **every cut lands exactly on a beat** — provable by `start % beat === 0`, not by
+ear. The editor draws beat ticks on the cue rail and SNAPS added cues to them. `bpm` is the
+fourth authored number (after `framing`, `nudge`, `custom[].at`): a fact about the chosen
+music, underivable, fps-independent because the frame count derives from it. The grid lives
+at the TOP LEVEL of the doc, never inside `sound` — gate P6 proves audio cannot change
+durations, and the grid is picture rhythm that exists with or without audio.
+
+A hit that reads late gets pulled 10–20ms early with its `nudge` (sound leads the eye;
+audio is processed faster than the picture). Risers end in a WRITTEN SILENCE one beat
+before the downbeat — the driving-version gap. Bookending with `hf-logo-ending` as BOTH
+intro and outro (the [B] bookend law) works: use scene ids `intro`/`ending`; cue ids stay
+distinct because they derive from scene ids.
 
 The house kit (`node motion-library/scripts/craft-audio.mjs`) generates slot-exact
 one-shots (−15 dBFS, the mix-budget ceiling), the HF percussion trio, and three beds at

@@ -153,7 +153,17 @@ export const clampNudge = (ms: number | undefined): number => {
   return Math.round(Math.min(max, Math.max(min, ms)) / step) * step;
 };
 
-export type PromoDocRaw = {v: 1; id: string; theme?: Theme; scenes: SceneRaw[]; sound?: PromoSound};
+/** THE BEAT GRID — the ON-BEAT law's mechanism. `bpm` is the fourth authored number: a fact
+ *  about the music the piece is cut to, underivable from anything in the doc. prepare() rounds
+ *  every scene UP to whole beats (the padding extends the settle before the outro), so every CUT
+ *  lands exactly on a beat — on-beat as arithmetic, not nudging.
+ *
+ *  Deliberately NOT inside `sound`: gate P6 proves audio can never change a frame count by
+ *  stripping the whole sound block. Timing structure that CHANGES durations therefore cannot
+ *  live there — the grid is rhythm the picture is cut to, whether or not any audio is present. */
+export type PromoGrid = {bpm: number};
+
+export type PromoDocRaw = {v: 1; id: string; theme?: Theme; scenes: SceneRaw[]; sound?: PromoSound; grid?: PromoGrid};
 
 /* ── Normalized: what components see. Every field present. ─────────────────── */
 type Base = {id: string; enter: IntroId; exit: OutroId; hold: HoldTok};
@@ -162,7 +172,7 @@ type Base = {id: string; enter: IntroId; exit: OutroId; hold: HoldTok};
 export type TextScene = Base & {kind: 'text'; effect: string; copy: string; sub: string | null; size: SizeTok; framing?: Framing};
 export type UiScene = Base & {kind: 'ui'; surface: string; framing: Framing};
 export type Scene = TextScene | UiScene;
-export type PromoDoc = {v: 1; id: string; theme: Theme; scenes: Scene[]; sound: PromoSound};
+export type PromoDoc = {v: 1; id: string; theme: Theme; scenes: Scene[]; sound: PromoSound; grid?: PromoGrid};
 
 export const DEFAULTS = {enter: 'glide-in' as IntroId, exit: 'push-off-left' as OutroId, hold: 'normal' as HoldTok, size: 'lg' as SizeTok};
 
@@ -170,6 +180,7 @@ export const normalize = (raw: PromoDocRaw): PromoDoc => ({
   v: 1,
   id: raw.id,
   theme: raw.theme ?? 'soft-light',
+  ...(raw.grid ? {grid: raw.grid} : {}),
   // Clamped HERE so the editor's live preview and the CLI render land on identical values — the
   // clampFraming pattern. A hand-edited nudge of 9999 renders as 500, it does not render as 9999.
   sound: {
@@ -226,6 +237,16 @@ export const validate = (doc: PromoDoc): string[] => {
     if (o?.gain && !(o.gain in GAIN)) errs.push(`sound cue "${id}": unknown gain token "${o.gain}"`);
     if (o?.src && !/^(sfx|music)\/[\w.-]+(\/[\w.-]+)*$/.test(o.src)) {
       errs.push(`sound cue "${id}": src "${o.src}" must be a simple path under sfx/ or music/`);
+    }
+  }
+  if (doc.grid) {
+    const {bpm} = doc.grid;
+    if (!Number.isFinite(bpm) || bpm <= 0) errs.push(`grid.bpm must be a positive number, got ${bpm}`);
+    else if ((FPS * 60) % bpm !== 0) {
+      errs.push(
+        `grid.bpm ${bpm} does not divide the frame rate: a beat would be ${((FPS * 60) / bpm).toFixed(2)} frames. ` +
+          `Use a BPM where ${FPS * 60}/bpm is whole — 90, 100, 120, 144, 150, 180 (see the ON-BEAT law).`
+      );
     }
   }
   const sceneIds = new Set(doc.scenes.map((s) => s.id));

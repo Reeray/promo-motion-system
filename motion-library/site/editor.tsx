@@ -877,6 +877,18 @@ const CueRail: React.FC<{
     return null;
   };
 
+  /** With a beat grid, an added cue SNAPS to the nearest beat — the grid exists so hits land on
+   *  it, and a hand-placed dot two pixels off a tick would defeat the whole arithmetic. The
+   *  snapped frame re-resolves to its owning scene (a beat can sit exactly on a boundary). */
+  const snapSlot = (raw: {scene: (typeof prep.scenes)[number]; frame: number}) => {
+    if (!prep.beat) return raw;
+    const f = Math.max(0, Math.min(prep.durationInFrames - 1, Math.round(raw.frame / prep.beat) * prep.beat));
+    const owner = prep.scenes.find((p, i) =>
+      f >= p.start && (i === prep.scenes.length - 1 ? f <= p.start + p.frames : f < p.start + p.frames)
+    );
+    return owner ? {scene: owner, frame: f} : raw;
+  };
+
   const onDown = (e: React.PointerEvent, c: Cue) => {
     const wrap = rail.current?.parentElement;
     const seg = prep.scenes.findIndex((p) => c.frame >= p.start && c.frame <= p.start + p.frames);
@@ -943,7 +955,12 @@ const CueRail: React.FC<{
           const dx = xFor(c.frame);
           return dx !== null && Math.abs(dx - x) < NEAR_DOT;
         });
-        setGhost(nearDot ? null : x);
+        if (nearDot) return setGhost(null);
+        // Magnetic ghost: on a beat grid the + PREVIEWS the snap, sitting where the cue will
+        // actually land — a ghost at the raw cursor would promise a position the click ignores.
+        const raw = slotAt(x);
+        const snapped = raw ? snapSlot(raw) : null;
+        setGhost(snapped ? xFor(snapped.frame) ?? x : x);
       }}
       onPointerLeave={() => setGhost(null)}
       onClick={(e) => {
@@ -954,13 +971,26 @@ const CueRail: React.FC<{
         if (!box) return;
         const x = e.clientX - box.left;
         if (list.some((c) => { const dx = xFor(c.frame); return dx !== null && Math.abs(dx - x) < NEAR_DOT; })) return;
-        const slot = slotAt(x);
-        if (!slot) return; // over a junction gap — no scene owns it
+        const raw = slotAt(x);
+        if (!raw) return; // over a junction gap — no scene owns it
+        const slot = snapSlot(raw);
         onAdd(slot.scene.scene.id, Math.round(((slot.frame - slot.scene.start) / prep.fps) * 1000));
         onSeek(slot.frame);
         setGhost(null);
       }}
     >
+      {/* Beat ticks — the grid made visible. Cuts sit on these by construction; added cues snap
+          to them. Purely decorative to the pointer (spans, not controls). */}
+      {prep.beat > 0 &&
+        geo.length > 0 &&
+        Array.from({length: Math.floor(prep.durationInFrames / prep.beat) + 1}, (_, n) => {
+          const f = n * prep.beat;
+          const x = xFor(Math.min(f, prep.durationInFrames));
+          if (x === null) return null;
+          const bar = n % 4 === 0; // downbeat of each bar reads slightly stronger
+          return <span key={`bt${n}`} className={`ed-beat${bar ? ' bar' : ''}`} style={{left: x}} aria-hidden="true" />;
+        })}
+
       {list.map((c) => {
         const drift = live?.id === c.id && drag.current ? live.dx : 0;
         const x = xFor(c.frame);

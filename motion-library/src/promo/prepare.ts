@@ -55,6 +55,9 @@ export type Prepared = {
   fps: number;
   width: number;
   height: number;
+  /** Frames per beat when the doc declares a grid, else 0. The editor draws beat ticks from
+   *  this and snaps added cues to it; nothing else may re-derive it (one boundary, one value). */
+  beat: number;
   warnings: string[];
 };
 
@@ -63,9 +66,17 @@ export const prepare = (raw: PromoDocRaw): Prepared => {
   const errs = validate(doc);
   if (errs.length) throw new Error(`Invalid promo doc "${raw?.id ?? '?'}":\n  - ${errs.join('\n  - ')}`);
 
+  /* THE BEAT GRID (ON-BEAT law). Every scene rounds UP to whole beats, so every cumulative
+   * start — every CUT — lands exactly on a beat of the declared BPM. The padding lands in the
+   * settle before the outro fires: the scene holds a touch longer, the throw still owns its
+   * measured frames. Ceil and never round-down, because shortening would eat into an intro's
+   * landing floor. validate() already proved (FPS·60)/bpm is whole. */
+  const beat = doc.grid ? (FPS * 60) / doc.grid.bpm : 0;
+
   let start = 0;
   const scenes: PreparedScene[] = doc.scenes.map((scene) => {
-    const frames = sceneFrames(scene);
+    const natural = sceneFrames(scene);
+    const frames = beat ? Math.ceil(natural / beat) * beat : natural;
     const p = {scene, frames, start};
     start += frames;
     return p;
@@ -96,5 +107,5 @@ export const prepare = (raw: PromoDocRaw): Prepared => {
 
   // `start` has accumulated the sum of every scene, so the composition length and the sum of the
   // Series.Sequence lengths are equal BY CONSTRUCTION rather than by two agreeing calculations.
-  return {doc, scenes, durationInFrames: start, fps: FPS, width: WIDTH, height: HEIGHT, warnings};
+  return {doc, scenes, durationInFrames: start, fps: FPS, width: WIDTH, height: HEIGHT, beat, warnings};
 };

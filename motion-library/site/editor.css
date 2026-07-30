@@ -388,6 +388,13 @@
    without precision. 18px was a sliver: the cursor left it constantly on the way to the timeline.
    Dots stay pinned to the bottom edge so they still read as attached to the segments below. */
 .ed-rail { position: relative; height: 28px; cursor: copy; }
+/* Beat ticks: quiet hairlines on the rail's bottom edge; bar downbeats reach a touch higher. */
+.ed-beat {
+  position: absolute; bottom: 0; width: 1px; height: 6px;
+  background: color-mix(in srgb, var(--faint) 38%, transparent);
+  pointer-events: none;
+}
+.ed-beat.bar { height: 10px; background: color-mix(in srgb, var(--faint) 60%, transparent); }
 .ed-dot {
   position: absolute; bottom: 1px; width: 12px !important; height: 12px !important;
   margin-left: -6px; padding: 0 !important; border-radius: 50% !important;
