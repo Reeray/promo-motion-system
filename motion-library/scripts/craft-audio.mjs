@@ -454,6 +454,45 @@ const legatoPads = (prog, bars, beatMs, gain) => {
   return events;
 };
 
+/* ── the LOFI voices ─────────────────────────────────────────────────────────
+ * The chosen expansion direction (user, July 2026): lofi/jazzy grown from bed-pulse-120, with
+ * the beat-marking ticks constant on EVERY beat through the whole piece.
+ *
+ * THE SWING ARITHMETIC that makes "jazzy" legal under the ON-BEAT law: at 120bpm a beat is
+ * 30 frames, so a swung (triplet) eighth lands at beat + 20 frames EXACTLY — swing lives on
+ * the frame grid at any tempo whose beatFrames divides by 3. Beats stay metronomic always;
+ * only subdivisions swing. */
+
+/** Rhodes-ish keys: sine-heavy with a soft bark, long piano decay, the instrument's signature
+ *  slow tremolo. The lofi harmony voice — warm, dark, rolled-off. */
+const keys = (f, ms, gain = 1) => {
+  const m = buf(ms);
+  sweep(m, f, f, gain * 0.62);
+  sweep(m, f * 2.001, f * 2.001, gain * 0.11);
+  sweep(m, f * 3.009, f * 3.009, gain * 0.04);
+  onepole(m, 0.16);
+  for (let i = 0; i < m.length; i++) m[i] *= 1 + 0.09 * Math.sin(2 * Math.PI * 4.3 * (i / SR));
+  decay(m, 1.6);
+  attack(m, 6);
+  return fadeOut(m, Math.min(ms * 0.35, 700));
+};
+/** A rim tick: a small woody click, rounder and quieter than a hat — the 2-and-4 backbeat. */
+const rim = (rnd, gain = 1) => decay(bandpass(noise(buf(40), rnd, gain), 1800, 2.2), 90);
+/** Vinyl crackle: sparse seeded pops through a lowpass, laid under the whole bed. The lofi
+ *  signifier, kept far below the music — texture, never an event. */
+const crackleLayer = (seed, totalMs, gain) => {
+  const rnd = mulberry32(seed);
+  const m = buf(totalMs);
+  const pops = Math.floor((totalMs / 1000) * 22);
+  for (let k = 0; k < pops; k++) {
+    const pAt = Math.floor(rnd() * (m.length - 40));
+    const amp = gain * (0.15 + 0.85 * Math.pow(rnd(), 3));
+    for (let j = 0; j < 24; j++) m[pAt + j] += (rnd() * 2 - 1) * amp * Math.exp(-j / 5);
+  }
+  onepole(m, 0.32);
+  return m;
+};
+
 /** Render a bed from a spec of layered event generators. totalMs must sit on the grid. */
 const renderBed = ({bpm, bars, layers, drive}) => {
   const beatMs = 60000 / bpm;
@@ -604,23 +643,23 @@ const BEDS = {
     ],
   },
 
-  /* ══ THE EXPANSION SET — canon variants beside the three standards ═════════
-   * Same voices, same rules: one loop, no fills, no humanization, static mix. Each bed
-   * varies exactly ONE legitimate axis (tempo / harmony / instrumentation / voice-leading).
-   * The standards above stay byte-identical — verified by hash on every regeneration. */
-
-  /* AXIS: TEMPO · 100 BPM = exactly 36 frames/beat. The relaxed walkthrough: half-time kick
-   * (beats 1 and 3 only), sparser plucks, voice-led pads. */
-  'bed-walk-100': {
-    bpm: 100,
-    bars: 12,
+  /* ══ THE LOFI PAIR — the chosen direction, grown from bed-pulse-120 ═══════
+   * ii–V–I–vi in C (Dm7 → G7 → Cmaj7 → Am7), Rhodes-ish keys voiced so consecutive chords
+   * share tones, vinyl-crackle floor, and the beat ticks on EVERY beat of every bar, never
+   * dropping out. Straight subdivisions in lofi; swung (+20f exact) in jazzy. */
+  'bed-lofi-120': {
+    bpm: 120,
+    bars: 16,
     drive: 1.2,
     layers: [
+      ({beatMs, bars}) => [{at: 0, ch: panTo(crackleLayer(601, beatMs * 4 * bars, 0.028), 0)}],
       ({beatMs, bars}) => {
         const out = [];
-        const roots = ['A', 'A', 'F', 'G'];
-        for (let b = 0; b < bars; b++)
-          out.push({at: at(b, 0, beatMs), ch: panTo(subNote(NOTE(roots[b % 4], 1), beatMs * 4, 0.5), 0)});
+        const roots = [['D', 1], ['G', 1], ['C', 2], ['A', 1]];
+        for (let b = 0; b < bars; b++) {
+          const [n, o] = roots[b % 4];
+          out.push({at: at(b, 0, beatMs), ch: panTo(subNote(NOTE(n, o), beatMs * 4, 0.46), 0)});
+        }
         return out;
       },
       ({beatMs, bars}) => {
@@ -630,212 +669,100 @@ const BEDS = {
         return out;
       },
       ({beatMs, bars}) => {
-        const rnd = mulberry32(211);
+        const rnd = mulberry32(602);
         const out = [];
         for (let b = 0; b < bars; b++)
-          for (let q = 0; q < 4; q++) out.push({at: at(b, q * 4 + 2, beatMs), ch: panTo(hat(rnd, 0.14), 0.35)});
+          for (const q of [1, 3]) out.push({at: at(b, q * 4, beatMs), ch: panTo(rim(rnd, 0.17), 0.15)});
         return out;
       },
       ({beatMs, bars}) => {
-        const out = [];
-        for (let b = 1; b < bars; b += 2) {
-          out.push({at: at(b, 0, beatMs), ch: panTo(pluck(NOTE('A', 3), 460, 0.2), -0.25)});
-          out.push({at: at(b, 8, beatMs), ch: panTo(pluck(NOTE('E', 3), 460, 0.15), 0.25)});
-        }
-        return out;
-      },
-      ({beatMs, bars}) => legatoPads([[['A', 2], ['C', 3], ['E', 3]], [['A', 2], ['C', 3], ['E', 3]], [['F', 2], ['A', 2], ['C', 3]], [['F', 2], ['A', 2], ['C', 3]]], bars, beatMs, 0.15),
-    ],
-  },
-
-  /* AXIS: TEMPO · 144 BPM = exactly 25 frames/beat. The brisk montage: four-kick, uniform
-   * off-beat eighths, no plucks — clean forward motion, nothing decorative. */
-  'bed-brisk-144': {
-    bpm: 144,
-    bars: 16,
-    drive: 1.25,
-    layers: [
-      ({beatMs, bars}) => {
-        const out = [];
-        const roots = ['A', 'G', 'F', 'G'];
-        for (let b = 0; b < bars; b++)
-          out.push({at: at(b, 0, beatMs), ch: panTo(subNote(NOTE(roots[b % 4], 1), beatMs * 4, 0.48), 0)});
-        return out;
-      },
-      ({beatMs, bars}) => {
+        // the beat ticks: every beat, every bar, constant gain — the metronome inside the music
+        const rnd = mulberry32(603);
         const out = [];
         for (let b = 0; b < bars; b++)
-          for (let q = 0; q < 4; q++) out.push({at: at(b, q * 4, beatMs), ch: panTo(kick(0.55), 0)});
+          for (let q = 0; q < 4; q++) out.push({at: at(b, q * 4, beatMs), ch: panTo(hat(rnd, 0.11), 0.3)});
         return out;
       },
       ({beatMs, bars}) => {
-        const rnd = mulberry32(212);
         const out = [];
-        for (let b = 0; b < bars; b++)
-          for (let s = 2; s < 16; s += 4) out.push({at: at(b, s, beatMs), ch: panTo(hat(rnd, 0.12), s % 8 === 2 ? -0.3 : 0.3)});
-        return out;
-      },
-      ({beatMs, bars}) => legatoPads([[['A', 2], ['C', 3], ['E', 3]], [['G', 2], ['B', 2], ['D', 3]], [['F', 2], ['A', 2], ['C', 3]], [['G', 2], ['B', 2], ['D', 3]]], bars, beatMs, 0.13),
-    ],
-  },
-
-  /* AXIS: HARMONY · the house tempo in C MAJOR (I–IV–vi–V). Same voices as pulse; the only
-   * change is what the loop says. Brighter without being louder. */
-  'bed-bright-120': {
-    bpm: 120,
-    bars: 16,
-    drive: 1.25,
-    layers: [
-      ({beatMs, bars}) => {
-        const out = [];
-        const roots = [['C', 2], ['F', 1], ['A', 1], ['G', 1]];
+        const voicings = [
+          [['D', 3], ['F', 3], ['A', 3], ['C', 4]],
+          [['D', 3], ['F', 3], ['G', 3], ['B', 3]],
+          [['E', 3], ['G', 3], ['B', 3], ['C', 4]],
+          [['E', 3], ['G', 3], ['A', 3], ['C', 4]],
+        ];
         for (let b = 0; b < bars; b++) {
-          const [n, o] = roots[b % 4];
-          out.push({at: at(b, 0, beatMs), ch: panTo(subNote(NOTE(n, o), beatMs * 4, 0.5), 0)});
+          for (const [n, o] of voicings[b % 4]) {
+            out.push({at: at(b, 0, beatMs), ch: panTo(keys(NOTE(n, o), beatMs * 3.6, 0.15), -0.1)});
+            out.push({at: at(b, 8, beatMs), ch: panTo(keys(NOTE(n, o), beatMs * 1.8, 0.075), 0.15)});
+          }
+        }
+        return out;
+      },
+    ],
+  },
+
+  'bed-jazzy-120': {
+    bpm: 120,
+    bars: 16,
+    drive: 1.2,
+    layers: [
+      ({beatMs, bars}) => [{at: 0, ch: panTo(crackleLayer(611, beatMs * 4 * bars, 0.028), 0)}],
+      ({beatMs, bars}) => {
+        // bass walks a little: root on the bar, the fifth on the swung and-of-3
+        const out = [];
+        const moves = [[['D', 1], ['A', 1]], [['G', 1], ['D', 2]], [['C', 2], ['G', 1]], [['A', 1], ['E', 2]]];
+        for (let b = 0; b < bars; b++) {
+          const [[rn, ro], [fn, fo]] = moves[b % 4];
+          out.push({at: at(b, 0, beatMs), ch: panTo(subNote(NOTE(rn, ro), beatMs * 2.6, 0.46), 0)});
+          out.push({at: at(b, 0, beatMs) + beatMs * (2 + 2 / 3), ch: panTo(subNote(NOTE(fn, fo), beatMs * 1.2, 0.3), 0)});
         }
         return out;
       },
       ({beatMs, bars}) => {
+        // laid-back kick: the bar, then the swung and-of-2 — boom, ba-doom
+        const out = [];
+        for (let b = 0; b < bars; b++) {
+          out.push({at: at(b, 0, beatMs), ch: panTo(kick(0.5), 0)});
+          out.push({at: at(b, 0, beatMs) + beatMs * (1 + 2 / 3), ch: panTo(kick(0.34), 0)});
+        }
+        return out;
+      },
+      ({beatMs, bars}) => {
+        const rnd = mulberry32(612);
         const out = [];
         for (let b = 0; b < bars; b++)
-          for (let q = 0; q < 4; q++) out.push({at: at(b, q * 4, beatMs), ch: panTo(kick(0.55), 0)});
+          for (const q of [1, 3]) out.push({at: at(b, q * 4, beatMs), ch: panTo(rim(rnd, 0.17), 0.15)});
         return out;
       },
       ({beatMs, bars}) => {
-        const rnd = mulberry32(213);
+        // beat ticks on every beat, plus the SWUNG eighth after each (+20f exactly at 120)
+        const rnd = mulberry32(613);
         const out = [];
         for (let b = 0; b < bars; b++)
-          for (let q = 0; q < 4; q++) out.push({at: at(b, q * 4 + 2, beatMs), ch: panTo(hat(rnd, 0.16), 0.35)});
+          for (let q = 0; q < 4; q++) {
+            out.push({at: at(b, q * 4, beatMs), ch: panTo(hat(rnd, 0.11), 0.3)});
+            out.push({at: at(b, q * 4, beatMs) + (beatMs * 2) / 3, ch: panTo(hat(rnd, 0.055), -0.2)});
+          }
         return out;
       },
       ({beatMs, bars}) => {
+        // comping: full chord on the bar, a short stab on the swung and-of-1
         const out = [];
-        const line = [['C', 4, 0], ['E', 4, 6], ['G', 4, 8], ['E', 4, 14]];
-        for (let b = 1; b < bars; b += 2)
-          for (const [n, o, s] of line) out.push({at: at(b, s, beatMs), ch: panTo(pluck(NOTE(n, o), 420, 0.2), s % 4 === 0 ? -0.3 : 0.3)});
+        const voicings = [
+          [['D', 3], ['F', 3], ['A', 3], ['C', 4]],
+          [['D', 3], ['F', 3], ['G', 3], ['B', 3]],
+          [['E', 3], ['G', 3], ['B', 3], ['C', 4]],
+          [['E', 3], ['G', 3], ['A', 3], ['C', 4]],
+        ];
+        for (let b = 0; b < bars; b++) {
+          for (const [n, o] of voicings[b % 4]) {
+            out.push({at: at(b, 0, beatMs), ch: panTo(keys(NOTE(n, o), beatMs * 3.2, 0.15), -0.1)});
+            out.push({at: at(b, 0, beatMs) + beatMs * (2 / 3), ch: panTo(keys(NOTE(n, o), beatMs * 0.9, 0.06), 0.2)});
+          }
+        }
         return out;
       },
-      ({beatMs, bars}) => legatoPads([[['C', 3], ['E', 3], ['G', 3]], [['C', 3], ['F', 3], ['A', 3]], [['C', 3], ['E', 3], ['A', 3]], [['B', 2], ['D', 3], ['G', 3]]], bars, beatMs, 0.14),
-    ],
-  },
-
-  /* AXIS: HARMONY · the house tempo, DARKER: Am–Em–F–Em in low voicings, no plucks, hats at
-   * half density. Weight without loudness. */
-  'bed-dark-120': {
-    bpm: 120,
-    bars: 16,
-    drive: 1.25,
-    layers: [
-      ({beatMs, bars}) => {
-        const out = [];
-        const roots = ['A', 'E', 'F', 'E'];
-        for (let b = 0; b < bars; b++)
-          out.push({at: at(b, 0, beatMs), ch: panTo(subNote(NOTE(roots[b % 4], 1), beatMs * 4, 0.52), 0)});
-        return out;
-      },
-      ({beatMs, bars}) => {
-        const out = [];
-        for (let b = 0; b < bars; b++)
-          for (let q = 0; q < 4; q++) out.push({at: at(b, q * 4, beatMs), ch: panTo(kick(0.5), 0)});
-        return out;
-      },
-      ({beatMs, bars}) => {
-        const rnd = mulberry32(214);
-        const out = [];
-        for (let b = 0; b < bars; b++)
-          for (const q of [1, 3]) out.push({at: at(b, q * 4 + 2, beatMs), ch: panTo(hat(rnd, 0.12), 0.3)});
-        return out;
-      },
-      ({beatMs, bars}) => legatoPads([[['A', 2], ['C', 3], ['E', 3]], [['E', 2], ['G', 2], ['B', 2]], [['F', 2], ['A', 2], ['C', 3]], [['E', 2], ['G', 2], ['B', 2]]], bars, beatMs, 0.15),
-    ],
-  },
-
-  /* AXIS: INSTRUMENTATION · pads + sub ONLY, 90 BPM. For CTAs and endings — the calm bed's
-   * harmony with every rhythmic element subtracted. Energy via subtraction, canon rule 6. */
-  'bed-air-90': {
-    bpm: 90,
-    bars: 12,
-    drive: 1.1,
-    layers: [
-      ({beatMs, bars}) => legatoPads([
-        [['A', 2], ['E', 3], ['A', 3]],
-        [['F', 2], ['C', 3], ['A', 3]],
-        [['C', 3], ['G', 3], ['E', 4]],
-        [['G', 2], ['D', 3], ['B', 3]],
-      ], bars, beatMs, 0.2),
-      ({beatMs, bars}) => {
-        const out = [];
-        const roots = ['A', 'F', 'C', 'G'];
-        for (let b = 0; b < bars; b++)
-          out.push({at: at(b, 0, beatMs), ch: panTo(subNote(NOTE(roots[b % 4], 1), beatMs * 4, 0.34), 0)});
-        return out;
-      },
-    ],
-  },
-
-  /* AXIS: INSTRUMENTATION · hat + sub ONLY, 120 BPM. The quietest possible pulse — a floor
-   * for log/typing sections where even a kick would compete with the ticks on screen. */
-  'bed-tick-120': {
-    bpm: 120,
-    bars: 16,
-    drive: 1.15,
-    layers: [
-      ({beatMs, bars}) => {
-        const out = [];
-        const roots = ['A', 'A', 'F', 'G'];
-        for (let b = 0; b < bars; b++)
-          out.push({at: at(b, 0, beatMs), ch: panTo(subNote(NOTE(roots[b % 4], 1), beatMs * 4, 0.45), 0)});
-        return out;
-      },
-      ({beatMs, bars}) => {
-        const rnd = mulberry32(215);
-        const out = [];
-        for (let b = 0; b < bars; b++)
-          for (let q = 0; q < 4; q++) out.push({at: at(b, q * 4 + 2, beatMs), ch: panTo(hat(rnd, 0.14), 0.35)});
-        return out;
-      },
-    ],
-  },
-
-  /* AXIS: VOICE-LEADING · the exact pulse bed, pads legato. Am holds for four bars, F for the
-   * next four; A and C are COMMON to both chords, so they sustain through all eight bars and
-   * only E↔F moves. Strictly smoother than the standard — A/B them and keep the one you like. */
-  'bed-pulse-120-vl': {
-    bpm: 120,
-    bars: 16,
-    drive: 1.25,
-    layers: [
-      ({beatMs, bars}) => {
-        const out = [];
-        const roots = ['A', 'A', 'F', 'G'];
-        for (let b = 0; b < bars; b++)
-          out.push({at: at(b, 0, beatMs), ch: panTo(subNote(NOTE(roots[b % 4], 1), beatMs * 4, 0.5), 0)});
-        return out;
-      },
-      ({beatMs, bars}) => {
-        const out = [];
-        for (let b = 0; b < bars; b++)
-          for (let q = 0; q < 4; q++) out.push({at: at(b, q * 4, beatMs), ch: panTo(kick(0.55), 0)});
-        return out;
-      },
-      ({beatMs, bars}) => {
-        const rnd = mulberry32(201);
-        const out = [];
-        for (let b = 0; b < bars; b++)
-          for (let q = 0; q < 4; q++) out.push({at: at(b, q * 4 + 2, beatMs), ch: panTo(hat(rnd, 0.16), 0.35)});
-        return out;
-      },
-      ({beatMs, bars}) => {
-        const out = [];
-        const line = [['A', 3, 0], ['C', 3, 6], ['E', 3, 8], ['G', 3, 14]];
-        for (let b = 1; b < bars; b += 2)
-          for (const [n, o, s] of line) out.push({at: at(b, s, beatMs), ch: panTo(pluck(NOTE(n, o), 420, 0.22), s % 4 === 0 ? -0.3 : 0.3)});
-        return out;
-      },
-      ({beatMs, bars}) => legatoPads([
-        [['A', 2], ['C', 3], ['E', 3]], [['A', 2], ['C', 3], ['E', 3]], [['A', 2], ['C', 3], ['E', 3]], [['A', 2], ['C', 3], ['E', 3]],
-        [['F', 2], ['A', 2], ['C', 3]], [['F', 2], ['A', 2], ['C', 3]], [['F', 2], ['A', 2], ['C', 3]], [['F', 2], ['A', 2], ['C', 3]],
-      ], bars, beatMs, 0.16),
     ],
   },
 };

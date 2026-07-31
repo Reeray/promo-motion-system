@@ -134,18 +134,20 @@ Beds (`public/music/`), all on the frame grid per §3, −1.5 dBTP:
 **The standards** (the golden sound): `bed-pulse-120` (16 bars, house default),
 `bed-calm-90` (12 bars, no kick, neo-classical), `bed-drive-150` (20 bars, four-on-floor).
 
-**The expansion set** — canon variants, each changing exactly ONE axis, standards untouched
-(verified byte-identical by hash on every regeneration):
+**The chosen direction — LOFI/JAZZY, grown from bed-pulse-120** (user, July 2026; a wider
+seven-variant sweep across tempo/harmony/instrumentation was auditioned and rejected as too
+fast or weird — only the pulse direction survived):
 
-| bed | axis | what changes |
-|---|---|---|
-| `bed-walk-100` | tempo (36f/beat) | half-time kick, relaxed walkthrough |
-| `bed-brisk-144` | tempo (25f/beat) | four-kick + off-beat 8ths, no plucks — clean montage |
-| `bed-bright-120` | harmony | C major I–IV–vi–V, same voices as pulse |
-| `bed-dark-120` | harmony | Am–Em–F–Em low voicings, no plucks, half-density hats |
-| `bed-air-90` | instrumentation | pads + sub only — CTAs and endings |
-| `bed-tick-120` | instrumentation | hat + sub only — under log/typing sections |
-| `bed-pulse-120-vl` | voice-leading | the standard with common tones HELD across chords (A/B it) |
+| bed | what it is |
+|---|---|
+| `bed-lofi-120` | ii–V–I–vi in C (Dm7→G7→Cmaj7→Am7), Rhodes-ish keys voiced for shared tones, vinyl-crackle floor, beat ticks on EVERY beat of every bar |
+| `bed-jazzy-120` | the same piece with SWING: triplet eighths at beat+20f (exact at 120bpm), laid-back kick on the swung and-of-2, walking fifths in the bass |
+
+**The swing arithmetic:** at 120bpm a beat is 30 frames, so a swung (triplet) eighth lands at
+beat + 20 frames EXACTLY — swing is grid-legal at any tempo whose frames-per-beat divides by 3
+(90→40f ✓, 120→30f ✓, 150→24f ✓; 100→36f ✓; 144→25f ✗). Beats stay metronomic ALWAYS — the
+user's stated taste is the constant beat-marking tick across the entire piece; swing lives only
+in the subdivisions.
 
 The v1 CANON the variants obey: the grid is the composer (no swing, no humanization) · a bed
 is a floor, not a story (one loop, no fills, no development) · few voices, one job each ·
