@@ -131,23 +131,21 @@ picture. Propose bed changes as new variants beside the standard, never as repla
 
 Beds (`public/music/`), all on the frame grid per §3, −1.5 dBTP:
 
-**The standards** (the golden sound): `bed-pulse-120` (16 bars, house default),
-`bed-calm-90` (12 bars, no kick, neo-classical), `bed-drive-150` (20 bars, four-on-floor).
-
-**The chosen direction — LOFI/JAZZY, grown from bed-pulse-120** (user, July 2026; a wider
-seven-variant sweep across tempo/harmony/instrumentation was auditioned and rejected as too
-fast or weird — only the pulse direction survived):
+**The shelf** (curated by ear, July 2026): `bed-pulse-120` — the ONE surviving standard and
+the reference sound — plus the current warm-lofi candidates. calm-90 and drive-150 were
+rejected by the user, as were: a 7-variant tempo/harmony/instrumentation sweep (too fast /
+weird) and a minor-key lofi pair (Dm7→G7→Cmaj7→Am7 — SAD: a loop that begins and ends minor
+reads melancholy by construction; never build beds on minor-heavy progressions).
 
 | bed | what it is |
 |---|---|
-| `bed-lofi-120` | ii–V–I–vi in C (Dm7→G7→Cmaj7→Am7), Rhodes-ish keys voiced for shared tones, vinyl-crackle floor, beat ticks on EVERY beat of every bar |
-| `bed-jazzy-120` | the same piece with SWING: triplet eighths at beat+20f (exact at 120bpm), laid-back kick on the swung and-of-2, walking fifths in the bass |
+| `bed-pulse-120` | the golden standard, untouched (hash d45eadf3…) |
+| `bed-warm-120` | lofi vamp on C6→Fmaj7 (E/A/C shared, only G↔F moves), bright Rhodes-ish keys, crackle floor, ticks on EVERY beat |
+| `bed-warm-swing-120` | the same, swung: triplet eighths at beat+20f exact, laid-back kick, walking fifths |
 
 **The swing arithmetic:** at 120bpm a beat is 30 frames, so a swung (triplet) eighth lands at
-beat + 20 frames EXACTLY — swing is grid-legal at any tempo whose frames-per-beat divides by 3
-(90→40f ✓, 120→30f ✓, 150→24f ✓; 100→36f ✓; 144→25f ✗). Beats stay metronomic ALWAYS — the
-user's stated taste is the constant beat-marking tick across the entire piece; swing lives only
-in the subdivisions.
+beat + 20 frames EXACTLY — grid-legal wherever frames-per-beat divides by 3. Beats stay
+metronomic ALWAYS (the user's stated taste: constant beat ticks across the whole piece).
 
 The v1 CANON the variants obey: the grid is the composer (no swing, no humanization) · a bed
 is a floor, not a story (one loop, no fills, no development) · few voices, one job each ·
