@@ -37,7 +37,7 @@ import {fileURLToPath, pathToFileURL} from 'node:url';
 import {createHash} from 'node:crypto';
 import {
   SR, PEAK_BED, mulberry32, secs, master, panTo, wav, NOTE,
-  kick, hat, rim, shaker, clap, snap, keysBright, subNote,
+  kick, hat, rim, shaker, clap, snap, keysBright, lead, subNote,
 } from './craft-audio.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -165,7 +165,7 @@ const main = async () => {
       const ai = n - (hits.length - 1 - ASCENT.length);
       if (!beatsOnly && ai >= 0 && ai < ASCENT.length) {
         const [note, oct] = ASCENT[ai];
-        put(panTo(keysBright(NOTE(note, oct), ai === ASCENT.length - 1 ? 900 : 450, 0.13), 0.1), t);
+        put(panTo(lead(NOTE(note, oct + 1), ai === ASCENT.length - 1 ? 900 : 450, 0.12), 0.25), t);
       }
       // the resolve on the ENDING scene's final hit: chord in melodic mode; in beats-only a
       // unison kick+clap — every hand in the room lands the downbeat together
@@ -233,7 +233,9 @@ const main = async () => {
       const phrase = PHRASES[p.scene.id] ?? (p.scene.kind === 'ui' ? PHRASES.ui : PHRASES.default);
       for (const [off, note, oct, len] of phrase) {
         if (off >= beats) continue;
-        put(panTo(keysBright(NOTE(note, oct), beatMs * len * 0.95, 0.13), 0.15), fMs(p.start) + off * beatMs);
+        // the LEAD, an octave above the chord voicings: melody and accompaniment now contrast
+        // on timbre, register AND articulation — see the lead voice's note in craft-audio.mjs
+        put(panTo(lead(NOTE(note, oct + 1), beatMs * len * 0.95, 0.12), 0.25), fMs(p.start) + off * beatMs);
       }
     }
   }

@@ -527,6 +527,21 @@ const snap = (rnd, gain = 1) => {
   mix(m, decay(bandpass(noise(buf(50), rnd, gain * 0.5), 850, 3), 150));
   return m;
 };
+/** The LEAD — a celesta/music-box bell, built to PAIR with keysBright instead of blending
+ *  into it. Three contrast axes, on purpose: brighter (open filter, bell partial at 4.02x),
+ *  more percussive (2ms attack, faster decay), and NO tremolo — a lead that wobbles reads as
+ *  wavering, and two voices sharing one LFO rate fuse into a single fat instrument, which is
+ *  exactly the mistake this voice exists to fix. Played an octave above the chord voicings. */
+const lead = (f, ms, gain = 1) => {
+  const m = buf(ms);
+  sweep(m, f, f, gain * 0.55);
+  sweep(m, f * 2.0, f * 2.0, gain * 0.1);
+  sweep(m, f * 4.02, f * 4.02, gain * 0.05);
+  onepole(m, 0.5);
+  decay(m, 2.2);
+  attack(m, 2);
+  return fadeOut(m, Math.min(ms * 0.3, 400));
+};
 /** A rim tick: a small woody click, rounder and quieter than a hat — the 2-and-4 backbeat. */
 const rim = (rnd, gain = 1) => decay(bandpass(noise(buf(40), rnd, gain), 1800, 2.2), 90);
 /** Vinyl crackle: sparse seeded pops through a lowpass, laid under the whole bed. The lofi
@@ -943,5 +958,5 @@ if (invoked) main();
 export {
   SR, PEAK_BED, mulberry32, secs, buf, sweep, noise, onepole, hipass, bandpass, decay, attack,
   fadeOut, dcBlock, mix, scale, demean, master, saturate, panTo, panSweep, wav, NOTE,
-  kick, hat, rim, shaker, clap, snap, keys, keysBright, subNote,
+  kick, hat, rim, shaker, clap, snap, keys, keysBright, lead, subNote,
 };
