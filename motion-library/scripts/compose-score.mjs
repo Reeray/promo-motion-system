@@ -71,13 +71,23 @@ const VAMP = [
 const SUB_ROOTS = [['C', 1], ['C', 1], ['F', 1], ['F', 1]];
 
 /** Per-scene phrases: [beatOffsetInScene, note, octave, beats]. Rests are the gaps.
- *  Chosen so each phrase ARCS (up then settle) and lands on chord tones of the vamp. */
+ *  Chosen so each phrase ARCS (up then settle) and lands on chord tones of the vamp.
+ *
+ *  Tuned once by ear ("melody too slow — just slightly more excited"): the lift comes from
+ *  EIGHTH-NOTE PICKUPS (offsets at .5) and slightly shorter holds — more motion in the same
+ *  phrases, same voice, same gain, same harmony. Density is the excitement dial; loudness and
+ *  extra voices are not (that experiment already lost). */
 const PHRASES = {
-  title: [[0, 'E', 4, 1], [1, 'D', 4, 1], [2, 'C', 4, 1.5]],
-  default: [[0, 'C', 4, 1], [1, 'D', 4, 1], [2, 'E', 4, 2]],
-  ui: [[0, 'C', 4, 1], [1, 'D', 4, 1], [2, 'E', 4, 2], [6, 'G', 4, 2], [8, 'A', 4, 1], [9, 'G', 4, 1], [10, 'E', 4, 2], [13, 'D', 4, 2]],
-  payoff: [[0, 'E', 4, 1], [1, 'G', 4, 1], [2, 'A', 4, 2]],
-  cta: [[0, 'C', 4, 1], [1, 'A', 3, 1], [2, 'G', 3, 2]],
+  title: [[0, 'C', 4, 0.5], [0.5, 'E', 4, 0.5], [1, 'D', 4, 1], [2, 'C', 4, 1.5]],
+  default: [[0, 'C', 4, 0.5], [0.5, 'D', 4, 0.5], [1, 'E', 4, 1.5], [3, 'G', 4, 1]],
+  ui: [
+    [0, 'C', 4, 0.5], [0.5, 'D', 4, 0.5], [1, 'E', 4, 1], [2, 'G', 4, 1.5],
+    [6, 'A', 4, 0.5], [6.5, 'G', 4, 0.5], [7, 'E', 4, 1.5],
+    [10, 'D', 4, 0.5], [10.5, 'E', 4, 0.5], [11, 'G', 4, 1],
+    [13, 'E', 4, 0.5], [13.5, 'D', 4, 1.5],
+  ],
+  payoff: [[0, 'E', 4, 0.5], [0.5, 'G', 4, 0.5], [1, 'A', 4, 1], [2, 'G', 4, 0.5], [2.5, 'A', 4, 1.5]],
+  cta: [[0, 'C', 4, 0.5], [0.5, 'D', 4, 0.5], [1, 'A', 3, 1], [2, 'G', 3, 2]],
 };
 /** The ascent into the logo: pitched on the animation's LAST FOUR hits, not on the grid. */
 const ASCENT = [['G', 3], ['A', 3], ['C', 4], ['E', 4]];
