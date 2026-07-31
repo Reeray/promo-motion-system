@@ -142,6 +142,8 @@ reads melancholy by construction; never build beds on minor-heavy progressions).
 | `bed-pulse-120` | the golden standard, untouched (hash d45eadf3…) |
 | `bed-warm-120` | lofi vamp on C6→Fmaj7 (E/A/C shared, only G↔F moves), bright Rhodes-ish keys, crackle floor, ticks on EVERY beat |
 | `bed-warm-swing-120` | the same, swung: triplet eighths at beat+20f exact, laid-back kick, walking fifths |
+| `bed-beat-120` | PURE BEAT MAP — no harmony: head-nod kick (boom / and-of-3), rim 2&4, ticks every beat, shaker 8ths |
+| `bed-beat-swing-120` | the beat map swung: laid-back kick on the swung and-of-2, swung shaker |
 
 **The swing arithmetic:** at 120bpm a beat is 30 frames, so a swung (triplet) eighth lands at
 beat + 20 frames EXACTLY — grid-legal wherever frames-per-beat divides by 3. Beats stay

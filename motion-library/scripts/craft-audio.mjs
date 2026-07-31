@@ -490,6 +490,14 @@ const keysBright = (f, ms, gain = 1) => {
   attack(m, 6);
   return fadeOut(m, Math.min(ms * 0.35, 700));
 };
+/** A shaker: bandpassed noise with a SOFT attack — a swish, not a click. The subdivision
+ *  texture for the pure beat maps; the hard tick stays reserved for the beats themselves. */
+const shaker = (rnd, gain = 1) => {
+  const m = noise(buf(70), rnd, gain);
+  bandpass(m, 6500, 0.9);
+  attack(m, 18);
+  return decay(m, 60, secs(18));
+};
 /** A rim tick: a small woody click, rounder and quieter than a hat — the 2-and-4 backbeat. */
 const rim = (rnd, gain = 1) => decay(bandpass(noise(buf(40), rnd, gain), 1800, 2.2), 90);
 /** Vinyl crackle: sparse seeded pops through a lowpass, laid under the whole bed. The lofi
@@ -698,6 +706,94 @@ const BEDS = {
             out.push({at: at(b, 0, beatMs) + beatMs * (2 / 3), ch: panTo(keysBright(NOTE(n, o), beatMs * 0.9, 0.055), 0.2)});
           }
         }
+        return out;
+      },
+    ],
+  },
+  /* ══ THE PURE BEAT MAPS — rhythm as the whole piece ═══════════════════════
+   * No harmony at all: the beat ticks the user loves, promoted from timekeeper to subject.
+   * A head-nod one-bar groove (boom … ba-boom on the and-of-3, rim backbeat on 2 and 4),
+   * ticks on EVERY beat, shaker 8ths breathing underneath. The kick's pitch-drop is the only
+   * low end — nothing minor, nothing sad, nothing to compete with the picture's story.
+   * Straight 8ths in bed-beat-120 (15f positions); swung (+20f exact) in the swing one. */
+  'bed-beat-120': {
+    bpm: 120,
+    bars: 16,
+    drive: 1.2,
+    layers: [
+      ({beatMs, bars}) => {
+        // boom on 1, ba-boom on the and-of-3 — the head-nod
+        const out = [];
+        for (let b = 0; b < bars; b++) {
+          out.push({at: at(b, 0, beatMs), ch: panTo(kick(0.52), 0)});
+          out.push({at: at(b, 10, beatMs), ch: panTo(kick(0.38), 0)});
+        }
+        return out;
+      },
+      ({beatMs, bars}) => {
+        const rnd = mulberry32(641);
+        const out = [];
+        for (let b = 0; b < bars; b++)
+          for (const q of [1, 3]) out.push({at: at(b, q * 4, beatMs), ch: panTo(rim(rnd, 0.19), 0.12)});
+        return out;
+      },
+      ({beatMs, bars}) => {
+        // the beat ticks: every beat, every bar, constant
+        const rnd = mulberry32(642);
+        const out = [];
+        for (let b = 0; b < bars; b++)
+          for (let q = 0; q < 4; q++) out.push({at: at(b, q * 4, beatMs), ch: panTo(hat(rnd, 0.12), 0.3)});
+        return out;
+      },
+      ({beatMs, bars}) => {
+        // shaker 8ths — softer on the offs, so the grid breathes without a second tick
+        const rnd = mulberry32(643);
+        const out = [];
+        for (let b = 0; b < bars; b++)
+          for (let e = 0; e < 8; e++)
+            out.push({at: at(b, e * 2, beatMs), ch: panTo(shaker(rnd, e % 2 ? 0.038 : 0.055), e % 2 ? -0.25 : 0.2)});
+        return out;
+      },
+    ],
+  },
+
+  'bed-beat-swing-120': {
+    bpm: 120,
+    bars: 16,
+    drive: 1.2,
+    layers: [
+      ({beatMs, bars}) => {
+        // boom on 1, the answer laid back on the swung and-of-2
+        const out = [];
+        for (let b = 0; b < bars; b++) {
+          out.push({at: at(b, 0, beatMs), ch: panTo(kick(0.52), 0)});
+          out.push({at: at(b, 0, beatMs) + beatMs * (1 + 2 / 3), ch: panTo(kick(0.36), 0)});
+        }
+        return out;
+      },
+      ({beatMs, bars}) => {
+        const rnd = mulberry32(651);
+        const out = [];
+        for (let b = 0; b < bars; b++)
+          for (const q of [1, 3]) out.push({at: at(b, q * 4, beatMs), ch: panTo(rim(rnd, 0.19), 0.12)});
+        return out;
+      },
+      ({beatMs, bars}) => {
+        const rnd = mulberry32(652);
+        const out = [];
+        for (let b = 0; b < bars; b++)
+          for (let q = 0; q < 4; q++) out.push({at: at(b, q * 4, beatMs), ch: panTo(hat(rnd, 0.12), 0.3)});
+        return out;
+      },
+      ({beatMs, bars}) => {
+        // shaker swings: on the beat and on the swung eighth (+20f exact)
+        const rnd = mulberry32(653);
+        const out = [];
+        for (let b = 0; b < bars; b++)
+          for (let q = 0; q < 4; q++) {
+            out.push({at: at(b, q * 4, beatMs), ch: panTo(shaker(rnd, 0.055), 0.2)});
+            out.push({at: at(b, q * 4, beatMs) + (beatMs * 2) / 3, ch: panTo(shaker(rnd, 0.036), -0.25)});
+          }
         return out;
       },
     ],
