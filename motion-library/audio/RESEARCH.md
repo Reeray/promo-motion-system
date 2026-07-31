@@ -179,6 +179,15 @@ Deterministic: same doc → same bytes. Re-run after ANY timing change to the do
 a derived artifact of the doc's timeline, and gate A4 still forbids committing docs that name
 it (regenerate on clone: one command).
 
+**--beats-only**: the same score with NO melody and NO harmony — percussion narrates alone.
+Each scene gets its own pattern (patterns swap exactly at the cuts): title = kick+snap,
+ui = full groove with clap on 4, payoff = double claps, cta = snaps only with the kick out,
+ending = a unison kick+clap on the logo downbeat. The palette grew for this: `clap` (three
+noise bursts a few ms apart — the many-hands) and `snap` (hollow high-Q mid click), also
+offered as kit-clap / kit-snap one-shots. Verified in the encoded render: the CTA measures
+ZERO sub-140Hz energy (kick truly absent), the clap band rises at the payoff, the unison
+resolve lands on the downbeat.
+
 Verified in an encoded render: intro hits scored 8/10 by onset detection (the 2 misses are
 ghost-tier ticks, quiet by design), groove drop exact at the title cut, resolve exact on the
 logo downbeat, tail measured 0.025→0.0 monotonic to the final frame.

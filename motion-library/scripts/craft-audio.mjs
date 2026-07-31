@@ -322,6 +322,16 @@ const SFX = {
     return panTo(fadeOut(m, 220), 0);
   },
 
+  /* Percussion one-shots for cue slots: the clap and snap, offered like every kit sound. */
+  'kit-clap': () => {
+    const rnd = mulberry32(120);
+    return panTo(fadeOut(clap(rnd, 1), 40), 0);
+  },
+  'kit-snap': () => {
+    const rnd = mulberry32(121);
+    return panTo(fadeOut(snap(rnd, 1), 20), 0);
+  },
+
   /* Risers — tension into a downbeat. End EXACTLY at their length: the last 40ms are
    * shaped to silence so the downbeat lands in a written gap (the driving-version trick). */
   'kit-riser-500': () => {
@@ -498,6 +508,24 @@ const shaker = (rnd, gain = 1) => {
   bandpass(m, 6500, 0.9);
   attack(m, 18);
   return decay(m, 60, secs(18));
+};
+/** A clap: three noise bursts a few ms apart (the "many hands") through a low-mid bandpass,
+ *  with a looser noise tail. The celebratory backbeat — bigger than a rim, warmer than a hat. */
+const clap = (rnd, gain = 1) => {
+  const m = buf(220);
+  const bursts = [[0, 0.7], [11, 0.85], [23, 1.0]];
+  for (const [t, g] of bursts) {
+    mix(m, decay(bandpass(noise(buf(30), rnd, g * gain), 1100, 1.6), 180), t);
+  }
+  mix(m, decay(bandpass(noise(buf(160), rnd, 0.55 * gain), 1300, 1.2), 40), 30);
+  return m;
+};
+/** A snap: a single hollow mid click — high-Q burst around 2.1kHz over a small 850Hz body.
+ *  The intimate backbeat: drier and quieter than a clap, for close sections like the CTA. */
+const snap = (rnd, gain = 1) => {
+  const m = decay(bandpass(noise(buf(70), rnd, gain), 2100, 2.5), 120);
+  mix(m, decay(bandpass(noise(buf(50), rnd, gain * 0.5), 850, 3), 150));
+  return m;
 };
 /** A rim tick: a small woody click, rounder and quieter than a hat — the 2-and-4 backbeat. */
 const rim = (rnd, gain = 1) => decay(bandpass(noise(buf(40), rnd, gain), 1800, 2.2), 90);
@@ -915,5 +943,5 @@ if (invoked) main();
 export {
   SR, PEAK_BED, mulberry32, secs, buf, sweep, noise, onepole, hipass, bandpass, decay, attack,
   fadeOut, dcBlock, mix, scale, demean, master, saturate, panTo, panSweep, wav, NOTE,
-  kick, hat, rim, shaker, keys, keysBright, subNote,
+  kick, hat, rim, shaker, clap, snap, keys, keysBright, subNote,
 };

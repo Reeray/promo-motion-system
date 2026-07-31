@@ -37,7 +37,7 @@ import {fileURLToPath, pathToFileURL} from 'node:url';
 import {createHash} from 'node:crypto';
 import {
   SR, PEAK_BED, mulberry32, secs, master, panTo, wav, NOTE,
-  kick, hat, rim, shaker, keysBright, subNote,
+  kick, hat, rim, shaker, clap, snap, keysBright, subNote,
 } from './craft-audio.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -84,10 +84,23 @@ const ASCENT = [['G', 3], ['A', 3], ['C', 4], ['E', 4]];
 /** The final resolve, struck on the logo downbeat: C6 spread wide. */
 const FINAL_CHORD = [['C', 2], ['G', 2], ['E', 3], ['A', 3], ['C', 4]];
 
+/** --beats-only: per-scene PERCUSSION PATTERNS (beats within each bar, bars relative to the
+ *  scene). The pattern IS the narration — it changes exactly at the scene cuts, and the wider
+ *  palette does the storytelling: rim is neutral, CLAP is lift (the payoff earns it), SNAP is
+ *  intimate (the CTA leans in, kick sits out). Ticks and shaker run through everything. */
+const PATTERNS = {
+  title: {kick: [0, 2], rim: [], clap: [], snap: [3]},
+  ui: {kick: [0, 2, 2.5], rim: [1], clap: [3], snap: []},
+  payoff: {kick: [0, 2], rim: [], clap: [1, 3], snap: []},
+  cta: {kick: [], rim: [], clap: [], snap: [1, 3]},
+  default: {kick: [0, 2], rim: [1], clap: [], snap: [3]},
+};
+
 const main = async () => {
   const docPath = process.argv[2];
+  const beatsOnly = process.argv.includes('--beats-only');
   if (!docPath) {
-    console.error('usage: node scripts/compose-score.mjs docs/<name>.promo.json');
+    console.error('usage: node scripts/compose-score.mjs docs/<name>.promo.json [--beats-only]');
     process.exit(2);
   }
   const raw = JSON.parse(readFileSync(resolve(ROOT, docPath), 'utf8'));
@@ -137,17 +150,23 @@ const main = async () => {
       } else {
         put(panTo(hat(rnd, 0.08), -0.2), t);
       }
-      // the ascent: the last four hits carry the melody into the logo
+      // the ascent: the last four hits carry the melody into the logo (melodic mode only —
+      // in beats-only the accelerating hit pattern IS the ascent)
       const ai = n - (hits.length - 1 - ASCENT.length);
-      if (ai >= 0 && ai < ASCENT.length) {
+      if (!beatsOnly && ai >= 0 && ai < ASCENT.length) {
         const [note, oct] = ASCENT[ai];
         put(panTo(keysBright(NOTE(note, oct), ai === ASCENT.length - 1 ? 900 : 450, 0.13), 0.1), t);
       }
-      // the resolve: on the final hit of the ENDING scene only, the chord lands and decays —
-      // sized to the time that actually remains, so it never rings into the end of the file
+      // the resolve on the ENDING scene's final hit: chord in melodic mode; in beats-only a
+      // unison kick+clap — every hand in the room lands the downbeat together
       if (p === last && n === hits.length - 1) {
-        const leftMs = (total / fps) * 1000 - t - 30;
-        for (const [note, oct] of FINAL_CHORD) put(panTo(keysBright(NOTE(note, oct), Math.min(2600, leftMs), 0.11), -0.05), t);
+        if (beatsOnly) {
+          put(panTo(kick(0.55), 0), t);
+          put(panTo(clap(rnd, 0.5), 0.1), t);
+        } else {
+          const leftMs = (total / fps) * 1000 - t - 30;
+          for (const [note, oct] of FINAL_CHORD) put(panTo(keysBright(NOTE(note, oct), Math.min(2600, leftMs), 0.11), -0.05), t);
+        }
       }
     });
   }
@@ -157,31 +176,55 @@ const main = async () => {
   const grooveRnd = mulberry32(710);
   const shakerRnd = mulberry32(711);
   const rimRnd = mulberry32(712);
+  const clapRnd = mulberry32(713);
+  const snapRnd = mulberry32(714);
   for (const p of bodyRanges) {
     const isCta = p.scene.id === 'cta' || p === prep.scenes[prep.scenes.length - 2];
     const startBeat = p.start / prep.beat;
     const beats = p.frames / prep.beat;
+
+    // the constant layer, both modes: the beat tick every beat, shaker 8ths under it
     for (let b = 0; b < beats; b++) {
-      const g = startBeat + b; // GLOBAL beat index — bars continue across scene cuts
       const t = fMs(p.start + b * prep.beat);
-      // the beat tick: every beat of every body scene, constant — the 节拍音
       put(panTo(hat(grooveRnd, 0.115), 0.3), t);
       put(panTo(shaker(shakerRnd, 0.05), 0.2), t);
       put(panTo(shaker(shakerRnd, 0.034), -0.25), t + beatMs / 2);
-      if (g % 2 === 1) put(panTo(rim(rimRnd, 0.17), 0.12), t); // backbeat on 2 & 4
-      if (!isCta && g % 2 === 0) put(panTo(kick(0.48), 0), t); // kick 1 & 3; the cta breathes
-      if (g % 4 === 0) {
-        const bar = Math.floor(g / 4);
-        const [rn, ro] = SUB_ROOTS[bar % 4];
-        put(panTo(subNote(NOTE(rn, ro), beatMs * 4, 0.4), 0), t);
-        for (const [note, oct] of VAMP[bar % 4]) put(panTo(keysBright(NOTE(note, oct), beatMs * 3.4, 0.115), -0.1), t);
-      }
     }
-    // the phrase: melody as punctuation for this scene's cut
-    const phrase = PHRASES[p.scene.id] ?? (p.scene.kind === 'ui' ? PHRASES.ui : PHRASES.default);
-    for (const [off, note, oct, len] of phrase) {
-      if (off >= beats) continue;
-      put(panTo(keysBright(NOTE(note, oct), beatMs * len * 0.95, 0.13), 0.15), fMs(p.start) + off * beatMs);
+
+    if (beatsOnly) {
+      // PATTERN MODE: the scene's pattern repeats per bar, bars RELATIVE TO THE SCENE, so the
+      // pattern change lands exactly on the cut — the rhythm narrates the animation.
+      const pat = PATTERNS[p.scene.id] ?? (p.scene.kind === 'ui' ? PATTERNS.ui : PATTERNS.default);
+      for (let barStart = 0; barStart < beats; barStart += 4) {
+        const t0 = fMs(p.start) + barStart * beatMs;
+        const room = beats - barStart;
+        const place = (offs, fn) => {
+          for (const o of offs) if (o < room) fn(t0 + o * beatMs);
+        };
+        place(pat.kick, (t) => put(panTo(kick(0.5), 0), t));
+        place(pat.rim, (t) => put(panTo(rim(rimRnd, 0.18), 0.12), t));
+        place(pat.clap, (t) => put(panTo(clap(clapRnd, 0.3), 0.15), t));
+        place(pat.snap, (t) => put(panTo(snap(snapRnd, 0.24), -0.12), t));
+      }
+    } else {
+      // MELODIC MODE: the approved groove + vamp + per-scene phrase
+      for (let b = 0; b < beats; b++) {
+        const g = startBeat + b; // GLOBAL beat index — bars continue across scene cuts
+        const t = fMs(p.start + b * prep.beat);
+        if (g % 2 === 1) put(panTo(rim(rimRnd, 0.17), 0.12), t); // backbeat on 2 & 4
+        if (!isCta && g % 2 === 0) put(panTo(kick(0.48), 0), t); // kick 1 & 3; the cta breathes
+        if (g % 4 === 0) {
+          const bar = Math.floor(g / 4);
+          const [rn, ro] = SUB_ROOTS[bar % 4];
+          put(panTo(subNote(NOTE(rn, ro), beatMs * 4, 0.4), 0), t);
+          for (const [note, oct] of VAMP[bar % 4]) put(panTo(keysBright(NOTE(note, oct), beatMs * 3.4, 0.115), -0.1), t);
+        }
+      }
+      const phrase = PHRASES[p.scene.id] ?? (p.scene.kind === 'ui' ? PHRASES.ui : PHRASES.default);
+      for (const [off, note, oct, len] of phrase) {
+        if (off >= beats) continue;
+        put(panTo(keysBright(NOTE(note, oct), beatMs * len * 0.95, 0.13), 0.15), fMs(p.start) + off * beatMs);
+      }
     }
   }
 
@@ -196,7 +239,7 @@ const main = async () => {
     R[k] *= g;
   }
 
-  const outName = `score-${prep.doc.id}.wav`;
+  const outName = beatsOnly ? `score-${prep.doc.id}-beats.wav` : `score-${prep.doc.id}.wav`;
   const outPath = resolve(ROOT, 'public', 'music', outName);
   mkdirSync(dirname(outPath), {recursive: true});
   const bytes = wav([L, R]);
