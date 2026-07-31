@@ -139,7 +139,10 @@ export type CustomCue = {id: string; scene: string; at: number; src?: string; ga
 
 export type PromoSound = {
   sfx?: 'on' | 'off';
-  music?: {src: string; level?: MusicLevelTok};
+  /** `fade: 'none'` marks a COMPOSED SCORE rather than a looping bed: a score authored to the
+   *  doc's own timeline (scripts/compose-score.mjs) carries its own opening and ending, and the
+   *  render's automatic 45-frame bed fade would damage both. Default 'auto' = bed behaviour. */
+  music?: {src: string; level?: MusicLevelTok; fade?: 'auto' | 'none'};
   cues?: Record<string, SoundCueOverride>;
   custom?: CustomCue[];
 };
@@ -263,6 +266,9 @@ export const validate = (doc: PromoDoc): string[] => {
   const music = doc.sound?.music;
   if (music) {
     if (music.level && !(music.level in MUSIC_LEVEL)) errs.push(`sound: unknown music level "${music.level}"`);
+    if (music.fade && music.fade !== 'auto' && music.fade !== 'none') {
+      errs.push(`sound: music fade must be "auto" or "none", got "${music.fade}"`);
+    }
     if (!/^music\/[\w.-]+(\/[\w.-]+)*$/.test(music.src)) {
       errs.push(`sound: music src "${music.src}" must be a simple path under music/`);
     }

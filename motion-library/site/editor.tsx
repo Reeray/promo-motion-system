@@ -375,7 +375,11 @@ const App: React.FC = () => {
 
   /** Background music: one file, looping under the whole video at a token level. Setting it does
    *  NOT touch sfx — the two halves of sound are independent, and the mix budget already counts
-   *  the bed (maxSimultaneous +1). */
+   *  the bed (maxSimultaneous +1).
+   *
+   *  A COMPOSED SCORE (score-*.wav, from scripts/compose-score.mjs) gets score defaults: level
+   *  `normal` and `fade: "none"` — a score authors its own opening and ending, and the automatic
+   *  bed fade would soften its first hits. Still just a default; the doc field stays editable. */
   const setMusic = (src: string | null) => {
     setRaw((d) => {
       if (!d) return d;
@@ -383,7 +387,16 @@ const App: React.FC = () => {
         const {music: _drop, ...rest} = d.sound ?? {};
         return {...d, sound: rest};
       }
-      return {...d, sound: {...d.sound, music: {src, level: d.sound?.music?.level ?? 'soft'}}};
+      const isScore = /(^|\/)score-[\w.-]+$/.test(src);
+      return {
+        ...d,
+        sound: {
+          ...d.sound,
+          music: isScore
+            ? {src, level: d.sound?.music?.level ?? 'normal', fade: 'none'}
+            : {src, level: d.sound?.music?.level ?? 'soft'},
+        },
+      };
     });
     setDirty(true);
   };

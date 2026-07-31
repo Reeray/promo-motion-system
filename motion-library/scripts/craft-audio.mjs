@@ -34,6 +34,7 @@
  * ========================================================================== */
 
 import {mkdirSync, writeFileSync, readFileSync, rmSync} from 'node:fs';
+import {pathToFileURL} from 'node:url';
 import {resolve, dirname} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {createHash} from 'node:crypto';
@@ -907,4 +908,12 @@ const main = () => {
   }
 };
 
-main();
+// Run only when invoked directly — compose-score.mjs imports this file as the voice toolkit.
+const invoked = process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url;
+if (invoked) main();
+
+export {
+  SR, PEAK_BED, mulberry32, secs, buf, sweep, noise, onepole, hipass, bandpass, decay, attack,
+  fadeOut, dcBlock, mix, scale, demean, master, saturate, panTo, panSweep, wav, NOTE,
+  kick, hat, rim, shaker, keys, keysBright, subNote,
+};

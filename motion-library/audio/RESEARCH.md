@@ -157,6 +157,32 @@ simple timbres · nothing clicks · energy via instrumentation, never intensity 
 `--verify` re-measures every claim above (slot fit, ceiling, DC, grid); `--prove`
 generates twice and compares bytes.
 
+## 5.5 · SCORES — music composed FROM the doc (scripts/compose-score.mjs)
+
+The answer to "too repetitive / melody boring": stop looping and START READING. A score is
+composed from the same prepare()/cues() the renderer reads — `node scripts/compose-score.mjs
+docs/<name>.promo.json` writes `public/music/score-<id>.wav`, exactly durationInFrames long:
+
+- **logo sections**: the animation is the metronome — percussion on its ten keyframe hits
+  (kick/rim/tick by accent tier), a rising pentatonic line climbing the last four hits into
+  the logo. No groove; the visual rhythm would fight the musical one.
+- **body**: the groove drops exactly at the first content cut — the approved pulse skeleton +
+  the warm C6→Fmaj7 vamp, ticks on every beat; each scene cut starts a hand-composed
+  C-pentatonic phrase (melody as punctuation, with rests — never a stream).
+- **cta**: the kick sits out. **ending**: written silence, the hit-rhythm again, the final
+  chord ON the logo downbeat, sized to the time remaining, 250ms cosine tail to true zero.
+
+Play with `"music": {"src": "music/score-<id>.wav", "level": "normal", "fade": "none"}`
+— `fade: none` is the score marker (a score authors its own opening/ending; the automatic
+45f bed fade would soften both). The editor's music chips apply score defaults automatically.
+Deterministic: same doc → same bytes. Re-run after ANY timing change to the doc — a score is
+a derived artifact of the doc's timeline, and gate A4 still forbids committing docs that name
+it (regenerate on clone: one command).
+
+Verified in an encoded render: intro hits scored 8/10 by onset detection (the 2 misses are
+ghost-tier ticks, quiet by design), groove drop exact at the title cut, resolve exact on the
+logo downbeat, tail measured 0.025→0.0 monotonic to the final frame.
+
 ## 6 · Gathered CC0 (Kenney, re-importable)
 
 Four packs fetched from [kenney.nl](https://kenney.nl/assets/category:Audio) (CC0):

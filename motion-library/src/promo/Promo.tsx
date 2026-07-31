@@ -173,13 +173,15 @@ const easeInOut = (t: number) => {
   return u * u * (3 - 2 * u);
 };
 
-const MusicBed: React.FC<{src: string; level: number; total: number; list: Cue[]}> = ({src, level, total, list}) => {
+const MusicBed: React.FC<{src: string; level: number; total: number; list: Cue[]; noFade?: boolean}> = ({src, level, total, list, noFade}) => {
   // Duck windows are DERIVED from the cue list, never hand-placed: a bed that dips where the
   // sounds are is the whole reason the cues stay audible at -15 dBFS. FILLED cues only — an
   // empty slot makes no noise, so a bed that dips for it pumps around pure silence.
   const ducks = list.filter((c) => c.src).map((c) => [c.frame - 6, c.frame + c.len + 10] as const);
   const volume = (f: number) => {
-    const fade = Math.min(1, f / FADE, Math.max(0, total - f) / FADE);
+    // A COMPOSED SCORE (fade: 'none') authored its own opening and ending — the automatic bed
+    // fade would soften the score's first hits and fight its final decay.
+    const fade = noFade ? 1 : Math.min(1, f / FADE, Math.max(0, total - f) / FADE);
     // The deepest window wins; edges ease in and out so the envelope is continuous everywhere.
     let ducked = 1;
     for (const [a, b] of ducks) {
@@ -219,7 +221,13 @@ export const Promo: React.FC<Prepared> = (prep) => {
       </Series>
       <CueLayer list={list} />
       {music && (
-        <MusicBed src={music.src} level={MUSIC_LEVEL[music.level ?? 'soft']} total={prep.durationInFrames} list={list} />
+        <MusicBed
+          src={music.src}
+          level={MUSIC_LEVEL[music.level ?? 'soft']}
+          total={prep.durationInFrames}
+          list={list}
+          noFade={music.fade === 'none'}
+        />
       )}
     </StageCtx.Provider>
   );
