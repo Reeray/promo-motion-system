@@ -732,6 +732,9 @@ The knob is the scene's `entry` token — flexible by context, never a number in
 The container test decides: if the scene has visible chrome that moves independently of its
 content (a surface window), ride. If the content IS the visible thing (text), together.
 
+USER-CONFIRMED (A/B, July 2026): ride vs together was rendered side-by-side on the storage
+surface and the user chose ride — this row of the table is a verdict, not a recommendation.
+
 prepare() converts the token against the intro's MEASURED frames (ride on glide-in 54f → 32f
 delay; on scale-pop-in 26f → 16f), the scene grows by exactly that delay (the beat grid
 re-quantises, cuts stay on beats), and surface-published cue slots shift with the choreography
