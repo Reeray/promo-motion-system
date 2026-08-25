@@ -713,6 +713,30 @@ Why "driving" and not the other three: it is the only version whose ending carri
 silence before the logo lands — an arrival, not just a stop. That reads as an ENDING even when
 the nine preceding hits of the full intro are absent.
 
+### ⚑ LAW — CONTENT RIDES THE TRANSITION (measured, flexible by token)
+
+A route change is ONE motion, and the incoming content rides inside it. Measured from the
+reference A/B (edo_lunardi demo, frame-profiled July 2026): starting the content AFTER the
+container transition produces TWO motions with ~0.35s of dead air and a detached pop; starting
+it at **60% of the transition** produces one unbroken 52-frame gesture that also finishes
+sooner. Our old default (content and container starting together at 0%) is legal but unstaged.
+
+The knob is the scene's `entry` token — flexible by context, never a number in the doc:
+
+| token | starts at | use when |
+|---|---|---|
+| `together` | 0% | **all TEXT scenes** (measured: text has NO container — its content is the only visible thing, so `ride` produces blank-stage dead air, the exact thing this law forbids); surfaces that ARE the motion (the HF logo animation) |
+| **`ride`** | 60% of the enter transition | **UI surfaces with visible chrome** — the window glides in while its internal choreography waits, then the items join mid-flight: one continuous gesture |
+| `after` | 100% | deliberate two-beat staging ONLY — you are choosing the dead air on purpose |
+
+The container test decides: if the scene has visible chrome that moves independently of its
+content (a surface window), ride. If the content IS the visible thing (text), together.
+
+prepare() converts the token against the intro's MEASURED frames (ride on glide-in 54f → 32f
+delay; on scale-pop-in 26f → 16f), the scene grows by exactly that delay (the beat grid
+re-quantises, cuts stay on beats), and surface-published cue slots shift with the choreography
+— sound follows motion through the delay too.
+
 ### ⚑ LAW — ON-BEAT IS ARITHMETIC: PICK BPMs THAT DIVIDE THE FRAME RATE
 
 At 60fps one beat is `3600 / BPM` frames. Only BPMs where that divides EXACTLY can put

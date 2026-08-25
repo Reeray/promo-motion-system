@@ -7,7 +7,7 @@ import '../src/lib/fonts';
 import {Promo} from '../src/promo/Promo';
 import {prepare, Prepared} from '../src/promo/prepare';
 import {
-  FRAMING_BOUNDS, FRAMING_ID, FULL_TRO, Framing, HOLD, INTRO, IntroId, OUTRO, OutroId, PromoDocRaw,
+  FRAMING_BOUNDS, FRAMING_ID, FULL_TRO, Framing, ENTRY, EntryTok, HOLD, INTRO, IntroId, OUTRO, OutroId, PromoDocRaw,
   SIZE, SizeTok, HoldTok, SceneRaw, clampFraming, fullTroFor, isIdentity,
 } from '../src/promo/schema';
 import {SURFACES} from '../src/promo/surfaces';
@@ -1072,7 +1072,7 @@ const Inspector: React.FC<{
   if (!sel) return null;
   if (sel.t === 'junc') return <JunctionInspector i={sel.i} h={sel.h} scenes={scenes} setJunction={setJunction} />;
   const s = scenes[sel.i];
-  if (s.kind === 'ui') return <UiInspector s={s} />;
+  if (s.kind === 'ui') return <UiInspector s={s} i={sel.i} patch={patch} />;
   return <TextInspector i={sel.i} s={s} scenes={scenes} prep={prep} patch={patch} />;
 };
 
@@ -1385,7 +1385,7 @@ const MusicRow: React.FC<{
   );
 };
 
-const UiInspector: React.FC<{s: Extract<SceneRaw, {kind: 'ui'}>}> = ({s}) => (
+const UiInspector: React.FC<{s: Extract<SceneRaw, {kind: 'ui'}>; i: number; patch: (i: number, p: Partial<SceneRaw>) => void}> = ({s, i, patch}) => (
   <div className="ed-insp">
     <div className="ed-insp-h">{SURFACES[s.surface]?.label ?? s.surface}</div>
     <p className="ed-note">
@@ -1394,6 +1394,19 @@ const UiInspector: React.FC<{s: Extract<SceneRaw, {kind: 'ui'}>}> = ({s}) => (
       frame it — scale and reposition the whole surface with <strong>Frame surface</strong> above.
       Swapping it for another surface needs the agent to re-run capture and rebuild it.
     </p>
+    <div className="ed-row">
+      <span className="ed-lab mono" title="When the surface's choreography starts, as a fraction of the enter transition — CONTENT RIDES THE TRANSITION">ENTRY</span>
+      {(Object.keys(ENTRY) as EntryTok[]).map((k) => (
+        <button
+          key={k}
+          className={`ed-tok${(s.entry ?? 'together') === k ? ' on' : ''}`}
+          title={k === 'together' ? 'choreography moves with the container (0%)' : k === 'ride' ? 'choreography joins at 60% of the transition — one continuous motion' : 'choreography waits for the container (100%) — deliberate two-beat only'}
+          onClick={() => patch(i, {entry: k})}
+        >
+          {k}
+        </button>
+      ))}
+    </div>
   </div>
 );
 
@@ -1423,6 +1436,19 @@ const TextInspector: React.FC<{
           <button key={k} className={`ed-tok${(s.hold ?? 'normal') === k ? ' on' : ''}`} onClick={() => patch(i, {hold: k})}>{k}</button>
         ))}
         <span className="ed-lab mono" style={{marginLeft: 'auto'}}>{(cur / prep.fps).toFixed(2)}s</span>
+      </div>
+      <div className="ed-row">
+        <span className="ed-lab mono" title="When the scene's content starts, as a fraction of the enter transition — CONTENT RIDES THE TRANSITION">ENTRY</span>
+        {(Object.keys(ENTRY) as EntryTok[]).map((k) => (
+          <button
+            key={k}
+            className={`ed-tok${(s.entry ?? 'together') === k ? ' on' : ''}`}
+            title={k === 'together' ? 'content moves with the container (0%)' : k === 'ride' ? 'content joins at 60% of the transition — one continuous motion' : 'content waits for the container (100%) — deliberate two-beat only'}
+            onClick={() => patch(i, {entry: k})}
+          >
+            {k}
+          </button>
+        ))}
       </div>
       <div className="ed-lab mono">TEXT ANIMATION — hover a tile to watch it; swapping changes this scene’s length</div>
       <PreviewStrip tiles={probes.map((p) => effectTile(p, cur, prep.fps, s.effect === p.id, () => patch(i, {effect: p.id})))} />

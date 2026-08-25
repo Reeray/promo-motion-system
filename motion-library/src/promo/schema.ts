@@ -102,7 +102,7 @@ export type SizeTok = keyof typeof SIZE;
 export type HoldTok = keyof typeof HOLD;
 
 /* ── Raw: what the editor writes to disk. Optionals allowed. ───────────────── */
-type BaseRaw = {id: string; enter?: IntroId; exit?: OutroId; hold?: HoldTok; framing?: Framing};
+type BaseRaw = {id: string; enter?: IntroId; exit?: OutroId; hold?: HoldTok; framing?: Framing; entry?: EntryTok};
 export type TextSceneRaw = BaseRaw & {kind: 'text'; effect: string; copy: string; sub?: string; size?: SizeTok};
 export type UiSceneRaw = BaseRaw & {kind: 'ui'; surface: string};
 export type SceneRaw = TextSceneRaw | UiSceneRaw;
@@ -169,7 +169,7 @@ export type PromoGrid = {bpm: number};
 export type PromoDocRaw = {v: 1; id: string; theme?: Theme; scenes: SceneRaw[]; sound?: PromoSound; grid?: PromoGrid};
 
 /* ── Normalized: what components see. Every field present. ─────────────────── */
-type Base = {id: string; enter: IntroId; exit: OutroId; hold: HoldTok};
+type Base = {id: string; enter: IntroId; exit: OutroId; hold: HoldTok; entry: EntryTok};
 /* `framing?` is carried on TextScene ONLY so validate can reject it — a camera on text is
  *  meaningless and a sign of a hand-edited doc. Promo.tsx reads framing on ui scenes exclusively. */
 export type TextScene = Base & {kind: 'text'; effect: string; copy: string; sub: string | null; size: SizeTok; framing?: Framing};
@@ -177,7 +177,21 @@ export type UiScene = Base & {kind: 'ui'; surface: string; framing: Framing};
 export type Scene = TextScene | UiScene;
 export type PromoDoc = {v: 1; id: string; theme: Theme; scenes: Scene[]; sound: PromoSound; grid?: PromoGrid};
 
-export const DEFAULTS = {enter: 'glide-in' as IntroId, exit: 'push-off-left' as OutroId, hold: 'normal' as HoldTok, size: 'lg' as SizeTok};
+/** CONTENT RIDES THE TRANSITION (measured from the reference A/B, July 2026): a route change
+ *  is ONE motion, and the incoming scene's content rides inside it. `entry` sets WHEN the
+ *  scene's internal animation begins, as a fraction of the enter transition:
+ *    together  0%   content and container move as one (the old behaviour; fine for fast Z pops
+ *                   and for surfaces that ARE the motion, like the logo animation)
+ *    ride      60%  the reference's number — the container is mostly home, the content joins
+ *                   while it still moves; reads as one continuous gesture
+ *    after     100% content waits for the container — TWO motions with dead air between them;
+ *                   measured in the reference as a 0.35s gap plus a detached pop. Deliberate
+ *                   two-beat staging only.
+ *  A token, never a number: the fraction multiplies the intro's MEASURED frames in prepare(). */
+export const ENTRY = {together: 0, ride: 0.6, after: 1} as const;
+export type EntryTok = keyof typeof ENTRY;
+
+export const DEFAULTS = {enter: 'glide-in' as IntroId, exit: 'push-off-left' as OutroId, hold: 'normal' as HoldTok, size: 'lg' as SizeTok, entry: 'together' as EntryTok};
 
 export const normalize = (raw: PromoDocRaw): PromoDoc => ({
   v: 1,
@@ -200,7 +214,7 @@ export const normalize = (raw: PromoDocRaw): PromoDoc => ({
     })),
   },
   scenes: (raw.scenes ?? []).map((s) => {
-    const base = {id: s.id, enter: s.enter ?? DEFAULTS.enter, exit: s.exit ?? DEFAULTS.exit, hold: s.hold ?? DEFAULTS.hold};
+    const base = {id: s.id, enter: s.enter ?? DEFAULTS.enter, exit: s.exit ?? DEFAULTS.exit, hold: s.hold ?? DEFAULTS.hold, entry: s.entry ?? DEFAULTS.entry};
     // ui: clamp framing here so BOTH the render path (calculateMetadata → prepare) and the editor
     // land on the same in-range value — a hand-edited zoom:99 renders clamped, not blinding-huge.
     // text: pass framing THROUGH unchanged (illegal, but validate must see it to reject it).
@@ -251,6 +265,9 @@ export const validate = (doc: PromoDoc): string[] => {
           `Use a BPM where ${FPS * 60}/bpm is whole — 90, 100, 120, 144, 150, 180 (see the ON-BEAT law).`
       );
     }
+  }
+  for (const sc of doc.scenes) {
+    if (!(sc.entry in ENTRY)) errs.push(`scene "${sc.id}": unknown entry token "${sc.entry}" (together | ride | after)`);
   }
   const sceneIds = new Set(doc.scenes.map((s) => s.id));
   const customIds = new Set<string>();

@@ -2,7 +2,7 @@ import {ANIMATE_TEXT_EFFECTS} from '../blocks/animate-text';
 import {countUnits, timeline} from '../blocks/animate-text/SpecText';
 import {SURFACES} from './surfaces';
 import {
-  FPS, HEIGHT, HOLD, INTRO, MIN_SETTLE, OUTRO, PromoDoc, PromoDocRaw, Scene, WIDTH,
+  ENTRY, FPS, HEIGHT, HOLD, INTRO, MIN_SETTLE, OUTRO, PromoDoc, PromoDocRaw, Scene, WIDTH,
   axisWarnings, framingWarnings, normalize, validate,
 } from './schema';
 
@@ -44,10 +44,16 @@ const bodyFrames = (s: Scene): number => {
  * THE FLOOR IS MEASURED, NOT PADDING. `glide-in` needs 54 frames to settle, while the shortest
  * text scenes derive to about 60 total — so a 9-frame throw would begin roughly 3 frames BEFORE
  * the incoming object came to rest, inverting the "short throw, cut at peak" law. */
-export const sceneFrames = (s: Scene): number =>
-  Math.max(bodyFrames(s), INTRO[s.enter].frames + MIN_SETTLE) + OUTRO[s.exit].frames;
+/** CONTENT RIDES THE TRANSITION: the scene's internal animation starts `contentDelay` frames
+ *  in — a token fraction of the enter transition's measured length (ENTRY in schema.ts). The
+ *  body therefore OCCUPIES delay + body frames, and the intro floor still guarantees the
+ *  container has landed before the settle. */
+export const contentDelayFrames = (s: Scene): number => Math.round(ENTRY[s.entry] * INTRO[s.enter].frames);
 
-export type PreparedScene = {scene: Scene; frames: number; start: number};
+export const sceneFrames = (s: Scene): number =>
+  Math.max(contentDelayFrames(s) + bodyFrames(s), INTRO[s.enter].frames + MIN_SETTLE) + OUTRO[s.exit].frames;
+
+export type PreparedScene = {scene: Scene; frames: number; start: number; contentDelay: number};
 export type Prepared = {
   doc: PromoDoc;
   scenes: PreparedScene[];
@@ -77,7 +83,7 @@ export const prepare = (raw: PromoDocRaw): Prepared => {
   const scenes: PreparedScene[] = doc.scenes.map((scene) => {
     const natural = sceneFrames(scene);
     const frames = beat ? Math.ceil(natural / beat) * beat : natural;
-    const p = {scene, frames, start};
+    const p = {scene, frames, start, contentDelay: contentDelayFrames(scene)};
     start += frames;
     return p;
   });

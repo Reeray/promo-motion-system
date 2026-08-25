@@ -104,7 +104,7 @@ export const cueLengthDrift = (fps: number): string[] => {
 
 type PreparedLike = {
   doc: PromoDoc;
-  scenes: {scene: Scene; frames: number; start: number}[];
+  scenes: {scene: Scene; frames: number; start: number; contentDelay?: number}[];
   fps: number;
 };
 
@@ -162,7 +162,7 @@ export const cues = (prep: PreparedLike): Cue[] => {
     // UI cues, published by the surface, rebased onto the timeline.
     if (s.kind === 'ui') {
       const surf = SURFACES[s.surface];
-      (surf?.cues ?? []).forEach((c, n) => push(`${s.id}:${c.kind}:${n}`, c.kind, p.start + c.at));
+      (surf?.cues ?? []).forEach((c, n) => push(`${s.id}:${c.kind}:${n}`, c.kind, p.start + (p.contentDelay ?? 0) + c.at));
     }
   });
 

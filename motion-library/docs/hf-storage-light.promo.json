@@ -28,7 +28,8 @@
       "kind": "ui",
       "surface": "hf-storage-repositories",
       "enter": "glide-in",
-      "exit": "scale-up-cut"
+      "exit": "scale-up-cut",
+      "entry": "ride"
     },
     {
       "id": "payoff",

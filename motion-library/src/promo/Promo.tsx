@@ -1,5 +1,5 @@
 import React from 'react';
-import {AbsoluteFill, Html5Audio, Sequence, Series, interpolate, staticFile, useCurrentFrame} from 'remotion';
+import {AbsoluteFill, Freeze, Html5Audio, Sequence, Series, interpolate, staticFile, useCurrentFrame} from 'remotion';
 import '../lib/fonts';
 import {EASE, lerp} from '../lib/ease';
 import {ELEV, FONT, PD, PS, PX} from '../lib/palette';
@@ -95,7 +95,17 @@ const SceneView: React.FC<{p: PreparedScene; pal: Pal}> = ({p, pal}) => {
     else scale *= 1 + p2 * (TZ.SCALE_UP_TO - 1);
   }
 
-  const body = scene.kind === 'text' ? <TextBody scene={scene} pal={pal} /> : <SurfaceBody scene={scene} />;
+  const inner = scene.kind === 'text' ? <TextBody scene={scene} pal={pal} /> : <SurfaceBody scene={scene} />;
+  /* CONTENT RIDES THE TRANSITION: the scene's internal choreography starts contentDelay frames
+   * in (a token fraction of the enter transition — ENTRY in schema.ts), so a route change reads
+   * as ONE motion with the content riding inside it.
+   *
+   * FREEZE, not a delayed Sequence — measured lesson: our surfaces draw their own window chrome,
+   * so a Sequence that mounts at `from` blanks the WHOLE surface during the delay and the
+   * transition animates an empty box (exactly the dead air the law forbids). Freeze keeps the
+   * body VISIBLE at its first frame while the container flies, then lets its clock run — the
+   * chrome rides the transition, the items join at 60%. */
+  const body = p.contentDelay > 0 ? <Freeze frame={Math.max(0, f - p.contentDelay)} active>{inner}</Freeze> : inner;
   const transform = `translateX(${x}px) scale(${scale})`;
 
   // No sizing here: a surface carries its own measured box (surfaces/frame.tsx), so the doc
