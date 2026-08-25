@@ -726,14 +726,18 @@ The knob is the scene's `entry` token — flexible by context, never a number in
 | token | starts at | use when |
 |---|---|---|
 | `together` | 0% | **all TEXT scenes** (measured: text has NO container — its content is the only visible thing, so `ride` produces blank-stage dead air, the exact thing this law forbids); surfaces that ARE the motion (the HF logo animation) |
-| **`ride`** | 60% of the enter transition | **UI surfaces with visible chrome** — the window glides in while its internal choreography waits, then the items join mid-flight: one continuous gesture |
+| `ride` | 60% of the enter transition | available for surfaces whose content arrives as a detached second event — A/B it; the storage surface A/B chose together |
 | `after` | 100% | deliberate two-beat staging ONLY — you are choosing the dead air on purpose |
 
 The container test decides: if the scene has visible chrome that moves independently of its
 content (a surface window), ride. If the content IS the visible thing (text), together.
 
-USER-CONFIRMED (A/B, July 2026): ride vs together was rendered side-by-side on the storage
-surface and the user chose ride — this row of the table is a verdict, not a recommendation.
+USER VERDICT (A/B, July 2026): ride vs together was rendered side-by-side on the storage
+surface and the user chose TOGETHER — the original simultaneous start. So `ride` is an
+AVAILABLE tool, not a recommendation: this system's surfaces carry their own internal
+choreography and stagger, which already stages the arrival; the 60% delay reads as withheld
+rather than staged here. Reach for `ride` only when a surface's content genuinely pops as a
+detached second event — and A/B it before keeping it.
 
 prepare() converts the token against the intro's MEASURED frames (ride on glide-in 54f → 32f
 delay; on scale-pop-in 26f → 16f), the scene grows by exactly that delay (the beat grid
