@@ -26,6 +26,11 @@ import {EASE} from './../lib/ease';
  *                      slightly up (the hero-angle echo), rz banks a touch —
  *                      so facings distribute smoothly around the ring like
  *                      cards on a carousel. Nothing is per-item arbitrary.
+ *   SYMMETRIC CUT      the return mirrors the snap: frames ease home only to the
+ *                      jump fraction and vanish there — no full dock, both ends cut.
+ *   TEXT BRUSH         one small frame's front pass sweeps across the headline and
+ *                      covers it slightly — a moving occlusion that proves the depth
+ *                      order. Brush, never park.
  *   UNEVEN BY DESIGN   phases cluster (three frames close, a gap, a loner…),
  *                      radii, heights and sizes contrast hard. Even spacing
  *                      reads as a diagram; clumps read as a scene. Flat-orbit
@@ -63,7 +68,10 @@ export const burstProgress = (f: number, delay: number, t: BurstTiming): number 
   if (local < t.shoot) return t.jump + (1 - t.jump) * EASE.outStrong(local / t.shoot);
   if (local < t.shoot + t.dwell) return 1;
   const back = local - t.shoot - t.dwell;
-  if (back < t.back) return 1 - EASE.inOut(back / t.back);
+  // SYMMETRIC CUT: the return eases home only as far as p = jump — the same fraction the
+  // shoot skipped — and the frame vanishes there. Flights live only in the outer (1-jump)
+  // of the path; both ends are snaps.
+  if (back < t.back) return 1 - (1 - t.jump) * EASE.inOut(back / t.back);
   return 0;
 };
 
@@ -74,11 +82,12 @@ const Frame3D: React.FC<{item: BurstItem; timing: BurstTiming; children: React.R
   const f = useCurrentFrame();
   const p = burstProgress(f, item.delay, timing);
   const local = f - timing.lead - item.delay;
-  // materialize over the first 3 frames (softens the jump cut); on the way home,
-  // dissolve across the last quarter of the radial path so nothing parks behind the text
-  const returning = local >= timing.shoot + timing.dwell;
-  const opacity = local <= 0 ? 0 : Math.min(1, local / 3) * (returning ? Math.max(0, Math.min(1, (p - 0.06) / 0.24)) : 1);
-  if (opacity <= 0) return null;
+  // 3-frame materialize at the jump-in; the cut-out fades over 8 frames — the return's
+  // tail is its slowest, most centre-converged stretch (worst at low jump values, where
+  // the cut sits near the headline), so the longer fade dissolves the pile-up before it reads
+  const total = timing.shoot + timing.dwell + timing.back;
+  if (local <= 0 || local >= total) return null;
+  const opacity = Math.min(1, local / 3) * Math.min(1, (total - local) / 8);
   // the orbit runs on the GLOBAL clock from frame 0 — radial p rides on top of it,
   // so the rotation is already underway when a frame materializes and never stops
   const phi = ((item.phase + timing.orbit * f) * Math.PI) / 180;
@@ -148,11 +157,12 @@ export const Burst3D: React.FC<{
 
 /* ── PRESET (under review) ─────────────────────────────────────────────────── */
 
-/** Eight frames, clumped on purpose: a tight trio low-front-right (8/40/74°), a loner far
- *  left (150°), a spread pair behind (196/228°), a deep one (262°) and a high catcher
- *  (330°). Two centre-lane frames (heights ±45) get the deepest orbits and cross in FRONT
- *  of the text on their front pass; outer lanes orbit flatter (zAmp shrinks with |height|)
- *  so the perspective swell never throws them off-frame. */
+/** Eight frames, clumped on purpose: a heavy front cluster (8/40/50/74°), a loner far left
+ *  (150°), a spread pair behind (196/228°) and a high catcher (330°). Front passes are
+ *  choreographed to the dwell: the text-brusher (50°) sweeps across the headline ~f38,
+ *  the low big card (40°) passes beneath ~f48 — a layered double pass — and the big
+ *  upper card's pass sails above the headline during the shoot. Outer lanes orbit
+ *  flatter (zAmp shrinks with |height|) so the swell never leaves 16:9. */
 export const BURST_ITEMS: BurstItem[] = [
   {phase: 8, radius: 350, zAmp: 300, height: -170, size: [220, 140], delay: 0},
   {phase: 40, radius: 420, zAmp: 290, height: 195, size: [150, 98], delay: 2},
@@ -160,7 +170,7 @@ export const BURST_ITEMS: BurstItem[] = [
   {phase: 150, radius: 480, zAmp: 420, height: 45, size: [170, 110], delay: 4},
   {phase: 196, radius: 380, zAmp: 180, height: -215, size: [190, 122], delay: 0},
   {phase: 228, radius: 330, zAmp: 330, height: 150, size: [260, 164], delay: 3},
-  {phase: 262, radius: 460, zAmp: 420, height: -45, size: [140, 92], delay: 1},
+  {phase: 50, radius: 460, zAmp: 420, height: -30, size: [140, 92], delay: 1}, // the text-brusher: front pass sweeps ACROSS the headline mid-dwell, covering it slightly
   {phase: 330, radius: 400, zAmp: 420, height: 95, size: [200, 128], delay: 2},
 ];
 
