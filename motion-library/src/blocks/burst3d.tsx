@@ -26,9 +26,10 @@ import {EASE} from './../lib/ease';
  *                      slightly up (the hero-angle echo), rz banks a touch —
  *                      so facings distribute smoothly around the ring like
  *                      cards on a carousel. Nothing is per-item arbitrary.
- *   THROW-OUT CUT      the return is HARD-CUT partway through its own leg (default:
- *                      the jump fraction — corresponding ends). Frames vanish mid-
- *                      flight at speed, well away from the centre; the eye
+ *   THROW-OUT CUT      corresponding ends: born at p = jump, HARD-CUT on the way
+ *                      home at that same radius (p <= cut, default = jump) while
+ *                      still at full speed. Radius, not time — strong easing
+ *                      front-loads travel, so a time cut reads as no cut. The eye
  *                      extrapolates the dock ([B]'s measured short-throw law:
  *                      never animate all the way home).
  *   TEXT BRUSH         one small frame's front pass sweeps across the headline and
@@ -61,7 +62,7 @@ export type BurstTiming = {
   dwell: number;
   back: number;
   jump: number; // 0..1 — flights begin already this far along their radial path (the snap)
-  cut?: number; // 0..1 — the return is HARD-CUT this far into its leg (default = jump)
+  cut?: number; // 0..1 — the return is HARD-CUT when radial progress falls back to this fraction (corresponding ends; default = jump)
   orbit: number; // deg per frame, one sign, constant — the rotation that never stops
 };
 
@@ -83,11 +84,13 @@ const Frame3D: React.FC<{item: BurstItem; timing: BurstTiming; children: React.R
   const f = useCurrentFrame();
   const p = burstProgress(f, item.delay, timing);
   const local = f - timing.lead - item.delay;
-  // THROW-OUT CUT (reference [B]'s short-throw law): the return plays only to `cut` of its
-  // leg, then the frame vanishes on a hard cut — still well out from centre, at/near peak
-  // velocity, fully on screen. The eye extrapolates the dock; the centre pile-up never exists.
+  // THROW-OUT CUT — corresponding ends: the frame is born at p = jump and vanishes on a
+  // hard cut when the return passes back through that same radius (p <= cut, default =
+  // jump), still at full speed (the trajectory targets the centre; it never decelerates
+  // into the cut). Radius, not time — the strong easing front-loads travel, so a time
+  // cut reads as no cut at all. The eye extrapolates the dock ([B]'s short-throw law).
   const backT = local - timing.shoot - timing.dwell;
-  if (backT >= timing.back * (timing.cut ?? timing.jump)) return null;
+  if (backT > 0 && p <= (timing.cut ?? timing.jump)) return null;
   if (local <= 0) return null;
   const opacity = Math.min(1, local / 3); // 3-frame materialize at the jump-in only
   // the orbit runs on the GLOBAL clock from frame 0 — radial p rides on top of it,
