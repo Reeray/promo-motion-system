@@ -1,7 +1,7 @@
 import React from 'react';
 import {Series} from 'remotion';
 import {FONT} from '../lib/palette';
-import {Burst3D, BURST_FRAMES, BURST_ITEMS, BURST_ITEMS_CLEAR, BURST_TIMING} from '../blocks/burst3d';
+import {Burst3D, BURST_FRAMES, BURST_ITEMS, BURST_TIMING} from '../blocks/burst3d';
 
 /* ============================================================================
  * BURST3D DEMO — review reel comparing the jump-start fraction: 20% / 40% / 60%.
@@ -118,7 +118,7 @@ const CenterLine: React.FC = () => (
   </div>
 );
 
-const Section: React.FC<{label: string; jump: number; clear?: boolean}> = ({label, jump, clear}) => (
+const Section: React.FC<{label: string; jump: number; cut?: number}> = ({label, jump, cut}) => (
   <div style={{position: 'absolute', inset: 0, background: '#0b0d10'}}>
     <div
       style={{
@@ -136,8 +136,8 @@ const Section: React.FC<{label: string; jump: number; clear?: boolean}> = ({labe
       {label}
     </div>
     <Burst3D
-      items={clear ? BURST_ITEMS_CLEAR : BURST_ITEMS}
-      timing={{...BURST_TIMING, jump}}
+      items={BURST_ITEMS}
+      timing={{...BURST_TIMING, jump, cut}}
       renderItem={(i, item) => <MiniFrame index={i} w={item.size[0]} h={item.size[1]} />}
     >
       <CenterLine />
@@ -148,18 +148,15 @@ const Section: React.FC<{label: string; jump: number; clear?: boolean}> = ({labe
 export const Burst3DDemo: React.FC = () => (
   <Series>
     <Series.Sequence durationInFrames={BURST_FRAMES}>
-      <Section label="overlap pass — jump 40% · cut 40%" jump={0.4} />
+      <Section label="cut 60% of the return — reference" jump={0.6} cut={0.6} />
     </Series.Sequence>
     <Series.Sequence durationInFrames={BURST_FRAMES}>
-      <Section label="no overlap — jump 40% · cut 40%" jump={0.4} clear />
+      <Section label="cut 70% — half the return plays" jump={0.6} cut={0.7} />
     </Series.Sequence>
     <Series.Sequence durationInFrames={BURST_FRAMES}>
-      <Section label="overlap pass — jump 60% · cut 60%" jump={0.6} />
-    </Series.Sequence>
-    <Series.Sequence durationInFrames={BURST_FRAMES}>
-      <Section label="no overlap — jump 60% · cut 60%" jump={0.6} clear />
+      <Section label="cut 80% — most of the return plays" jump={0.6} cut={0.8} />
     </Series.Sequence>
   </Series>
 );
 
-export const BURST3D_DEMO_FRAMES = BURST_FRAMES * 4;
+export const BURST3D_DEMO_FRAMES = BURST_FRAMES * 3;
