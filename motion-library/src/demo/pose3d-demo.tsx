@@ -3,8 +3,9 @@ import {Series, useCurrentFrame} from 'remotion';
 import {EASE, lerp} from '../lib/ease';
 import {FONT} from '../lib/palette';
 import {
-  DEPTH_ORBIT_FRAMES, DEPTH_ORBIT_KEYS, FLIP_NEXT_FRAMES, FLIP_NEXT_KEYS,
-  Pose3D, PoseLayer, TILT_INSPECT_FRAMES, TILT_INSPECT_KEYS,
+  DOLLY_ZOOM_FRAMES, DOLLY_ZOOM_KEYS, DROP_LAND_FRAMES, DROP_LAND_KEYS,
+  HERO_RISE_FRAMES, HERO_RISE_KEYS, PUNCH_IN_FRAMES, PUNCH_IN_KEYS,
+  Pose3D, PoseLayer, WHIP_SWAP_FRAMES, WHIP_SWAP_KEYS,
 } from '../blocks/pose3d';
 
 /* ============================================================================
@@ -46,6 +47,7 @@ const DemoCard: React.FC<{state: number; depth: number}> = ({state, depth}) => {
         fontFamily: FONT.sans,
         color: INK,
         padding: 18,
+        position: 'relative',
         transformStyle: 'preserve-3d',
       }}
     >
@@ -81,6 +83,21 @@ const DemoCard: React.FC<{state: number; depth: number}> = ({state, depth}) => {
                 {t.split('·')[0]}
               </div>
             ))}
+          </div>
+          <div
+            style={{
+              position: 'absolute',
+              right: 26,
+              bottom: 22,
+              padding: '10px 18px',
+              borderRadius: 10,
+              background: '#2f6fed',
+              color: '#fff',
+              fontSize: 13,
+              fontWeight: 650,
+            }}
+          >
+            Upgrade →
           </div>
         </PoseLayer>
       ) : (
@@ -137,23 +154,37 @@ const Section: React.FC<{label: string; children: React.ReactNode}> = ({label, c
 
 export const Pose3DDemo: React.FC = () => (
   <Series>
-    <Series.Sequence durationInFrames={TILT_INSPECT_FRAMES}>
-      <Section label="tilt-inspect — look at the screen">
-        <Pose3D keys={TILT_INSPECT_KEYS} width={CARD_W} height={CARD_H}>
+    <Series.Sequence durationInFrames={PUNCH_IN_FRAMES}>
+      <Section label="punch-in — snap 80%, ease into the interaction point">
+        <Pose3D keys={PUNCH_IN_KEYS} width={CARD_W} height={CARD_H}>
           {(state, depth) => <DemoCard state={state} depth={depth} />}
         </Pose3D>
       </Section>
     </Series.Sequence>
-    <Series.Sequence durationInFrames={FLIP_NEXT_FRAMES}>
-      <Section label="flip-next — same screen, next keyframe">
-        <Pose3D keys={FLIP_NEXT_KEYS} width={CARD_W} height={CARD_H}>
+    <Series.Sequence durationInFrames={HERO_RISE_FRAMES}>
+      <Section label="hero-rise — low camera, monumental entrance">
+        <Pose3D keys={HERO_RISE_KEYS} width={CARD_W} height={CARD_H}>
           {(state, depth) => <DemoCard state={state} depth={depth} />}
         </Pose3D>
       </Section>
     </Series.Sequence>
-    <Series.Sequence durationInFrames={DEPTH_ORBIT_FRAMES}>
-      <Section label="depth-orbit — the screen is a stack">
-        <Pose3D keys={DEPTH_ORBIT_KEYS} width={CARD_W} height={CARD_H}>
+    <Series.Sequence durationInFrames={WHIP_SWAP_FRAMES}>
+      <Section label="whip-swap — next keyframe inside the blur">
+        <Pose3D keys={WHIP_SWAP_KEYS} width={CARD_W} height={CARD_H}>
+          {(state, depth) => <DemoCard state={state} depth={depth} />}
+        </Pose3D>
+      </Section>
+    </Series.Sequence>
+    <Series.Sequence durationInFrames={DROP_LAND_FRAMES}>
+      <Section label="drop-land — weight, impact frame, shake">
+        <Pose3D keys={DROP_LAND_KEYS} width={CARD_W} height={CARD_H}>
+          {(state, depth) => <DemoCard state={state} depth={depth} />}
+        </Pose3D>
+      </Section>
+    </Series.Sequence>
+    <Series.Sequence durationInFrames={DOLLY_ZOOM_FRAMES}>
+      <Section label="dolly-zoom — the lens widens as it closes in">
+        <Pose3D keys={DOLLY_ZOOM_KEYS} width={CARD_W} height={CARD_H}>
           {(state, depth) => <DemoCard state={state} depth={depth} />}
         </Pose3D>
       </Section>
@@ -161,4 +192,5 @@ export const Pose3DDemo: React.FC = () => (
   </Series>
 );
 
-export const POSE3D_DEMO_FRAMES = TILT_INSPECT_FRAMES + FLIP_NEXT_FRAMES + DEPTH_ORBIT_FRAMES;
+export const POSE3D_DEMO_FRAMES =
+  PUNCH_IN_FRAMES + HERO_RISE_FRAMES + WHIP_SWAP_FRAMES + DROP_LAND_FRAMES + DOLLY_ZOOM_FRAMES;
