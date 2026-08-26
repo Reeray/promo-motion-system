@@ -26,8 +26,11 @@ import {EASE} from './../lib/ease';
  *                      slightly up (the hero-angle echo), rz banks a touch —
  *                      so facings distribute smoothly around the ring like
  *                      cards on a carousel. Nothing is per-item arbitrary.
- *   SYMMETRIC CUT      the return mirrors the snap: frames ease home only to the
- *                      jump fraction and vanish there — no full dock, both ends cut.
+ *   THROW-OUT CUT      the return is HARD-CUT partway through its own leg (default:
+ *                      the jump fraction — corresponding ends). Frames vanish mid-
+ *                      flight at speed, well away from the centre; the eye
+ *                      extrapolates the dock ([B]'s measured short-throw law:
+ *                      never animate all the way home).
  *   TEXT BRUSH         one small frame's front pass sweeps across the headline and
  *                      covers it slightly — a moving occlusion that proves the depth
  *                      order. Brush, never park.
@@ -58,6 +61,7 @@ export type BurstTiming = {
   dwell: number;
   back: number;
   jump: number; // 0..1 — flights begin already this far along their radial path (the snap)
+  cut?: number; // 0..1 — the return is HARD-CUT this far into its leg (default = jump)
   orbit: number; // deg per frame, one sign, constant — the rotation that never stops
 };
 
@@ -68,10 +72,7 @@ export const burstProgress = (f: number, delay: number, t: BurstTiming): number 
   if (local < t.shoot) return t.jump + (1 - t.jump) * EASE.outStrong(local / t.shoot);
   if (local < t.shoot + t.dwell) return 1;
   const back = local - t.shoot - t.dwell;
-  // SYMMETRIC CUT: the return eases home only as far as p = jump — the same fraction the
-  // shoot skipped — and the frame vanishes there. Flights live only in the outer (1-jump)
-  // of the path; both ends are snaps.
-  if (back < t.back) return 1 - (1 - t.jump) * EASE.inOut(back / t.back);
+  if (back < t.back) return 1 - EASE.inOut(back / t.back);
   return 0;
 };
 
@@ -82,12 +83,13 @@ const Frame3D: React.FC<{item: BurstItem; timing: BurstTiming; children: React.R
   const f = useCurrentFrame();
   const p = burstProgress(f, item.delay, timing);
   const local = f - timing.lead - item.delay;
-  // 3-frame materialize at the jump-in; the cut-out fades over 8 frames — the return's
-  // tail is its slowest, most centre-converged stretch (worst at low jump values, where
-  // the cut sits near the headline), so the longer fade dissolves the pile-up before it reads
-  const total = timing.shoot + timing.dwell + timing.back;
-  if (local <= 0 || local >= total) return null;
-  const opacity = Math.min(1, local / 3) * Math.min(1, (total - local) / 8);
+  // THROW-OUT CUT (reference [B]'s short-throw law): the return plays only to `cut` of its
+  // leg, then the frame vanishes on a hard cut — still well out from centre, at/near peak
+  // velocity, fully on screen. The eye extrapolates the dock; the centre pile-up never exists.
+  const backT = local - timing.shoot - timing.dwell;
+  if (backT >= timing.back * (timing.cut ?? timing.jump)) return null;
+  if (local <= 0) return null;
+  const opacity = Math.min(1, local / 3); // 3-frame materialize at the jump-in only
   // the orbit runs on the GLOBAL clock from frame 0 — radial p rides on top of it,
   // so the rotation is already underway when a frame materializes and never stops
   const phi = ((item.phase + timing.orbit * f) * Math.PI) / 180;
@@ -175,5 +177,11 @@ export const BURST_ITEMS: BurstItem[] = [
 ];
 
 /** Strong-ease radial timing over a constant orbit (~105° across the piece). */
+/** Clear-pass variant: identical table, but the text-brusher's lane is lifted so its front
+ *  pass sails above the headline — nothing ever covers the text. For the overlap A/B. */
+export const BURST_ITEMS_CLEAR: BurstItem[] = BURST_ITEMS.map((it) =>
+  it.phase === 50 ? {...it, height: -165} : it
+);
+
 export const BURST_TIMING = {lead: 8, shoot: 22, dwell: 34, back: 26, orbit: 1.05};
 export const BURST_FRAMES = 100; // lead + shoot + max delay + dwell + back + settle
