@@ -2,35 +2,115 @@ import React from 'react';
 import {Series, useCurrentFrame} from 'remotion';
 import {EASE, lerp} from '../lib/ease';
 import {FONT} from '../lib/palette';
-import {DOLLY_FLYBY_FRAMES, DOLLY_FLYBY_KEYS, Pose3D, PoseLayer} from '../blocks/pose3d';
+import {DOLLY_FLYBY_FRAMES, DOLLY_FLYBY_KEYS, FLYBY_BEATS, Pose3D, PoseLayer} from '../blocks/pose3d';
 
 /* ============================================================================
- * POSE3D DEMO — the review reel for the 3D pose template (see pose3d.tsx STATUS).
+ * POSE3D DEMO — review reel for the MOTIVATED dolly fly-by.
  *
- * Content here is a NEUTRAL PLACEHOLDER card, deliberately not a captured surface: the
- * reel judges the MOTION. Per the block law the content is the free half — on admission,
- * any surface or text card rides these exact keys via the render-prop.
+ * "The zoom is usually for what's happening in the UI" — so the card carries the happening:
+ * a cursor glides to the Upgrade button, presses it, the button loads, the plan flips to Pro
+ * — and the camera's approach/dwell/departure aim at exactly that spot (the pose table's
+ * fx/fy) on the same FLYBY_BEATS clock. The zoom has a subject; the exit has a reason.
  *
- * Dark backdrop on purpose: it is the reference demo's staging for this family, and depth
- * reads strongest against dark. Declared bg + font per the render laws.
+ * The interaction lives in CONTENT (inside the card, riding every pose) — the template
+ * stays motion-only, per the block law. The cursor lifts on the layer-pop channel so it
+ * stays above popped content, like a cursor on a screen being filmed.
  * ========================================================================== */
 
 const INK = '#eef1f6';
 const CARD_W = 560;
 const CARD_H = 360;
+const B = FLYBY_BEATS;
 
-/** The placeholder UI: state 0 = overview tiles, state 1 = the "next keyframe" detail view.
- *  `depth` lifts the floating pieces only when a pose separates layers. */
-const DemoCard: React.FC<{state: number; depth: number}> = ({state, depth}) => {
+/** Cursor: glides in from the lower-left, lands on the button, dips for the press. */
+const Cursor: React.FC<{depth: number}> = ({depth}) => {
   const f = useCurrentFrame();
-  const tile = (i: number): React.CSSProperties => ({
-    borderRadius: 10,
-    background: 'rgba(255,255,255,0.055)',
-    border: '1px solid rgba(255,255,255,0.09)',
-    padding: '16px 18px',
-    fontSize: 12,
-    color: 'rgba(238,241,246,0.55)',
-  });
+  if (f < B.cursorEnter) return null;
+  const x = lerp(f, [B.cursorEnter, B.cursorArrive], [96, CARD_W - 122], EASE.inOut);
+  const y = lerp(f, [B.cursorEnter, B.cursorArrive], [CARD_H + 26, CARD_H - 50], EASE.inOut);
+  const press = f >= B.press && f < B.release ? 0.85 : 1;
+  return (
+    <svg
+      width={22}
+      height={22}
+      viewBox="0 0 24 24"
+      style={{
+        position: 'absolute',
+        left: x,
+        top: y,
+        transform: `translateZ(${130 * depth}px) scale(${press})`,
+        filter: 'drop-shadow(0 3px 6px rgba(0,0,0,0.55))',
+      }}
+    >
+      <path d="M5 3 L19 12.5 L12.6 13.8 L15.6 20.4 L13 21.5 L10.1 14.8 L5 19 Z" fill="#fff" stroke="#0b0d10" strokeWidth="1.4" />
+    </svg>
+  );
+};
+
+/** The button — the subject of the whole shot: idle → pressed → loading → done.
+ *  A DIRECT card child (not inside PoseLayer — its translateZ would become the containing
+ *  block and re-anchor right/bottom to the grid box) so it shares the cursor's coordinate
+ *  frame; it carries its own layer-lift instead. */
+const UpgradeButton: React.FC<{depth: number}> = ({depth}) => {
+  const f = useCurrentFrame();
+  const pressed = f >= B.press && f < B.release;
+  const loading = f >= B.release && f < B.loaded;
+  const done = f >= B.loaded;
+  const spin = ((f - B.release) / 14) * 360;
+  const pop = done ? lerp(f, [B.loaded, B.loaded + 8], [1.1, 1], EASE.out) : 1;
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        right: 26,
+        bottom: 22,
+        minWidth: 118,
+        padding: '10px 18px',
+        borderRadius: 10,
+        background: done ? '#1f9d5b' : pressed ? '#2153bd' : '#2f6fed',
+        color: '#fff',
+        fontSize: 13,
+        fontWeight: 650,
+        textAlign: 'center',
+        transform: `translateZ(${55 * depth}px) translateY(${pressed ? 1.5 : 0}px) scale(${pop})`,
+        boxShadow: pressed ? 'none' : '0 4px 14px rgba(47,111,237,0.35)',
+      }}
+    >
+      {loading ? (
+        <svg width={15} height={15} viewBox="0 0 20 20" style={{transform: `rotate(${spin}deg)`, verticalAlign: -2}}>
+          <circle cx="10" cy="10" r="7.5" fill="none" stroke="rgba(255,255,255,0.35)" strokeWidth="3" />
+          <circle cx="10" cy="10" r="7.5" fill="none" stroke="#fff" strokeWidth="3" strokeDasharray="14 33" strokeLinecap="round" />
+        </svg>
+      ) : done ? (
+        'Upgraded ✓'
+      ) : (
+        'Upgrade →'
+      )}
+      {f >= B.release && f < B.release + 12 && (
+        <span
+          style={{
+            position: 'absolute',
+            inset: -((f - B.release) * 2.2),
+            borderRadius: 16,
+            border: '1.5px solid rgba(255,255,255,0.7)',
+            opacity: 1 - (f - B.release) / 12,
+          }}
+        />
+      )}
+    </div>
+  );
+};
+
+/** The card: metric tiles whose Plan tile is what the upgrade CHANGES — the data payoff. */
+const DemoCard: React.FC<{depth: number}> = ({depth}) => {
+  const f = useCurrentFrame();
+  const done = f >= B.loaded;
+  const tiles: [string, string, boolean][] = [
+    ['1.2M', 'Requests', false],
+    ['84ms', 'Latency', false],
+    ['0.02%', 'Errors', false],
+    [done ? 'Pro' : 'Free', 'Plan', true],
+  ];
   return (
     <div
       style={{
@@ -70,50 +150,33 @@ const DemoCard: React.FC<{state: number; depth: number}> = ({state, depth}) => {
         </PoseLayer>
       </div>
 
-      {state === 0 ? (
-        <PoseLayer z={55} depth={depth}>
-          <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12}}>
-            {['Requests · 1.2M', 'Latency · 84ms', 'Errors · 0.02%', 'Uptime · 99.99%'].map((t, i) => (
-              <div key={i} style={{...tile(i), height: 116, display: 'flex', flexDirection: 'column', justifyContent: 'center'}}>
-                <div style={{fontSize: 30, fontWeight: 650, color: INK, marginBottom: 8}}>{t.split('·')[1]}</div>
-                {t.split('·')[0]}
-              </div>
-            ))}
-          </div>
-          <div
-            style={{
-              position: 'absolute',
-              right: 26,
-              bottom: 22,
-              padding: '10px 18px',
-              borderRadius: 10,
-              background: '#2f6fed',
-              color: '#fff',
-              fontSize: 13,
-              fontWeight: 650,
-            }}
-          >
-            Upgrade →
-          </div>
-        </PoseLayer>
-      ) : (
-        <PoseLayer z={55} depth={depth}>
-          <div style={{fontSize: 12, color: 'rgba(238,241,246,0.5)', marginBottom: 10}}>Requests — last 12 weeks</div>
-          <div style={{display: 'flex', alignItems: 'flex-end', gap: 10, height: 246}}>
-            {[58, 74, 66, 88, 84, 104, 98, 124, 116, 148, 170, 196].map((h, i) => (
-              <div
-                key={i}
-                style={{
-                  flex: 1,
-                  height: lerp(f, [i * 2, i * 2 + 16], [0, h], EASE.out),
-                  borderRadius: 5,
-                  background: i >= 10 ? '#2f6fed' : 'rgba(255,255,255,0.16)',
-                }}
-              />
-            ))}
-          </div>
-        </PoseLayer>
-      )}
+      <PoseLayer z={55} depth={depth}>
+        <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12}}>
+          {tiles.map(([v, label, isPlan], i) => (
+            <div
+              key={i}
+              style={{
+                borderRadius: 10,
+                background: 'rgba(255,255,255,0.055)',
+                border: `1px solid ${isPlan && done ? 'rgba(74,222,128,0.4)' : 'rgba(255,255,255,0.09)'}`,
+                padding: '16px 18px',
+                fontSize: 12,
+                color: 'rgba(238,241,246,0.55)',
+                height: 116,
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+              }}
+            >
+              <div style={{fontSize: 30, fontWeight: 650, color: isPlan && done ? '#4ade80' : INK, marginBottom: 8}}>{v}</div>
+              {label}
+            </div>
+          ))}
+        </div>
+      </PoseLayer>
+
+      <UpgradeButton depth={depth} />
+      <Cursor depth={depth} />
     </div>
   );
 };
@@ -151,9 +214,9 @@ const Section: React.FC<{label: string; children: React.ReactNode}> = ({label, c
 export const Pose3DDemo: React.FC = () => (
   <Series>
     <Series.Sequence durationInFrames={DOLLY_FLYBY_FRAMES}>
-      <Section label="dolly fly-by — long dwell at the zoom">
+      <Section label="dolly fly-by — the camera chases the click">
         <Pose3D keys={DOLLY_FLYBY_KEYS} width={CARD_W} height={CARD_H} smooth>
-          {(state, depth) => <DemoCard state={state} depth={depth} />}
+          {(_state, depth) => <DemoCard depth={depth} />}
         </Pose3D>
       </Section>
     </Series.Sequence>

@@ -265,15 +265,24 @@ export const DOLLY_ZOOM_FRAMES = 150;
  *  share); layer separation halved and the lens floor raised so components stop popping off
  *  the camera (d 1→0.55, pp 0.435→0.52, z 38→28); and a bit more upward tilt from the low
  *  camera at the dwell (rx 7, po 0.64) — the hero angle. */
+/** MOTIVATED: the camera aims at the INTERACTION POINT (fx/fy walk from centre to the action
+ *  area during the approach), dwells while the interaction and its consequence play — the
+ *  demo's cursor click and loading beats are timed to this table — and departs when the job
+ *  is done. An unmotivated zoom is cinematography without a subject. */
 export const DOLLY_FLYBY_KEYS: PoseKey[] = [
   {at: 0, pose: {}},
-  {at: 16, pose: {ry: -11, rx: 3, s: 1.07, pp: 0.84, z: 10, d: 0.3, po: 0.58}},
-  {at: 28, pose: {ry: -2.5, rx: 7, s: 1.285, pp: 0.52, z: 28, d: 0.55, po: 0.64}},
-  {at: 62, pose: {ry: 2.5, rx: 7, s: 1.285, pp: 0.52, z: 28, d: 0.55, po: 0.64}},
-  {at: 76, pose: {ry: 11, rx: 3, s: 1.07, pp: 0.84, z: 10, d: 0.3, po: 0.58}},
+  {at: 16, pose: {ry: -11, rx: 3, s: 1.07, pp: 0.84, z: 10, d: 0.3, po: 0.58, fx: 0.6, fy: 0.62}},
+  {at: 28, pose: {ry: -2.5, rx: 7, s: 1.285, pp: 0.52, z: 28, d: 0.55, po: 0.64, fx: 0.76, fy: 0.78}},
+  {at: 62, pose: {ry: 2.5, rx: 7, s: 1.285, pp: 0.52, z: 28, d: 0.55, po: 0.64, fx: 0.76, fy: 0.78}},
+  {at: 76, pose: {ry: 11, rx: 3, s: 1.07, pp: 0.84, z: 10, d: 0.3, po: 0.58, fx: 0.6, fy: 0.62}},
   {at: 90, pose: {}},
 ];
 export const DOLLY_FLYBY_FRAMES = 90;
+
+/** The interaction beats the fly-by dwells FOR — one clock shared by camera and content.
+ *  Content reads these to time its cursor/press/load/result; the pose table above is spaced
+ *  so the dwell brackets press→result. Frames, 60fps. */
+export const FLYBY_BEATS = {cursorEnter: 4, cursorArrive: 30, press: 34, release: 37, loaded: 53} as const;
 
 /* Round-1 presets kept for reference/A-B; not part of the impact reel. */
 export const TILT_INSPECT_KEYS: PoseKey[] = [
