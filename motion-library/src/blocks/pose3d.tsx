@@ -255,11 +255,18 @@ export const DOLLY_ZOOM_FRAMES = 150;
  *  point (max lateral speed at closest approach, like a real camera passing a subject), while
  *  scale and lens-width bump at the apex. The return IS the outbound curve continuing.
  *  Render with smooth: true. */
+/** Timing = v1's strong easing, expressed as SPACING (the only timing control spline mode
+ *  has): a fast approach decelerating into a LONG DWELL — 66 of 170 frames bracket the apex
+ *  with the zoom held and the rotation drifting only −2.5°→+2.5°, so the viewer spends the
+ *  duration at the detail — then a fast, accelerating departure. Continuity untouched: the
+ *  drift keeps the sweep alive through the dwell (same sign, never zero for long), and the
+ *  spline's tangents give a subtle zoom crest mid-dwell for free. */
 export const DOLLY_FLYBY_KEYS: PoseKey[] = [
   {at: 0, pose: {}},
-  {at: 34, pose: {ry: -11, rx: 2, s: 1.07, pp: 0.82, z: 12, d: 0.55, po: 0.56}},
-  {at: 85, pose: {ry: 0, rx: 3.5, s: 1.3, pp: 0.42, z: 40, d: 1, po: 0.6}},
-  {at: 136, pose: {ry: 11, rx: 2, s: 1.07, pp: 0.82, z: 12, d: 0.55, po: 0.56}},
+  {at: 30, pose: {ry: -11, rx: 2, s: 1.07, pp: 0.82, z: 12, d: 0.55, po: 0.56}},
+  {at: 52, pose: {ry: -2.5, rx: 3.4, s: 1.285, pp: 0.435, z: 38, d: 1, po: 0.6}},
+  {at: 118, pose: {ry: 2.5, rx: 3.4, s: 1.285, pp: 0.435, z: 38, d: 1, po: 0.6}},
+  {at: 144, pose: {ry: 11, rx: 2, s: 1.07, pp: 0.82, z: 12, d: 0.55, po: 0.56}},
   {at: 170, pose: {}},
 ];
 export const DOLLY_FLYBY_FRAMES = 170;

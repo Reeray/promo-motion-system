@@ -2,10 +2,7 @@ import React from 'react';
 import {Series, useCurrentFrame} from 'remotion';
 import {EASE, lerp} from '../lib/ease';
 import {FONT} from '../lib/palette';
-import {
-  DOLLY_FLYBY_FRAMES, DOLLY_FLYBY_KEYS, DOLLY_ZOOM_FRAMES, DOLLY_ZOOM_KEYS,
-  Pose3D, PoseLayer,
-} from '../blocks/pose3d';
+import {DOLLY_FLYBY_FRAMES, DOLLY_FLYBY_KEYS, Pose3D, PoseLayer} from '../blocks/pose3d';
 
 /* ============================================================================
  * POSE3D DEMO — the review reel for the 3D pose template (see pose3d.tsx STATUS).
@@ -153,15 +150,8 @@ const Section: React.FC<{label: string; children: React.ReactNode}> = ({label, c
 
 export const Pose3DDemo: React.FC = () => (
   <Series>
-    <Series.Sequence durationInFrames={DOLLY_ZOOM_FRAMES}>
-      <Section label="dolly-zoom v1 — there and back (for comparison)">
-        <Pose3D keys={DOLLY_ZOOM_KEYS} width={CARD_W} height={CARD_H}>
-          {(state, depth) => <DemoCard state={state} depth={depth} />}
-        </Pose3D>
-      </Section>
-    </Series.Sequence>
     <Series.Sequence durationInFrames={DOLLY_FLYBY_FRAMES}>
-      <Section label="dolly-zoom v2 — the fly-by: the return continues the curve">
+      <Section label="dolly fly-by — long dwell at the zoom">
         <Pose3D keys={DOLLY_FLYBY_KEYS} width={CARD_W} height={CARD_H} smooth>
           {(state, depth) => <DemoCard state={state} depth={depth} />}
         </Pose3D>
@@ -170,4 +160,4 @@ export const Pose3DDemo: React.FC = () => (
   </Series>
 );
 
-export const POSE3D_DEMO_FRAMES = DOLLY_ZOOM_FRAMES + DOLLY_FLYBY_FRAMES;
+export const POSE3D_DEMO_FRAMES = DOLLY_FLYBY_FRAMES;
