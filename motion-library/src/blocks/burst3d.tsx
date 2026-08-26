@@ -172,7 +172,7 @@ export const BURST_ITEMS: BurstItem[] = [
   {phase: 150, radius: 480, zAmp: 420, height: 45, size: [170, 110], delay: 4},
   {phase: 196, radius: 380, zAmp: 180, height: -215, size: [190, 122], delay: 0},
   {phase: 228, radius: 330, zAmp: 330, height: 150, size: [260, 164], delay: 3},
-  {phase: 50, radius: 460, zAmp: 420, height: -30, size: [140, 92], delay: 1}, // the text-brusher: front pass sweeps ACROSS the headline mid-dwell, covering it slightly
+  {phase: 50, radius: 460, zAmp: 420, height: -42, size: [120, 80], delay: 1}, // the text-brusher: at its closest pass it covers the kicker and clips only the headline's cap-tops (~top third) — a graze, tuned down from a full sweep
   {phase: 330, radius: 400, zAmp: 420, height: 95, size: [200, 128], delay: 2},
 ];
 
