@@ -261,15 +261,19 @@ export const DOLLY_ZOOM_FRAMES = 150;
  *  duration at the detail — then a fast, accelerating departure. Continuity untouched: the
  *  drift keeps the sweep alive through the dwell (same sign, never zero for long), and the
  *  spline's tangents give a subtle zoom crest mid-dwell for free. */
+/** Tuned by three verdicts: 1.5s total (90f, spacing rescaled — the dwell keeps its ~55%
+ *  share); layer separation halved and the lens floor raised so components stop popping off
+ *  the camera (d 1→0.55, pp 0.435→0.52, z 38→28); and a bit more upward tilt from the low
+ *  camera at the dwell (rx 7, po 0.64) — the hero angle. */
 export const DOLLY_FLYBY_KEYS: PoseKey[] = [
   {at: 0, pose: {}},
-  {at: 30, pose: {ry: -11, rx: 2, s: 1.07, pp: 0.82, z: 12, d: 0.55, po: 0.56}},
-  {at: 52, pose: {ry: -2.5, rx: 3.4, s: 1.285, pp: 0.435, z: 38, d: 1, po: 0.6}},
-  {at: 118, pose: {ry: 2.5, rx: 3.4, s: 1.285, pp: 0.435, z: 38, d: 1, po: 0.6}},
-  {at: 144, pose: {ry: 11, rx: 2, s: 1.07, pp: 0.82, z: 12, d: 0.55, po: 0.56}},
-  {at: 170, pose: {}},
+  {at: 16, pose: {ry: -11, rx: 3, s: 1.07, pp: 0.84, z: 10, d: 0.3, po: 0.58}},
+  {at: 28, pose: {ry: -2.5, rx: 7, s: 1.285, pp: 0.52, z: 28, d: 0.55, po: 0.64}},
+  {at: 62, pose: {ry: 2.5, rx: 7, s: 1.285, pp: 0.52, z: 28, d: 0.55, po: 0.64}},
+  {at: 76, pose: {ry: 11, rx: 3, s: 1.07, pp: 0.84, z: 10, d: 0.3, po: 0.58}},
+  {at: 90, pose: {}},
 ];
-export const DOLLY_FLYBY_FRAMES = 170;
+export const DOLLY_FLYBY_FRAMES = 90;
 
 /* Round-1 presets kept for reference/A-B; not part of the impact reel. */
 export const TILT_INSPECT_KEYS: PoseKey[] = [
