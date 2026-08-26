@@ -19,9 +19,16 @@ const skel = (w: number | string, h = 7, o = 0.14): React.CSSProperties => ({
   background: `rgba(255,255,255,${o})`,
 });
 
-/** Mini UI frames — four content variants cycled by index. */
+/** Mini UI frames — six content variants, hand-mapped so no two identical cards are
+ *  airborne at once. */
+const KIND: number[] = [0, 1, 2, 3, 4, 5, 1, 3];
+const METRIC: [string, string, string][] = [
+  ['Requests', '1.2M', '+12%'],
+  ['Latency', '84ms', '-6ms'],
+];
 const MiniFrame: React.FC<{index: number; w: number; h: number}> = ({index, w, h}) => {
-  const kind = index % 4;
+  const kind = KIND[index % KIND.length];
+  const [ml, mv, md] = METRIC[Math.floor(index / 4) % 2];
   return (
     <div
       style={{
@@ -68,9 +75,33 @@ const MiniFrame: React.FC<{index: number; w: number; h: number}> = ({index, w, h
       )}
       {kind === 3 && (
         <div>
-          <div style={{fontSize: 8.5, letterSpacing: 0.8, textTransform: 'uppercase', color: MUTED, marginBottom: 5}}>Requests</div>
+          <div style={{fontSize: 8.5, letterSpacing: 0.8, textTransform: 'uppercase', color: MUTED, marginBottom: 5}}>{ml}</div>
           <div style={{fontSize: 21, fontWeight: 650, color: INK}}>
-            1.2M <span style={{fontSize: 9, color: '#4ade80', fontWeight: 600}}>+12%</span>
+            {mv} <span style={{fontSize: 9, color: '#4ade80', fontWeight: 600}}>{md}</span>
+          </div>
+        </div>
+      )}
+      {kind === 4 && (
+        <div style={{display: 'flex', flexDirection: 'column', gap: 8}}>
+          {[1, 0, 1].map((on, r) => (
+            <div key={r} style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
+              <div style={skel('52%', 6)} />
+              <span style={{width: 22, height: 12, borderRadius: 7, background: on ? '#2f6fed' : 'rgba(255,255,255,0.14)', position: 'relative'}}>
+                <span style={{position: 'absolute', top: 2, left: on ? 12 : 2, width: 8, height: 8, borderRadius: '50%', background: '#fff'}} />
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+      {kind === 5 && (
+        <div style={{display: 'flex', alignItems: 'center', gap: 9}}>
+          <svg width={34} height={34} viewBox="0 0 34 34">
+            <circle cx="17" cy="17" r="13" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="5" />
+            <circle cx="17" cy="17" r="13" fill="none" stroke="#2f6fed" strokeWidth="5" strokeDasharray="60 82" strokeLinecap="round" transform="rotate(-90 17 17)" />
+          </svg>
+          <div>
+            <div style={{fontSize: 13, fontWeight: 650, color: INK}}>73%</div>
+            <div style={skel(40, 5, 0.12)} />
           </div>
         </div>
       )}
