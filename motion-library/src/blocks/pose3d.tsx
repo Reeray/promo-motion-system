@@ -72,16 +72,58 @@ export const poseAt = (keys: PoseKey[], f: number): {pose: Required<Pose>; state
   return {pose: fill(keys[keys.length - 1].pose), state};
 };
 
+/** SPLINE MODE — one continuous curve through every key (time-aware Catmull-Rom). Per-segment
+ *  easing stops the motion at each key: velocity reaches zero, reverses, and a there-and-back
+ *  reads as "going in, then going back". A spline keeps C1 continuity THROUGH intermediate
+ *  keys — the movement of the outbound phase flows into the return as one gesture (measured
+ *  need: the dolly-zoom verdict, "follow the movement curve of zooming all the way back").
+ *  Key `ease` fields are ignored in this mode; timing lives in the key spacing. */
+export const splinePoseAt = (keys: PoseKey[], f: number): {pose: Required<Pose>; state: number} => {
+  let state = keys[0]?.state ?? 0;
+  for (const k of keys) if (f >= k.at && k.state !== undefined) state = k.state;
+  const n = keys.length;
+  if (f <= keys[0].at) return {pose: fill(keys[0].pose), state};
+  if (f >= keys[n - 1].at) return {pose: fill(keys[n - 1].pose), state};
+  let i = 0;
+  while (i < n - 2 && f >= keys[i + 1].at) i++;
+  const t0 = keys[Math.max(0, i - 1)].at;
+  const t1 = keys[i].at;
+  const t2 = keys[i + 1].at;
+  const t3 = keys[Math.min(n - 1, i + 2)].at;
+  const p0 = fill(keys[Math.max(0, i - 1)].pose);
+  const p1 = fill(keys[i].pose);
+  const p2 = fill(keys[i + 1].pose);
+  const p3 = fill(keys[Math.min(n - 1, i + 2)].pose);
+  const u = (f - t1) / Math.max(1e-6, t2 - t1);
+  const u2 = u * u;
+  const u3 = u2 * u;
+  const h00 = 2 * u3 - 3 * u2 + 1;
+  const h10 = u3 - 2 * u2 + u;
+  const h01 = -2 * u3 + 3 * u2;
+  const h11 = u3 - u2;
+  const out = {} as Required<Pose>;
+  (Object.keys(ID) as (keyof Pose)[]).forEach((k) => {
+    // finite-difference tangents, scaled to this segment's duration (non-uniform CR)
+    const m1 = ((p2[k] - p0[k]) / Math.max(1e-6, t2 - t0)) * (t2 - t1);
+    const m2 = ((p3[k] - p1[k]) / Math.max(1e-6, t3 - t1)) * (t2 - t1);
+    out[k] = h00 * p1[k] + h10 * m1 + h01 * p2[k] + h11 * m2;
+  });
+  return {pose: out, state};
+};
+
 export const Pose3D: React.FC<{
   keys: PoseKey[];
   width: number;
   height: number;
   perspective?: number;
   shadow?: boolean;
+  /** Spline mode: one C1-continuous curve through every key — for fly-by moves whose return
+   *  must continue the outbound motion instead of reversing it. */
+  smooth?: boolean;
   children: (state: number, depth: number) => React.ReactNode;
-}> = ({keys, width, height, perspective = 900, shadow = true, children}) => {
+}> = ({keys, width, height, perspective = 900, shadow = true, smooth = false, children}) => {
   const f = useCurrentFrame();
-  const {pose, state} = poseAt(keys, f);
+  const {pose, state} = (smooth ? splinePoseAt : poseAt)(keys, f);
   const lift = Math.max(0, pose.z);
   const tilt = Math.abs(pose.rx) + Math.abs(pose.ry);
   const squash = 1 - pose.sy; // >0 during an impact frame — the shadow slaps with it
@@ -207,6 +249,20 @@ export const DOLLY_ZOOM_KEYS: PoseKey[] = [
   {at: 138, pose: {}, ease: EASE.camera},
 ];
 export const DOLLY_ZOOM_FRAMES = 150;
+
+/** dolly-zoom v2 (170f): the FLY-BY. One spline through five keys shaped as a loop — the
+ *  rotation sweeps a single direction for the whole journey and crosses zero at the deepest
+ *  point (max lateral speed at closest approach, like a real camera passing a subject), while
+ *  scale and lens-width bump at the apex. The return IS the outbound curve continuing.
+ *  Render with smooth: true. */
+export const DOLLY_FLYBY_KEYS: PoseKey[] = [
+  {at: 0, pose: {}},
+  {at: 34, pose: {ry: -11, rx: 2, s: 1.07, pp: 0.82, z: 12, d: 0.55, po: 0.56}},
+  {at: 85, pose: {ry: 0, rx: 3.5, s: 1.3, pp: 0.42, z: 40, d: 1, po: 0.6}},
+  {at: 136, pose: {ry: 11, rx: 2, s: 1.07, pp: 0.82, z: 12, d: 0.55, po: 0.56}},
+  {at: 170, pose: {}},
+];
+export const DOLLY_FLYBY_FRAMES = 170;
 
 /* Round-1 presets kept for reference/A-B; not part of the impact reel. */
 export const TILT_INSPECT_KEYS: PoseKey[] = [
