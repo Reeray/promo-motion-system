@@ -249,7 +249,7 @@ const DemoCard: React.FC<{depth: number}> = ({depth}) => {
   );
 };
 
-const Section: React.FC<{label: string; children: React.ReactNode}> = ({label, children}) => (
+const Section: React.FC<{label?: string; children: React.ReactNode}> = ({label, children}) => (
   <div
     style={{
       position: 'absolute',
@@ -261,22 +261,33 @@ const Section: React.FC<{label: string; children: React.ReactNode}> = ({label, c
       justifyContent: 'center',
     }}
   >
-    <div
-      style={{
-        position: 'absolute',
-        top: 34,
-        left: 44,
-        fontFamily: FONT.mono,
-        fontSize: 13,
-        letterSpacing: 1.5,
-        color: 'rgba(238,241,246,0.45)',
-        textTransform: 'uppercase',
-      }}
-    >
-      {label}
-    </div>
+    {label ? (
+      <div
+        style={{
+          position: 'absolute',
+          top: 34,
+          left: 44,
+          fontFamily: FONT.mono,
+          fontSize: 13,
+          letterSpacing: 1.5,
+          color: 'rgba(238,241,246,0.45)',
+          textTransform: 'uppercase',
+        }}
+      >
+        {label}
+      </div>
+    ) : null}
     {children}
   </div>
+);
+
+/** Gallery block: the admitted fly-by over the interactive card, no reel chrome. */
+export const DollyFlybyDemo: React.FC = () => (
+  <Section>
+    <Pose3D keys={DOLLY_FLYBY_KEYS} width={CARD_W} height={CARD_H} smooth>
+      {(_state, depth) => <DemoCard depth={depth} />}
+    </Pose3D>
+  </Section>
 );
 
 export const Pose3DDemo: React.FC = () => (

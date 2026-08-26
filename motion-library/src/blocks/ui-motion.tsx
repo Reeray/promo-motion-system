@@ -1,6 +1,8 @@
 import {Block} from './types';
 import {ChipTokenize, LogTheater, LogTheaterZoomed, CameraPush} from '../clips/C';
 import {LogoAnimationSurface, ANIM_FRAMES} from '../promo/surfaces/hf-logo-animation';
+import {DollyFlybyDemo} from '../demo/pose3d-demo';
+import {DOLLY_FLYBY_FRAMES} from './pose3d';
 
 /* UI-motion blocks (GPT-5.5 house standard) — same Block shape as the typography and
  * transition sets.
@@ -51,5 +53,16 @@ export const UI_BLOCKS: Block[] = [
     wide: true,
     desc: 'The complete brand animation, ten keyframes on a ten-hit rhythm: the “Hugging Face” wordmark degrades letter-by-letter into real photo objects (waving hand, stone, oil barrel, rubber duck), the objects are refined into HF product icons, then the row squeezes inward and hard-cuts into the logo landing its own downbeat with one ~3% overshoot. Raw material → product → brand. Transparent, so it plays over the video’s own theme. The handoff’s default build: 2s-uniform cut, “opening” accents (2+2+3+3) — 120 frames, exactly 2.0s.',
     Comp: LogoAnimationSurface,
+  },
+  {
+    name: 'pose3d-dolly-flyby',
+    category: 'ui',
+    source: 'pose3d family · spline',
+    poster: 44, // mid-dwell: zoomed on the button, spinner running — the motivated moment
+    durationInFrames: DOLLY_FLYBY_FRAMES,
+    fps: 60,
+    wide: true,
+    desc: 'The 2D UI breaks the picture plane: one C1-continuous spline flies the camera past the card — fast approach decelerating into a long dwell (~55% of the 1.5s) at a low hero angle, then an accelerating departure that continues the same curve. The zoom is MOTIVATED: fx/fy aim at the interaction point, and the demo card plays the reason on the shared FLYBY_BEATS clock — cursor glides in, presses Upgrade, a ~0.27s load, the quota bar fills green as Free flips to Pro, and the camera leaves because the job is done. Template: pose channels (rx ry rz · xyz · scale/squash · layer-separation · blur · focus point · camera height · lens) with content free via render-prop.',
+    Comp: DollyFlybyDemo,
   },
 ];

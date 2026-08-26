@@ -5,27 +5,23 @@ import {EASE} from '../lib/ease';
 /* ============================================================================
  * POSE3D — 2D UI breaks the picture plane: flat → xyz pose keyframes → flat.
  *
- * STATUS: TEMPLATE UNDER REVIEW, round 2. Round 1 (tilt-inspect / flip-next / depth-orbit)
- * was judged "good start, far from ideal — lacks impact". The correction came with
- * photography knowledge attached, and it reshaped the template:
+ * STATUS: ADMITTED (first member: dolly fly-by). Two review rounds distilled the laws
+ * this family is built on:
  *
  *   THE HERO ANGLE   impact framing is a LOW camera with the UI tilted slightly UPWARD
- *                    (rx positive, perspective origin BELOW centre). Round 1 tilted top-away
- *                    from a high camera — the observational angle, which is polite, and
- *                    polite is boring.
- *   THE SNAP         aggressive zooms JUMP most of their distance instantly (the user's
- *                    spec: ~80% in a violent step) and ease only the remainder INTO THE
- *                    INTERACTION POINT — the same DNA as reference [B]'s measured
- *                    "95% of the distance in ~4 frames". Smooth 0→100 eases read as screen
+ *                    (rx positive, perspective origin BELOW centre). Tilting top-away from
+ *                    a high camera is the observational angle — polite, and polite is boring.
+ *   THE SNAP         aggressive zooms JUMP most of their distance instantly and ease only
+ *                    the remainder INTO THE INTERACTION POINT — reference [B]'s measured
+ *                    "95% of the distance in ~4 frames". Smooth 0->100 eases read as screen
  *                    recordings, not cinema.
- *
- * Five preset choreographies, each an established camera technique in UI space
- * (punch-in / crash zoom / whip pan / impact frame / dolly zoom):
- *   punch-in    snap to 80% of the zoom, ease the last 20% into the interaction point
- *   hero-rise   low-angle monumental entrance; HOLDS a slight upward stance
- *   whip-swap   whip-pan state change — directional blur streak, swap inside the blur
- *   drop-land   gravity, a hard landing (micro-squash, shadow slap), decaying shake
- *   dolly-zoom  vertigo: scale in while the lens widens; depth layers stretch apart
+ *   MOTIVATED CAMERA a zoom exists FOR something happening in the UI — a click, a load, a
+ *                    data change. Aim fx/fy at that spot, let the dwell bracket the
+ *                    interaction and its consequence, and depart when the job is done. An
+ *                    unmotivated zoom is cinematography without a subject.
+ *   SPLINE MODE      `smooth` runs one Catmull-Rom spline through every key (C1-continuous,
+ *                    no reversal kinks) — there, SPACING IS THE EASING: cluster keys to
+ *                    dwell, spread them to travel fast.
  *
  * THE TEMPLATE CONTRACT (block law): choreography LOCKED, content FREE via the render-prop
  * `(state, depth) => node`. `state` = the content's own keyframe (whip-swap changes it
@@ -182,73 +178,7 @@ export const PoseLayer: React.FC<{z: number; depth: number; children: React.Reac
   <div style={{transform: `translateZ(${z * depth}px)`, transformStyle: 'preserve-3d'}}>{children}</div>
 );
 
-/* ══ THE FIVE IMPACT PRESETS (LOCKED) ═══════════════════════════════════════ */
-
-/** punch-in (130f): hold, then the zoom SNAPS to 80% of its distance in 3 frames and eases the
- *  last 20% into the INTERACTION POINT (fx/fy — here the card's action area), from a slightly
- *  low camera with the UI tipped a touch upward. The user's spec, verbatim. */
-export const PUNCH_IN_KEYS: PoseKey[] = [
-  {at: 0, pose: {po: 0.58}},
-  {at: 14, pose: {po: 0.58}},
-  // the SNAP: 80% of the way in 3 frames, origin already at the focus point
-  {at: 17, pose: {s: 2.28, fx: 0.72, fy: 0.72, rx: 5, po: 0.62}, ease: EASE.in},
-  // the remaining 20%, decelerating into the interaction point
-  {at: 52, pose: {s: 2.6, fx: 0.72, fy: 0.72, rx: 6, po: 0.62}, ease: EASE.camera},
-  {at: 96, pose: {s: 2.6, fx: 0.72, fy: 0.72, rx: 6, po: 0.62}},
-  // quick pull home so the preset loops clean
-  {at: 122, pose: {po: 0.58}, ease: EASE.camera},
-];
-export const PUNCH_IN_FRAMES = 130;
-
-/** hero-rise (140f): the monumental entrance — the UI rises to a LOW camera, tipped upward,
- *  overshoots a breath, and HOLDS the hero stance (rx +6) instead of flattening out. */
-export const HERO_RISE_KEYS: PoseKey[] = [
-  {at: 0, pose: {y: 300, rx: 22, s: 0.86, z: -140, po: 0.72}},
-  {at: 30, pose: {y: -14, rx: 7, s: 1.015, z: 0, po: 0.66}, ease: EASE.camera},
-  {at: 46, pose: {y: 0, rx: 6, s: 1, po: 0.66}, ease: EASE.inOut},
-  {at: 140, pose: {y: 0, rx: 6, po: 0.66}},
-];
-export const HERO_RISE_FRAMES = 140;
-
-/** whip-swap (120f): the whip pan as a state change — the screen is THROWN off left inside a
- *  directional blur streak, the next keyframe arrives from the right inside the same streak,
- *  and plants with a small counter-settle. The swap happens where the blur peaks. */
-export const WHIP_SWAP_KEYS: PoseKey[] = [
-  {at: 0, pose: {}, state: 0},
-  {at: 22, pose: {}, state: 0},
-  {at: 30, pose: {x: -640, ry: 14, b: 26}, ease: EASE.in},
-  {at: 30, pose: {x: 660, ry: -14, b: 26}, state: 1},
-  {at: 41, pose: {x: -10, ry: 0, b: 3}, ease: EASE.out},
-  {at: 50, pose: {x: 0, b: 0}, ease: EASE.inOut},
-  {at: 120, pose: {}},
-];
-export const WHIP_SWAP_FRAMES = 120;
-
-/** drop-land (130f): weight. The UI falls from above under gravity (ease-in), LANDS on an
- *  impact frame — 2% vertical squash, the shadow slaps wide and dark — recovers, and the
- *  residual energy leaves as a two-bounce decaying shake. */
-export const DROP_LAND_KEYS: PoseKey[] = [
-  {at: 0, pose: {y: -430, s: 1.05, rx: -6, po: 0.55}},
-  {at: 15, pose: {y: 0, s: 1, rx: 0, sy: 0.978, po: 0.55}, ease: EASE.in},
-  {at: 21, pose: {sy: 1.006, y: -3, po: 0.55}, ease: EASE.out},
-  {at: 27, pose: {sy: 0.998, y: 0, po: 0.55}, ease: EASE.inOut},
-  {at: 33, pose: {sy: 1, x: 2, po: 0.55}, ease: EASE.inOut},
-  {at: 40, pose: {x: -1, po: 0.55}, ease: EASE.inOut},
-  {at: 47, pose: {x: 0, po: 0.55}, ease: EASE.inOut},
-  {at: 130, pose: {po: 0.55}},
-];
-export const DROP_LAND_FRAMES = 130;
-
-/** dolly-zoom (150f): the vertigo — the card pushes toward the viewer WHILE the lens widens
- *  (perspective shortens), so its own depth layers stretch apart around it. Slow, uncanny,
- *  then a clean release home. Needs layered content (depth channel held at 1 mid-move). */
-export const DOLLY_ZOOM_KEYS: PoseKey[] = [
-  {at: 0, pose: {}},
-  {at: 18, pose: {d: 1, ry: -8, rx: 3, po: 0.56}, ease: EASE.camera},
-  {at: 100, pose: {s: 1.3, pp: 0.42, d: 1, ry: 8, rx: 3, z: 40, po: 0.6}, ease: EASE.inOut},
-  {at: 138, pose: {}, ease: EASE.camera},
-];
-export const DOLLY_ZOOM_FRAMES = 150;
+/* ══ PRESETS ══ one admitted choreography; rejected candidates were removed, not kept ═ */
 
 /** dolly-zoom v2 (170f): the FLY-BY. One spline through five keys shaped as a loop — the
  *  rotation sweeps a single direction for the whole journey and crosses zero at the deepest
@@ -284,25 +214,3 @@ export const DOLLY_FLYBY_FRAMES = 90;
  *  so the dwell brackets press→result. Frames, 60fps. */
 export const FLYBY_BEATS = {cursorEnter: 4, cursorArrive: 30, press: 34, release: 37, loaded: 53} as const;
 
-/* Round-1 presets kept for reference/A-B; not part of the impact reel. */
-export const TILT_INSPECT_KEYS: PoseKey[] = [
-  {at: 0, pose: {}},
-  {at: 34, pose: {rx: -30, ry: -20, z: 90, s: 0.96, y: 10}, ease: EASE.camera},
-  {at: 96, pose: {rx: -30, ry: 20, z: 90, s: 0.96, y: 10}, ease: EASE.inOut},
-  {at: 150, pose: {}, ease: EASE.camera},
-];
-export const TILT_INSPECT_FRAMES = 180;
-export const FLIP_NEXT_KEYS: PoseKey[] = [
-  {at: 0, pose: {}, state: 0},
-  {at: 48, pose: {ry: 90, z: 90, s: 0.95}, ease: EASE.in},
-  {at: 48, pose: {ry: -90, z: 90, s: 0.95}, state: 1},
-  {at: 104, pose: {}, ease: EASE.camera},
-];
-export const FLIP_NEXT_FRAMES = 150;
-export const DEPTH_ORBIT_KEYS: PoseKey[] = [
-  {at: 0, pose: {}},
-  {at: 40, pose: {ry: -26, rx: -12, z: 60, s: 0.95, d: 1}, ease: EASE.camera},
-  {at: 130, pose: {ry: 26, rx: -12, z: 60, s: 0.95, d: 1}, ease: EASE.inOut},
-  {at: 172, pose: {}, ease: EASE.camera},
-];
-export const DEPTH_ORBIT_FRAMES = 200;

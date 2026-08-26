@@ -1409,6 +1409,24 @@ Categories: **Formula** (storyboard blueprint strip) · **Typography** · **UI m
   (`kinetic-center-build`, `short-slide-right`, `short-slide-down`) are still to do.
 - `src/clips/C.tsx` — **UI-motion blocks**: chip-tokenize · log-theater ·
   **log-theater-zoomed** (static macro crop) · **camera macro-push**
+- `src/blocks/pose3d.tsx` — **3D pose family** (first member: `pose3d-dolly-flyby`). The 2D
+  UI breaks the picture plane on pose keyframes (rx ry rz · xyz · scale/squash ·
+  layer-separation · blur · focus point · camera height · lens); choreography locked,
+  content free via render-prop. Its laws, each ruled by review:
+  - **Hero angle** — impact framing is a LOW camera, UI tilted slightly UPWARD (rx > 0,
+    perspective-origin below centre). High-camera top-away tilt is observational = boring.
+  - **The snap** — aggressive zooms jump most of the distance instantly and ease only the
+    remainder into the interaction point ([B]’s “95% in ~4 frames”).
+  - **Motivated camera** — a zoom exists FOR something happening in the UI (a click, a load,
+    a data change): aim fx/fy at that spot, dwell across the interaction and its consequence,
+    depart when the job is done. Content and camera share one exported beat clock
+    (`FLYBY_BEATS`) so they can never drift.
+  - **Spline mode** — `smooth` runs one C1 Catmull-Rom through all keys; SPACING IS THE
+    EASING (cluster keys to dwell, spread to travel). The fly-by’s return is the outbound
+    curve continuing — no reversal kink at the apex.
+  - **Interactive-content frame law** — anything that must align with a cursor (buttons,
+    footers) must be a DIRECT child of the card with its own translateZ lift: a PoseLayer’s
+    transform becomes the containing block and re-anchors right/bottom to its flow box.
 - `src/clips/A.tsx` / `B.tsx` — the tier-A/B reproductions (anchored-grow, ghost-wipe,
   dot-birth, quantum-bars, swallow-morph, hover-ignite, headline-swap).
 - `src/lib/ease.ts` — measured curves incl. the GPT-5.5 set above (`EASE.uiEnter`,

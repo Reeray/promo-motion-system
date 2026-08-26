@@ -1,6 +1,6 @@
 {
   "generated": "npm run blocks",
-  "total": 28,
+  "total": 29,
   "orphanSpecs": [
     "depth-parallax-words",
     "kinetic-center-build",
@@ -296,6 +296,15 @@
           "tag": null,
           "source": "HF logo intro · 2s-uniform / opening",
           "desc": "The complete brand animation, ten keyframes on a ten-hit rhythm: the “Hugging Face” wordmark degrades letter-by-letter into real photo objects (waving hand, stone, oil barrel, rubber duck), the objects are refined into HF product icons, then the row squeezes inward and hard-cuts into the logo landing its own downbeat with one ~3% overshoot. Raw material → product → brand. Transparent, so it plays over the video’s own theme. The handoff’s default build: 2s-uniform cut, “opening” accents (2+2+3+3) — 120 frames, exactly 2.0s.",
+          "durationInFrames": null,
+          "fps": 60
+        },
+        {
+          "name": "pose3d-dolly-flyby",
+          "category": "ui",
+          "tag": null,
+          "source": "pose3d family · spline",
+          "desc": "The 2D UI breaks the picture plane: one C1-continuous spline flies the camera past the card — fast approach decelerating into a long dwell (~55% of the 1.5s) at a low hero angle, then an accelerating departure that continues the same curve. The zoom is MOTIVATED: fx/fy aim at the interaction point, and the demo card plays the reason on the shared FLYBY_BEATS clock — cursor glides in, presses Upgrade, a ~0.27s load, the quota bar fills green as Free flips to Pro, and the camera leaves because the job is done. Template: pose channels (rx ry rz · xyz · scale/squash · layer-separation · blur · focus point · camera height · lens) with content free via render-prop.",
           "durationInFrames": null,
           "fps": 60
         }

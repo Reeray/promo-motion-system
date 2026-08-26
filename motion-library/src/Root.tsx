@@ -1,5 +1,4 @@
 import React from 'react';
-import {Pose3DDemo, POSE3D_DEMO_FRAMES} from './demo/pose3d-demo';
 import {AbsoluteFill, Composition, Series, useCurrentFrame} from 'remotion';
 import {lerp} from './lib/ease';
 import {PX, FONT} from './lib/palette';
@@ -111,17 +110,7 @@ export const Root: React.FC = () => (
         height={720}
       />
     ))}
-    {/* TEMP — review reel for the Pose3D template (src/blocks/pose3d.tsx, STATUS: under
-        review). Removed or replaced by real block registration once the family is admitted. */}
-    <Composition
-      id="Pose3DDemo"
-      component={Pose3DDemo}
-      durationInFrames={POSE3D_DEMO_FRAMES}
-      fps={60}
-      width={1280}
-      height={720}
-    />
-    <Composition
+        <Composition
       id="AnimateTextReel"
       component={AnimateTextReel}
       durationInFrames={ANIMATE_TEXT_BLOCKS.reduce((n, b) => n + dur(b), 0)}
