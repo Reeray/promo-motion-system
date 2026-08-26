@@ -6,10 +6,10 @@ import {EASE} from './../lib/ease';
  * BURST3D — many UI frames shoot out of a centre text line into a 3D ORBIT,
  * carousel around it, and spiral back home.
  *
- * STATUS: TEMPLATE UNDER REVIEW, round 2 (jump-start fraction also unruled).
- * Round 1 was judged: arrangement too even, no perspective in the shoot, facing
- * directions chaotic, and the paths stopped — "the frames also orbit around the
- * center point throughout the entire animation". This core is the correction:
+ * STATUS: ADMITTED (preset: orbit burst — jump 0.6, cut 0.7, graze overlap).
+ * Two review rounds shaped the laws. Round 1 was judged: arrangement too even, no
+ * perspective in the shoot, facing directions chaotic, paths stopped — "the frames
+ * also orbit around the center point throughout the entire animation":
  *
  *   CONTINUOUS ORBIT   one global angular velocity runs the WHOLE animation —
  *                      shoot, hold and return are only the radial coordinate
@@ -28,9 +28,9 @@ import {EASE} from './../lib/ease';
  *                      cards on a carousel. Nothing is per-item arbitrary.
  *   THROW-OUT CUT      the return is a THROW built to be cut: accelerating ease-in
  *                      (travel back-loaded), hard-cut at `cut` of the leg's time
- *                      (default = jump). Cut 0.4 fires with frames at ~82% radius,
- *                      0.6 at ~62% — distinct in time and space, and the cut lands
- *                      at peak velocity ([B]'s measured short-throw law: never
+ *                      (default = jump). The ruled default cut 0.7 plays about
+ *                      half the visible return and cuts at ~50% radius, at peak
+ *                      velocity ([B]'s measured short-throw law: never
  *                      animate all the way home, never decelerate into a cut).
  *   TEXT BRUSH         one small frame's front pass sweeps across the headline and
  *                      covers it slightly — a moving occlusion that proves the depth
@@ -164,7 +164,7 @@ export const Burst3D: React.FC<{
   );
 };
 
-/* ── PRESET (under review) ─────────────────────────────────────────────────── */
+/* ── PRESET (admitted) ─────────────────────────────────────────────────── */
 
 /** Eight frames, clumped on purpose: a heavy front cluster (8/40/50/74°), a loner far left
  *  (150°), a spread pair behind (196/228°) and a high catcher (330°). Front passes are
@@ -190,5 +190,7 @@ export const BURST_ITEMS_CLEAR: BurstItem[] = BURST_ITEMS.map((it) =>
   it.phase === 50 ? {...it, height: -165} : it
 );
 
-export const BURST_TIMING = {lead: 8, shoot: 22, dwell: 34, back: 26, orbit: 1.05};
+/** The ruled defaults: jump 0.6 (snappy birth), cut 0.7 (about half the visible return
+ *  plays, then the hard cut at ~50% radius — ruled after a 60/70/80 comparison). */
+export const BURST_TIMING: BurstTiming = {lead: 8, shoot: 22, dwell: 34, back: 26, jump: 0.6, cut: 0.7, orbit: 1.05};
 export const BURST_FRAMES = 100; // lead + shoot + max delay + dwell + back + settle

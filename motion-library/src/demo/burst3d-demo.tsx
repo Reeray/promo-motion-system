@@ -1,12 +1,11 @@
 import React from 'react';
-import {Series} from 'remotion';
 import {FONT} from '../lib/palette';
 import {Burst3D, BURST_FRAMES, BURST_ITEMS, BURST_TIMING} from '../blocks/burst3d';
 
 /* ============================================================================
- * BURST3D DEMO — review reel comparing the jump-start fraction: 20% / 40% / 60%.
- * Same items, same paths, same easing; only where along the path each flight
- * BEGINS differs. Content is a neutral placeholder set (the reel judges motion).
+ * BURST3D DEMO — gallery demo of the admitted orbit burst (BURST_TIMING defaults:
+ * jump 0.6, cut 0.7, graze overlap). Content is a neutral placeholder set — per the
+ * block law the content half is free; any card set and centre line ride these paths.
  * ========================================================================== */
 
 const INK = '#eef1f6';
@@ -118,45 +117,11 @@ const CenterLine: React.FC = () => (
   </div>
 );
 
-const Section: React.FC<{label: string; jump: number; cut?: number}> = ({label, jump, cut}) => (
+/** Gallery block: the admitted orbit burst at its ruled defaults, no reel chrome. */
+export const BurstOrbitDemo: React.FC = () => (
   <div style={{position: 'absolute', inset: 0, background: '#0b0d10'}}>
-    <div
-      style={{
-        position: 'absolute',
-        top: 34,
-        left: 44,
-        fontFamily: FONT.mono,
-        fontSize: 13,
-        letterSpacing: 1.5,
-        color: 'rgba(238,241,246,0.45)',
-        textTransform: 'uppercase',
-        zIndex: 10,
-      }}
-    >
-      {label}
-    </div>
-    <Burst3D
-      items={BURST_ITEMS}
-      timing={{...BURST_TIMING, jump, cut}}
-      renderItem={(i, item) => <MiniFrame index={i} w={item.size[0]} h={item.size[1]} />}
-    >
+    <Burst3D items={BURST_ITEMS} timing={BURST_TIMING} renderItem={(i, item) => <MiniFrame index={i} w={item.size[0]} h={item.size[1]} />}>
       <CenterLine />
     </Burst3D>
   </div>
 );
-
-export const Burst3DDemo: React.FC = () => (
-  <Series>
-    <Series.Sequence durationInFrames={BURST_FRAMES}>
-      <Section label="cut 60% of the return — reference" jump={0.6} cut={0.6} />
-    </Series.Sequence>
-    <Series.Sequence durationInFrames={BURST_FRAMES}>
-      <Section label="cut 70% — half the return plays" jump={0.6} cut={0.7} />
-    </Series.Sequence>
-    <Series.Sequence durationInFrames={BURST_FRAMES}>
-      <Section label="cut 80% — most of the return plays" jump={0.6} cut={0.8} />
-    </Series.Sequence>
-  </Series>
-);
-
-export const BURST3D_DEMO_FRAMES = BURST_FRAMES * 3;

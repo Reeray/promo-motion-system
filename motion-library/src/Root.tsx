@@ -9,7 +9,6 @@ import {TRANSITION_BLOCKS} from './blocks/transitions';
 import {Promo} from './promo/Promo';
 import {prepare} from './promo/prepare';
 import {PromoDocRaw} from './promo/schema';
-import {Burst3DDemo, BURST3D_DEMO_FRAMES} from './demo/burst3d-demo';
 import SAMPLE_DOC from '../docs/sample.promo.json';
 
 const slug = (s: string) => 'at-' + s.replace(/[^a-z0-9]+/gi, '-').replace(/(^-|-$)/g, '').toLowerCase();
@@ -111,15 +110,6 @@ export const Root: React.FC = () => (
         height={720}
       />
     ))}
-    {/* TEMP: burst3d review reel — remove after the verdict */}
-    <Composition
-      id="Burst3DDemo"
-      component={Burst3DDemo}
-      durationInFrames={BURST3D_DEMO_FRAMES}
-      fps={60}
-      width={1280}
-      height={720}
-    />
         <Composition
       id="AnimateTextReel"
       component={AnimateTextReel}

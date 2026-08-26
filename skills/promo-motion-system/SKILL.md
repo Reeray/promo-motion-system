@@ -1427,6 +1427,22 @@ Categories: **Formula** (storyboard blueprint strip) · **Typography** · **UI m
   - **Interactive-content frame law** — anything that must align with a cursor (buttons,
     footers) must be a DIRECT child of the card with its own translateZ lift: a PoseLayer’s
     transform becomes the containing block and re-anchors right/bottom to its flow box.
+- `src/blocks/burst3d.tsx` — **orbit burst** (`burst3d-orbit`, same 3D family). Many UI
+  frames shoot out of a centre text line into a 3D orbit, carousel around it, and are
+  thrown home. Its laws, each ruled by review:
+  - **Continuous orbit** — one constant angular velocity runs the whole piece; shoot, hold
+    and return are only the radial coordinate breathing on top of a rotation that never
+    stops or reverses.
+  - **Orbit in depth** — the orbit plane is x/z: frames swing toward the camera at the
+    front of the circle and recede behind the text; perspective does the size work.
+  - **Derived facing** — orientation is one rule of orbit phase (rotateY ~ cos φ, constant
+    hero rx, slight bank). Nothing per-item arbitrary.
+  - **Throw-out cut** — the return is an accelerating throw hard-cut at `cut` of its leg
+    (ruled default 0.7 ≈ half the visible return, ~50% radius) on ONE global frame; the
+    birth snaps in at `jump` (default 0.6). Never animate all the way home.
+  - **Uneven by design + graze** — clumped phases, hard size/depth contrast; one small
+    frame’s front pass grazes the headline (covers only the cap-tops briefly) — the moving
+    occlusion that proves depth order. Brush, never park.
 - `src/clips/A.tsx` / `B.tsx` — the tier-A/B reproductions (anchored-grow, ghost-wipe,
   dot-birth, quantum-bars, swallow-morph, hover-ignite, headline-swap).
 - `src/lib/ease.ts` — measured curves incl. the GPT-5.5 set above (`EASE.uiEnter`,
