@@ -76,7 +76,7 @@ export const JZ = {
   enterDist: 18, // …covering this px beyond the creep
   relax: 5, // the overshoot-relax: glides this far past rest, eases back gently
   exitF: 18, // every non-final line's last frames accelerate left…
-  exitDist: 26, // …adding this much BEYOND the creep — a visible lean, cut at ~-6px/f
+  exitDist: 30, // px BEYOND the creep across the whole build — end-loaded, cut at ~-6px/f
 } as const;
 
 const lineDur = (ln: JZLine, last: boolean): number => {
@@ -89,8 +89,12 @@ const lineDur = (ln: JZLine, last: boolean): number => {
 export const jzFrames = (lines: JZLine[]): number => lines.reduce((n, ln, i) => n + lineDur(ln, i === lines.length - 1), 0);
 
 /** The conveyor: x-offset of a line at local frame `t`.
- *  enter (decelerating, still moving) → creep (with overshoot-relax) → exit accel. */
-const conveyorX = (t: number, dur: number, hasExit: boolean, hasEnterGlide: boolean): number => {
+ *  enter (decelerating, still moving) → creep (with overshoot-relax) → exit accel.
+ *  The exit ramp starts at `exitStart` — the moment the line completes — not in a fixed
+ *  final window: EASE.in is end-loaded, so the lean still lands late, but the early ramp
+ *  is a whisper of building speed that keeps the hold ALIVE (a flat creep between the
+ *  relax and a late lean read as a dead pause). */
+const conveyorX = (t: number, dur: number, hasExit: boolean, hasEnterGlide: boolean, exitStart: number): number => {
   let x = 0;
   if (hasEnterGlide) {
     const g = lerp(t, [0, JZ.enterGlide], [0, 1], EASE.out);
@@ -99,8 +103,7 @@ const conveyorX = (t: number, dur: number, hasExit: boolean, hasEnterGlide: bool
   }
   x -= JZ.creep * t; // the ever-present creep
   if (hasExit) {
-    const e0 = dur - JZ.exitF;
-    x -= lerp(t, [e0, dur], [0, JZ.exitDist], EASE.in); // accelerate into the cut
+    x -= lerp(t, [exitStart, dur], [0, JZ.exitDist], EASE.in); // one long build into the cut
   }
   return x;
 };
@@ -164,7 +167,7 @@ export const JumpZoomType: React.FC<{
       // ONE-step jump-cut to the reading frame; the line accumulates while creeping
       const lt = local - macroEnd;
       scale = JZ.smallScale;
-      x = conveyorX(lt, dur - macroEnd, !last, true);
+      x = conveyorX(lt, dur - macroEnd, !last, true, Math.max(JZ.enterGlide + 16, line.tail.length * JZ.appendEvery + JZ.appendIn));
       node = (
         <>
           <span style={{whiteSpace: 'pre'}}>{line.head} </span>
@@ -177,7 +180,7 @@ export const JumpZoomType: React.FC<{
   } else if (line.kind === 'swap') {
     // lands whole in 1 frame at swapScale, CONSTANT, riding the conveyor
     scale = JZ.swapScale;
-    x = conveyorX(local, dur, !last, false);
+    x = conveyorX(local, dur, !last, false, line.tail.length * JZ.appendEvery + JZ.appendIn);
     node = (
       <>
         <span style={{whiteSpace: 'pre'}}>{line.head} </span>
