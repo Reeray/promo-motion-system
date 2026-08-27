@@ -1,6 +1,6 @@
 {
   "generated": "npm run blocks",
-  "total": 30,
+  "total": 31,
   "orphanSpecs": [
     "depth-parallax-words",
     "kinetic-center-build",
@@ -75,7 +75,7 @@
     {
       "label": "Typography",
       "category": "typography",
-      "note": "pixel-point/animate-text",
+      "note": "pixel-point/animate-text + measured components",
       "blocks": [
         {
           "name": "soft-blur-in",
@@ -246,6 +246,15 @@
           "target": "per-character",
           "durationInFrames": null,
           "fps": 30
+        },
+        {
+          "name": "jump-zoom-type",
+          "category": "typography",
+          "tag": null,
+          "source": "measured · what-if reference",
+          "desc": "A sentence on a leftward conveyor, told through camera jumps. Emphasised phrases open MACRO (2.6×) and jump-cut to a wide reading frame in ONE step; words append from the right; every line creeps left its whole life and exits on a bridge+lean build into a hard cut (never a standstill — the seam where words finish arriving stays alive). A macro swap replaces the line at 2.1×; the single-word climax wipes on from 20% (the snap law) at 2.5×. Ruled size pattern: BIG → small → BIG → BIG-if-one-word. Line list is content; the motion table is the measurement.",
+          "durationInFrames": null,
+          "fps": 60
         }
       ]
     },

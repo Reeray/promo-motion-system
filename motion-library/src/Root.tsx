@@ -9,25 +9,12 @@ import {TRANSITION_BLOCKS} from './blocks/transitions';
 import {Promo} from './promo/Promo';
 import {prepare} from './promo/prepare';
 import {PromoDocRaw} from './promo/schema';
-import {JumpZoomType, jzFrames, JZLine} from './blocks/jump-zoom-type';
 import SAMPLE_DOC from '../docs/sample.promo.json';
 
 const slug = (s: string) => 'at-' + s.replace(/[^a-z0-9]+/gi, '-').replace(/(^-|-$)/g, '').toLowerCase();
 const dur = (b: {durationInFrames?: number}) => b.durationInFrames ?? 75;
 
 const CLIP = 75; // 2.5s @ 30fps
-
-/* TEMP: jump-zoom-type review reel — the reference copy, our motion (verdict pending) */
-const JZ_DEMO_LINES: JZLine[] = [
-  {kind: 'open', head: 'What if', tail: ['your', 'launch', 'video']},
-  {kind: 'swap', head: 'edited', tail: ['itself']},
-  {kind: 'climax', word: 'automatically'},
-];
-const JumpZoomDemo: React.FC = () => (
-  <AbsoluteFill style={{background: '#f4f6fb', fontFamily: 'sans-serif'}}>
-    <JumpZoomType lines={JZ_DEMO_LINES} fontSize={64} color={'#14161c'} />
-  </AbsoluteFill>
-);
 
 const Intro: React.FC = () => {
   const f = useCurrentFrame();
@@ -110,7 +97,7 @@ export const Root: React.FC = () => (
       height={720}
     />
     {ANIMATE_TEXT_BLOCKS.map((b) => (
-      <Composition key={b.name} id={slug(b.name)} component={b.Comp} durationInFrames={dur(b)} fps={30} width={1280} height={720} />
+      <Composition key={b.name} id={slug(b.name)} component={b.Comp} durationInFrames={dur(b)} fps={b.fps ?? 30} width={1280} height={720} />
     ))}
     {TRANSITION_BLOCKS.map((b) => (
       <Composition
@@ -123,15 +110,6 @@ export const Root: React.FC = () => (
         height={720}
       />
     ))}
-    {/* TEMP: jump-zoom-type review — remove after the verdict */}
-    <Composition
-      id="JumpZoomDemo"
-      component={JumpZoomDemo}
-      durationInFrames={jzFrames(JZ_DEMO_LINES)}
-      fps={60}
-      width={1280}
-      height={720}
-    />
         <Composition
       id="AnimateTextReel"
       component={AnimateTextReel}

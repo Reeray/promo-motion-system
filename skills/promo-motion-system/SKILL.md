@@ -1427,6 +1427,23 @@ Categories: **Formula** (storyboard blueprint strip) · **Typography** · **UI m
   - **Interactive-content frame law** — anything that must align with a cursor (buttons,
     footers) must be a DIRECT child of the card with its own translateZ lift: a PoseLayer’s
     transform becomes the containing block and re-anchors right/bottom to its flow box.
+- `src/blocks/jump-zoom-type.tsx` — **jump-zoom type** (`jump-zoom-type`, typography
+  family, measured from the what-if reference). A sentence on a leftward CONVEYOR told
+  through camera jumps. Its laws, each ruled by review:
+  - **The conveyor** — every text object slides left its whole life: decelerating enter,
+    creeping hold, and a BRIDGE+LEAN exit (a quadratic build starting while the last word
+    is still arriving, plus the sharp end-loaded lean into a hard cut). Net velocity never
+    reaches zero — the word-dock seam is where pauses hide.
+  - **Jump-cut** — macro → reading frame in ONE step (0.46×); the only hard scale event.
+  - **Words append from the RIGHT**, layout reserved from frame 0 (fade in place —
+    mount-on-time re-centres the line in visible jolts).
+  - **Size contrast (ruled)** — BIG 2.6× → small 0.9× → BIG 2.1× → BIG 2.5× if the final
+    line is one word / small if several. Scale is constant within a phase (an apparent
+    +10% zoom in the reference was letter-shape bias in the measurement).
+  - **Climax snap** — the final word's wipe lands at 20% on frame one, then eases the rest.
+  - **Pacing** — ~3s by trimming HOLDS only; motion phases keep their measured frame
+    counts (uniform time-scaling with fixed distances steepens every curve and breaks
+    the easing feel).
 - `src/blocks/burst3d.tsx` — **orbit burst** (`burst3d-orbit`, same 3D family). Many UI
   frames shoot out of a centre text line into a 3D orbit, carousel around it, and are
   thrown home. Its laws, each ruled by review:

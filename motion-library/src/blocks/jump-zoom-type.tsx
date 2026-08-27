@@ -6,7 +6,7 @@ import {FONT} from '../lib/fonts';
 /* ============================================================================
  * JUMP-ZOOM TYPE — a sentence on a leftward conveyor, told through camera jumps.
  *
- * STATUS: TEMPLATE UNDER REVIEW. Paced to ~3s (182f) the second way: uniform 0.55x
+ * STATUS: ADMITTED (typography family, wide gallery cell). Paced to ~3s (182f): uniform 0.55x
  * compression broke the easing feel (fixed distances over fewer frames = steeper curves),
  * so the HOLDS were shortened while every motion phase keeps its round-4 frame count -
  * the curves are untouched, only the stillness is briefer. Earlier round notes: round 3 (round-2 notes: exit travel 3x too far, swap
@@ -223,3 +223,16 @@ export const JumpZoomType: React.FC<{
     </AbsoluteFill>
   );
 };
+
+/* ── gallery demo (admitted): the review sentence at the ruled defaults ───── */
+export const JZ_DEMO_LINES: JZLine[] = [
+  {kind: 'open', head: 'What if', tail: ['your', 'launch', 'video']},
+  {kind: 'swap', head: 'edited', tail: ['itself']},
+  {kind: 'climax', word: 'automatically'},
+];
+export const JZ_DEMO_FRAMES = jzFrames(JZ_DEMO_LINES);
+export const JumpZoomTypeDemo: React.FC = () => (
+  <AbsoluteFill style={{background: '#f4f6fb', fontFamily: FONT.sans}}>
+    <JumpZoomType lines={JZ_DEMO_LINES} fontSize={64} color="#14161c" />
+  </AbsoluteFill>
+);

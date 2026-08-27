@@ -52,7 +52,22 @@ const toBlock = (raw: unknown): Block => {
   };
 };
 
-export const ANIMATE_TEXT_BLOCKS: Block[] = RAW.map(toBlock);
+import {JumpZoomTypeDemo, JZ_DEMO_FRAMES} from '../jump-zoom-type';
+
+export const ANIMATE_TEXT_BLOCKS: Block[] = [
+  ...RAW.map(toBlock),
+  {
+    name: 'jump-zoom-type',
+    category: 'typography',
+    source: 'measured · what-if reference',
+    poster: 34, // the macro open, mid-conveyor
+    durationInFrames: JZ_DEMO_FRAMES,
+    fps: 60,
+    wide: true,
+    desc: 'A sentence on a leftward conveyor, told through camera jumps. Emphasised phrases open MACRO (2.6×) and jump-cut to a wide reading frame in ONE step; words append from the right; every line creeps left its whole life and exits on a bridge+lean build into a hard cut (never a standstill — the seam where words finish arriving stays alive). A macro swap replaces the line at 2.1×; the single-word climax wipes on from 20% (the snap law) at 2.5×. Ruled size pattern: BIG → small → BIG → BIG-if-one-word. Line list is content; the motion table is the measurement.',
+    Comp: JumpZoomTypeDemo,
+  },
+];
 
 /* ── The registry the PromoDoc layer and the editor's swap picker consume ────────────────────
  * Built from the same RAW array that produces the gallery blocks, so the two can never disagree.

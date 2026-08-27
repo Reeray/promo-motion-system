@@ -98,9 +98,14 @@ const typography = registeredSpecs.map((id) => {
   };
 });
 
+// component-based typography blocks (hand-written entries in the same registry array —
+// the object-literal parser skips the ...RAW spread and finds only the literals)
+const typographyComponents = parse(atIndex, 'ANIMATE_TEXT_BLOCKS', 'typography');
+const typographyAll = [...typography, ...typographyComponents];
+
 const groups = [
   {label: 'Transition', category: 'transition', note: 'scene-to-scene glue', blocks: transitions},
-  {label: 'Typography', category: 'typography', note: 'pixel-point/animate-text', blocks: typography},
+  {label: 'Typography', category: 'typography', note: 'pixel-point/animate-text + measured components', blocks: typographyAll},
   {label: 'UI motion', category: 'ui', note: 'GPT-5.5 house standard', blocks: ui},
 ];
 const all = groups.flatMap((g) => g.blocks);
@@ -145,5 +150,5 @@ These JSON specs exist in \`src/blocks/animate-text/specs/\` but are **not** reg
 }
 
 writeFileSync(join(ROOT, 'BLOCKS.md'), md);
-console.log(`✓ blocks: ${all.length} (${transitions.length} transition, ${typography.length} typography, ${ui.length} ui)` +
+console.log(`✓ blocks: ${all.length} (${transitions.length} transition, ${typographyAll.length} typography, ${ui.length} ui)` +
   (orphanSpecs.length ? ` · ⚠ ${orphanSpecs.length} unregistered spec(s)` : ''));
