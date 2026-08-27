@@ -52,15 +52,16 @@ export type JZLine =
 export const JZ = {
   resolveIn: 10, // the macro head fades in (stand-in for the ignored glyph morph)
   macroHold: 34, // macro phrase rides the conveyor…
-  macroScale: 2.2, // …at this scale (measured 212/98 ≈ jump 0.46×)
+  macroScale: 2.6, // …at this scale (pushed past the measured 2.2 — ruled: MORE contrast)
   appendEvery: 6, // a new word lands every…
   appendIn: 8, // …settling with fade + 18px rise
   wideHold: 40, // completed line reads (creeping all the while)
-  swapScale: 1.8, // a swap line is BIG (the ruled size-contrast pattern: big -> small ->
+  smallScale: 0.9, // the accumulated line reads slightly UNDER reading size — deepens the drop
+  swapScale: 2.1, // a swap line is BIG (the ruled size-contrast pattern: big -> small ->
   // big -> BIG-if-one-word / small-if-more), CONSTANT for its whole life — the earlier
   // "+10% micro-zoom" was measurement bias (descenders raise median component height)
-  climaxScale: 1.9, // the climax word's size — CONSTANT (no drift, no lift; ruled)
-  climaxJump: 40, // the wipe SNAPS to this % instantly (the snap law), then eases the rest
+  climaxScale: 2.5, // the climax word is the BIGGEST — CONSTANT (no drift, no lift; ruled)
+  climaxJump: 20, // the wipe SNAPS to this % instantly (the snap law), then eases the rest
   climaxWipe: 20, // …over this many frames
   climaxGlide: 36, // the decelerating entry glide…
   climaxGlideDist: 130, // …covering this many px to rest
@@ -159,7 +160,7 @@ export const JumpZoomType: React.FC<{
     } else {
       // ONE-step jump-cut to the reading frame; the line accumulates while creeping
       const lt = local - macroEnd;
-      scale = 1;
+      scale = JZ.smallScale;
       x = conveyorX(lt, dur - macroEnd, !last, true);
       node = (
         <>
