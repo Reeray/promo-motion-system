@@ -4,7 +4,7 @@ import {EASE, lerp} from '../../lib/ease';
 import {FONT} from '../../lib/fonts';
 import {ELEV} from '../../lib/palette';
 import {Burst3D, BURST_ITEMS, burstTextFrames, burstTextTiming} from '../../blocks/burst3d';
-import {Pose3D, flybyAimedAt, DOLLY_FLYBY_FRAMES, FLYBY_BEATS} from '../../blocks/pose3d';
+import {Pose3D, flybyFocusDive, MacCursor, DOLLY_FLYBY_FRAMES, FLYBY_BEATS} from '../../blocks/pose3d';
 import {JumpZoomType, jzFrames, JZLine} from '../../blocks/jump-zoom-type';
 import type {CueKind} from '../sound-kinds';
 import {SURFACE_W, SURFACE_H} from './frame';
@@ -416,23 +416,23 @@ export const BlogBurstSurface: React.FC = () => {
  * auto-scrolls (camera dead still — the content is the motion).
  * ════════════════════════════════════════════════════════════════════════ */
 
-export const WRITE_FRAMES = DOLLY_FLYBY_FRAMES + 40; // the admitted fly-by + a flat settle (its own f0-16 approach is the lead)
+export const WRITE_LEAD = 26; // the flat rest before the 3D rolls (focus-dive law)
+export const WRITE_FRAMES = WRITE_LEAD + DOLLY_FLYBY_FRAMES + 34;
 export const WRITE_CUES: {at: number; kind: CueKind}[] = [
-  {at: FLYBY_BEATS.press, kind: 'ui-tick'}, // the Preview click, on the block's own clock
-  {at: FLYBY_BEATS.release + 3, kind: 'ui-swap'}, // panes swap
+  {at: WRITE_LEAD + FLYBY_BEATS.press, kind: 'ui-tick'}, // the Preview click
+  {at: WRITE_LEAD + FLYBY_BEATS.release + 3, kind: 'ui-swap'}, // panes swap
 ];
 
 const Z_WRITE = 1.18; // editor page inside the window, one scale constant
 const PAGE_W = BROWSER_W / Z_WRITE;
 
-/** The write beat IS a pose3d-dolly-flyby: the browser window breaks the picture plane,
- *  the camera dives at the Preview chip (aim retargeted per the motivated-camera law),
- *  the click and pane swap happen inside the dwell, and the departure is the pull-out.
- *  No scrolling — the dwell shows the rendered article's head, and that is the point. */
+/** The write beat is the FOCUS DIVE (pose3d named preset): flat rest, then the browser
+ *  dives deep on the Preview chip which travels toward frame centre; the macOS cursor
+ *  flies in on the STAGE layer — the window banks under it, the hand does not. */
 export const BlogWriteSurface: React.FC = () => {
   const f = useCurrentFrame();
   useCharter();
-  const fb = f; // the fly-by reads the same clock; its pose clamps flat after the last key
+  const fb = Math.max(0, f - WRITE_LEAD); // the fly-by + content clock, after the rest
   const B = FLYBY_BEATS;
   const press = fb >= B.press && fb < B.release;
   const flipped = fb >= B.press + 2;
@@ -442,9 +442,8 @@ export const BlogWriteSurface: React.FC = () => {
   const curT = lerp(fb, [B.cursorEnter, B.cursorArrive], [0, 1], EASE.inOut);
   return (
     <div style={{width: SURFACE_W, height: SURFACE_H, position: 'relative', display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
-      <Pose3D keys={flybyAimedAt(0.94, 0.1, 2.05)} width={BROWSER_W} height={BROWSER_H} smooth>
-        {(_state, depth) => (
-          <div style={{width: '100%', height: '100%', position: 'relative', transformStyle: 'preserve-3d'}}>
+      <Pose3D keys={flybyFocusDive({fx: 0.94, fy: 0.1, width: BROWSER_W, height: BROWSER_H, zoom: 3.0, pull: 0.62})} width={BROWSER_W} height={BROWSER_H} smooth lead={WRITE_LEAD}>
+        {() => (
           <BrowserWindow elevation={false}>
             <div style={{position: 'absolute', left: 0, top: 0, width: PAGE_W, transformOrigin: '0% 0%', transform: `scale(${Z_WRITE})`}}>
               {/* app bar - real copy, real icon */}
@@ -475,20 +474,10 @@ export const BlogWriteSurface: React.FC = () => {
               </div>
             </div>
           </BrowserWindow>
-          {/* the cursor rides its OWN plane above the window (translateZ on the depth
-              channel) — the 3D interaction feel: hand above the screen, not ink on it */}
-          {fb >= B.cursorEnter && fb < 78 && (
-            <div style={{position: 'absolute', right: 89, top: 136, zIndex: 40, transform: `translateZ(${110 * depth}px)`}}>
-              <div style={{transform: `translate(${(1 - curT) * -420}px, ${(1 - curT) * 350}px)`}}>
-                <svg width={26} height={26} viewBox="0 0 24 24" style={{transform: `scale(${press ? 0.82 : 1})`, filter: 'drop-shadow(0 6px 12px rgba(16,22,38,0.45))'}}>
-                  <path d="M5 3 L19 12.5 L12.6 13.8 L15.6 20.4 L13 21.5 L10.1 14.8 L5 19 Z" fill="#fff" stroke="#111827" strokeWidth="1.5" />
-                </svg>
-              </div>
-            </div>
-          )}
-          </div>
         )}
       </Pose3D>
+      {/* STAGE-layer macOS cursor: the 3D never touches it (focus-dive law) */}
+      {fb >= B.cursorEnter && fb < 82 && <MacCursor land={{x: 712, y: 559}} t={curT} press={press} />}
     </div>
   );
 };

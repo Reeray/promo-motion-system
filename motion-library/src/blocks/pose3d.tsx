@@ -107,6 +107,65 @@ export const splinePoseAt = (keys: PoseKey[], f: number): {pose: Required<Pose>;
   return {pose: out, state};
 };
 
+/* ══ FOCUS DIVE (named preset — call it by name) ════════════════════════════
+ * "The zoom-in interaction focus": the ruled variant of the fly-by for diving on a
+ * CONTROL inside a larger surface. Four requirements, each ruled by review:
+ *   REST FIRST     the surface appears FLAT for a lead (~0.4s) before the 3D rolls —
+ *                  the scene transition lands, the eye settles, then the dive.
+ *   DEEP FOCUS     zoom ~2.8–3.2 at the dwell — the control fills the focus area,
+ *                  not a polite 2×.
+ *   PULL INWARD    the aimed point TRAVELS toward frame centre during the dive
+ *                  (pull ~0.6 of the way) — good empty-space ratio: the control is
+ *                  presented, not cornered.
+ *   FLAT CURSOR    the macOS cursor lives on the STAGE layer, outside the 3D — the
+ *                  browser banks under it, the hand does not. It flies in from
+ *                  off-screen on an elegant decelerating arc, oversized (~38px).
+ * flybyFocusDive() + <MacCursor/> implement it; plain flybyAimedAt() stays the
+ * default when the focus-dive treatment is not requested. */
+
+export const flybyFocusDive = (opts: {fx: number; fy: number; width: number; height: number; zoom?: number; pull?: number}): PoseKey[] => {
+  const {fx, fy, width, height, zoom = 3.0, pull = 0.6} = opts;
+  const px = (0.5 - fx) * width * pull; // the dwell's inward travel
+  const py = (0.5 - fy) * height * pull;
+  return flybyAimedAt(fx, fy, zoom).map((k) => {
+    if (k.pose.fx === undefined) return k;
+    // shoulders carry the same fraction of the travel as of the zoom (their s-excess ratio)
+    const w = k.pose.s !== undefined ? (k.pose.s - 1) / ((zoom - 1) || 1) : 0;
+    return {...k, pose: {...k.pose, x: (k.pose.x ?? 0) + px * w, y: (k.pose.y ?? 0) + py * w}};
+  });
+};
+
+/** The macOS arrow, oversized, black body with white outline. Render it on the STAGE
+ *  layer (a sibling of Pose3D, never inside it) so the 3D cannot touch it. */
+export const MacCursor: React.FC<{
+  land: {x: number; y: number}; // stage coords where the TIP rests
+  t: number; // 0..1 flight progress
+  from?: {x: number; y: number}; // off-screen start offset relative to land
+  press?: boolean;
+  size?: number;
+}> = ({land, t, from = {x: 460, y: 420}, press, size = 38}) => {
+  // elegant arc: the axes decelerate at different rates, bowing the path
+  const ax = 1 - Math.pow(1 - t, 2.2);
+  const ay = 1 - Math.pow(1 - t, 1.45);
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        left: land.x - size * 0.23,
+        top: land.y - size * 0.11,
+        zIndex: 50,
+        transform: `translate(${(1 - ax) * from.x}px, ${(1 - ay) * from.y}px) scale(${press ? 0.86 : 1})`,
+        transformOrigin: `${size * 0.23} ${size * 0.11}px`,
+        filter: 'drop-shadow(0 6px 14px rgba(16,22,38,0.4))',
+      }}
+    >
+      <svg width={size} height={size} viewBox="0 0 24 24">
+        <path d="M5.5 2.6 L5.5 19.2 L9.9 15.1 L12.4 21.2 L15.6 19.9 L13.1 13.9 L19 13.6 Z" fill="#000" stroke="#fff" strokeWidth="1.7" strokeLinejoin="round" />
+      </svg>
+    </div>
+  );
+};
+
 export const Pose3D: React.FC<{
   keys: PoseKey[];
   width: number;
@@ -116,9 +175,13 @@ export const Pose3D: React.FC<{
   /** Spline mode: one C1-continuous curve through every key — for fly-by moves whose return
    *  must continue the outbound motion instead of reversing it. */
   smooth?: boolean;
+  /** Flat rest before the keys roll (the scene transition lands first, then the 3D dives
+   *  — the focus-dive law: never start the 3D on frame one). */
+  lead?: number;
   children: (state: number, depth: number) => React.ReactNode;
-}> = ({keys, width, height, perspective = 900, shadow = true, smooth = false, children}) => {
-  const f = useCurrentFrame();
+}> = ({keys, width, height, perspective = 900, shadow = true, smooth = false, lead = 0, children}) => {
+  const rawF = useCurrentFrame();
+  const f = Math.max(0, rawF - lead);
   const {pose, state} = (smooth ? splinePoseAt : poseAt)(keys, f);
   const lift = Math.max(0, pose.z);
   const tilt = Math.abs(pose.rx) + Math.abs(pose.ry);

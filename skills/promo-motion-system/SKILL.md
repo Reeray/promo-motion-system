@@ -1441,6 +1441,14 @@ Categories: **Formula** (storyboard blueprint strip) · **Typography** · **UI m
   - **Spline mode** — `smooth` runs one C1 Catmull-Rom through all keys; SPACING IS THE
     EASING (cluster keys to dwell, spread to travel). The fly-by’s return is the outbound
     curve continuing — no reversal kink at the apex.
+  - **FOCUS DIVE (named preset — ask for it by name)**: the ruled treatment for diving
+    on a CONTROL inside a larger surface. Rest first (flat lead ~0.4s before the 3D
+    rolls); deep focus (zoom 2.8–3.2 at the dwell); pull inward (the aimed point travels
+    ~0.6 toward frame centre — empty-space ratio, the control presented not cornered);
+    flat cursor (oversized macOS arrow on the STAGE layer, outside the 3D — the surface
+    banks under it, the hand does not; it flies in from off-screen on a decelerating
+    arc). `flybyFocusDive()` + `<MacCursor/>`; plain `flybyAimedAt()` is the default
+    when focus-dive is not requested.
   - **Interactive-content frame law** — anything that must align with a cursor (buttons,
     footers) must be a DIRECT child of the card with its own translateZ lift: a PoseLayer’s
     transform becomes the containing block and re-anchors right/bottom to its flow box.
