@@ -442,8 +442,9 @@ export const BlogWriteSurface: React.FC = () => {
   const curT = lerp(fb, [B.cursorEnter, B.cursorArrive], [0, 1], EASE.inOut);
   return (
     <div style={{width: SURFACE_W, height: SURFACE_H, position: 'relative', display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
-      <Pose3D keys={flybyAimedAt(0.94, 0.1)} width={BROWSER_W} height={BROWSER_H} smooth>
-        {() => (
+      <Pose3D keys={flybyAimedAt(0.94, 0.1, 2.05)} width={BROWSER_W} height={BROWSER_H} smooth>
+        {(_state, depth) => (
+          <div style={{width: '100%', height: '100%', position: 'relative', transformStyle: 'preserve-3d'}}>
           <BrowserWindow elevation={false}>
             <div style={{position: 'absolute', left: 0, top: 0, width: PAGE_W, transformOrigin: '0% 0%', transform: `scale(${Z_WRITE})`}}>
               {/* app bar - real copy, real icon */}
@@ -471,13 +472,21 @@ export const BlogWriteSurface: React.FC = () => {
                 <div style={{position: 'absolute', left: 0, top: 0, right: 0, padding: '28px 40px', opacity: prevIn, transform: `translateY(${prevY}px)`}}>
                   <ProseArticle width={Math.min(720, PAGE_W - 80)} />
                 </div>
-                {/* cursor: tip layout-anchored to the Preview chip's own right-edge geometry */}
-                {fb >= B.cursorEnter && fb < 78 && (
-                  <AnchoredCursor anchor={{right: 40, top: 20}} fromX={-360} fromY={330} t={curT} press={press} />
-                )}
               </div>
             </div>
           </BrowserWindow>
+          {/* the cursor rides its OWN plane above the window (translateZ on the depth
+              channel) — the 3D interaction feel: hand above the screen, not ink on it */}
+          {fb >= B.cursorEnter && fb < 78 && (
+            <div style={{position: 'absolute', right: 89, top: 136, zIndex: 40, transform: `translateZ(${110 * depth}px)`}}>
+              <div style={{transform: `translate(${(1 - curT) * -420}px, ${(1 - curT) * 350}px)`}}>
+                <svg width={26} height={26} viewBox="0 0 24 24" style={{transform: `scale(${press ? 0.82 : 1})`, filter: 'drop-shadow(0 6px 12px rgba(16,22,38,0.45))'}}>
+                  <path d="M5 3 L19 12.5 L12.6 13.8 L15.6 20.4 L13 21.5 L10.1 14.8 L5 19 Z" fill="#fff" stroke="#111827" strokeWidth="1.5" />
+                </svg>
+              </div>
+            </div>
+          )}
+          </div>
         )}
       </Pose3D>
     </div>

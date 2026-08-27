@@ -99,9 +99,12 @@ const Frame3D: React.FC<{item: BurstItem; timing: BurstTiming; children: React.R
   if (globalBack >= timing.back * (timing.cut ?? timing.jump)) return null;
   if (local <= 0) return null;
   const opacity = Math.min(1, local / 3); // 3-frame materialize at the jump-in only
-  // the orbit runs on the GLOBAL clock from frame 0 — radial p rides on top of it,
-  // so the rotation is already underway when a frame materializes and never stops
-  const phi = ((item.phase + timing.orbit * f) * Math.PI) / 180;
+  // the orbit clock is anchored to FLIGHT-START (lead minus the preset's original 8f
+  // pre-roll), not the global frame: a longer lead (e.g. a text reveal) must not rotate
+  // the formation past its choreographed front passes — the graze vanished exactly this
+  // way when the soft-blur lead grew to 84f. Rotation still runs before frames appear
+  // (continuous-orbit law intact); the choreography is simply lead-invariant.
+  const phi = ((item.phase + timing.orbit * (f - timing.lead + 8)) * Math.PI) / 180;
   const x = Math.cos(phi) * item.radius * p;
   const z = Math.sin(phi) * item.zAmp * p;
   const y = item.height * p;

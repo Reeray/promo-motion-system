@@ -213,12 +213,17 @@ export const DOLLY_FLYBY_FRAMES = 90;
  *  the motivated-camera law says fx/fy point at the interaction that motivates the move.
  *  The walk's proportions are preserved: each key's offset from centre scales toward the
  *  new target by the same ratio the original table used (shoulders ~0.38 of the dwell). */
-export const flybyAimedAt = (fx: number, fy: number): PoseKey[] =>
+export const flybyAimedAt = (fx: number, fy: number, zoom?: number): PoseKey[] =>
   DOLLY_FLYBY_KEYS.map((k) => {
     if (k.pose.fx === undefined) return k;
     const rx = (k.pose.fx - 0.5) / 0.26; // original dwell offset 0.26 (0.76 - 0.5)
     const ry = ((k.pose.fy ?? 0.5) - 0.5) / 0.28;
-    return {...k, pose: {...k.pose, fx: 0.5 + (fx - 0.5) * rx, fy: 0.5 + (fy - 0.5) * ry}};
+    // optional focus depth: the dwell's zoom re-scaled to the target (a small control needs a
+    // deeper dive than a whole card — "very zoom to the focus area"). The s-channel's excess
+    // scales by the same ratio at every key, so the curve SHAPE (spacing, easing) is untouched.
+    const sBoost = zoom ? (zoom - 1) / 0.285 : 1;
+    const s = k.pose.s !== undefined && zoom ? 1 + (k.pose.s - 1) * sBoost : k.pose.s;
+    return {...k, pose: {...k.pose, ...(s !== undefined ? {s} : {}), fx: 0.5 + (fx - 0.5) * rx, fy: 0.5 + (fy - 0.5) * ry}};
   });
 
 /** The interaction beats the fly-by dwells FOR — one clock shared by camera and content.
