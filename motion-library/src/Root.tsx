@@ -19,9 +19,9 @@ const CLIP = 75; // 2.5s @ 30fps
 
 /* TEMP: jump-zoom-type review reel — the reference copy, our motion (verdict pending) */
 const JZ_DEMO_LINES: JZLine[] = [
-  {kind: 'open', head: 'What if', tail: ['your', 'cold', 'emails']},
-  {kind: 'swap', head: "didn't", tail: ['need', 'you']},
-  {kind: 'climax', word: 'anymore'},
+  {kind: 'open', head: 'What if', tail: ['your', 'launch', 'video']},
+  {kind: 'swap', head: 'edited', tail: ['itself']},
+  {kind: 'climax', word: 'automatically'},
 ];
 const JumpZoomDemo: React.FC = () => (
   <AbsoluteFill style={{background: '#f4f6fb', fontFamily: 'sans-serif'}}>

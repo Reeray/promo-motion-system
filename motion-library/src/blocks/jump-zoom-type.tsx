@@ -4,33 +4,38 @@ import {EASE, lerp} from '../lib/ease';
 import {FONT} from '../lib/fonts';
 
 /* ============================================================================
- * JUMP-ZOOM TYPE — a sentence told through camera jumps.
+ * JUMP-ZOOM TYPE — a sentence on a leftward conveyor, told through camera jumps.
  *
- * STATUS: TEMPLATE UNDER REVIEW.
- * Measured frame-by-frame (ink-bbox tracking, 30fps source ×2 → 60fps) from the
- * "What if your cold emails didn't need you anymore" reference (G76Vjz7sqi2mbxdg.mp4,
- * first 3.5s). The glyph-morph resolve and gradient colour of the source are out of
- * scope by request — this template captures the CAMERA behaviour and text entry only:
+ * STATUS: TEMPLATE UNDER REVIEW, round 2.
+ * Round 1 missed the defining motion: it tracked bbox height/cy only, called the
+ * holds "dead still", and invented a 1.75×→1 shrink on the swap line. Round 2
+ * re-measured the reference (per-frame text-only component tracking, x0/cx/capH,
+ * 1080p 30fps → values here are ×2 frames, ×2/3 px for 720p):
  *
- *   MACRO OPEN      the first phrase holds at ~2.3× reading scale, dead still
- *                   (measured: bbox 225→225 over 17 src frames — zero zoom during
- *                   the hold; stillness is the anticipation).
- *   JUMP-CUT OUT    ONE step, no glide (measured 0.43× between adjacent frames):
- *                   the camera cuts to the wide sentence frame; the phrase becomes
- *                   the line start and the remaining words APPEND ~every 3 src
- *                   frames, centred as a growing line.
- *   MACRO SWAP      the next emphasised phrase REPLACES the line at macro scale
- *                   (hard swap ≤3 src frames), its tail words append while the
- *                   whole line settles OUT ~0.7× over ~8 src frames (ease-out) to
- *                   reading size.
- *   CLIMAX WIPE     the final word enters at the largest scale with a hard
- *                   left-to-right wipe (measured width 99→1530 over 11 src
- *                   frames), overshoots ~1.08 and settles in ~6, then holds with
- *                   a slow upward DRIFT (−1.6px/f at 1080p) — the exit breath.
+ *   THE CONVEYOR    every text object slides LEFT its whole life. It ENTERS
+ *                   decelerating (climax glides ~200px to rest; a fresh line is
+ *                   already moving ~5px/f), CREEPS left through the hold
+ *                   (~2.5px/f at 1080p — never static; segment 2 overshoots and
+ *                   relaxes back ~12px), and EXITS by accelerating left
+ *                   (3→16px/f over ~10f) into a HARD CUT while still fully on
+ *                   screen — the short-throw law on X, per line.
+ *   JUMP-CUT        the only hard scale event: macro → reading frame in ONE
+ *                   frame (measured 0.46×). The macro phrase slides during its
+ *                   hold and accelerates into the jump like any exit.
+ *   ACCUMULATION    after the jump the line is left-anchored: existing words
+ *                   hold their ground (plus the creep), new words attach on the
+ *                   right every ~6f.
+ *   MACRO SWAP      a new emphasised line replaces everything in 1 frame at
+ *                   ~1.28× the reading size and then MICRO-ZOOMS IN ~+10%
+ *                   across its life (measured capH 99→109) — growth, never
+ *                   shrink. No entry fade: it lands whole.
+ *   CLIMAX WIPE     the final word wipes on left→right (~22f at 60fps) WHILE
+ *                   gliding left to rest, at ~1.9× with a +2% drift — no
+ *                   overshoot anywhere (every scale approach is monotonic).
+ *                   After it rests: the slow upward drift, the exit breath.
  *
- * TEMPLATE CONTRACT (block law): the TIMING TABLE below is locked — it is the
- * measurement. The line list (copy, which phrase is macro, which word is the
- * climax) is content, free per video.
+ * TEMPLATE CONTRACT (block law): the motion table is locked — it is the
+ * measurement. The line list (copy, emphasis, climax) is content, free per video.
  * ========================================================================== */
 
 export type JZLine =
@@ -38,43 +43,73 @@ export type JZLine =
   | {kind: 'swap'; head: string; tail: string[]}
   | {kind: 'climax'; word: string};
 
-/* ── the measured timing table (60fps frames; source values ×2) ───────────── */
+/* ── the measured motion table (60fps frames · 720p px) ──────────────────── */
 export const JZ = {
-  resolveIn: 10, // the head fades/settles in at macro (stand-in for the ignored morph)
-  macroHold: 34, // the macro phrase holds, dead still
-  jumpCut: 2, // the out-jump: one step
-  macroScale: 2.3, // macro vs reading size (measured 225/96)
+  resolveIn: 10, // the macro head fades in (stand-in for the ignored glyph morph)
+  macroHold: 34, // macro phrase rides the conveyor…
+  macroScale: 2.2, // …at this scale (measured 212/98 ≈ jump 0.46×)
   appendEvery: 6, // a new word lands every…
-  appendIn: 8, // …and takes this long to settle (uiEnter: fade + 18px rise)
-  wideHold: 40, // the completed line reads
-  swapIn: 4, // macro-swap replaces the line this fast (hard)
-  swapScale: 1.75, // the swap phrase's macro (measured ~1.7–2.0)
-  settleOut: 16, // the swap line's glide down to reading size…
-  settleFrom: 1.43, // …starting this much larger (measured ~1/0.7)
-  climaxScale: 1.9, // the climax word's size vs reading (measured 246/130)
+  appendIn: 8, // …settling with fade + 18px rise
+  wideHold: 40, // completed line reads (creeping all the while)
+  swapScale: 1.28, // a swap line enters at this ×reading size…
+  swapZoom: 0.1, // …and grows +10% across its visible life (micro zoom-in)
+  climaxScale: 1.9, // the climax word's size
+  climaxZoomDrift: 0.02, // +2% drift after the wipe
   climaxWipe: 22, // hard left→right reveal
-  climaxOver: 1.08, // slight overshoot at the wipe's end…
-  climaxSettle: 12, // …settling back over this long
-  climaxHold: 30, // final hold…
-  driftPerFrame: -1.5, // …with the slow upward drift (px/f at 720p-ish scale)
+  climaxGlide: 36, // the decelerating entry glide…
+  climaxGlideDist: 130, // …covering this many px to rest
+  climaxHold: 34, // final hold…
+  liftPerFrame: -1.0, // …with the slow upward drift
+  // the conveyor
+  creep: 1.7, // px/f leftward, all holds
+  enterGlide: 16, // a fresh line decelerates over this many frames…
+  enterDist: 34, // …covering this px (plus creep)
+  relax: 8, // the overshoot-relax: glides this far past rest, eases back
+  exitF: 18, // every non-final line's last frames accelerate left…
+  exitDist: 62, // …through this px, and are CUT mid-motion
 } as const;
 
-/** Total frames for a line list — derived from the table, never hand-typed. */
-export const jzFrames = (lines: JZLine[]): number => {
-  let n = 0;
-  for (const ln of lines) {
-    if (ln.kind === 'open') n += JZ.resolveIn + JZ.macroHold + JZ.jumpCut + ln.tail.length * JZ.appendEvery + JZ.appendIn + JZ.wideHold;
-    else if (ln.kind === 'swap') n += JZ.swapIn + ln.tail.length * JZ.appendEvery + JZ.settleOut + JZ.wideHold;
-    else n += JZ.climaxWipe + JZ.climaxSettle + JZ.climaxHold;
-  }
-  return n;
+const lineDur = (ln: JZLine, last: boolean): number => {
+  if (ln.kind === 'open') return JZ.resolveIn + JZ.macroHold + ln.tail.length * JZ.appendEvery + JZ.appendIn + JZ.wideHold + (last ? 0 : JZ.exitF);
+  if (ln.kind === 'swap') return ln.tail.length * JZ.appendEvery + JZ.appendIn + JZ.wideHold + (last ? 0 : JZ.exitF);
+  return Math.max(JZ.climaxWipe, JZ.climaxGlide) + JZ.climaxHold;
 };
 
+/** Total frames for a line list — derived from the table, never hand-typed. */
+export const jzFrames = (lines: JZLine[]): number => lines.reduce((n, ln, i) => n + lineDur(ln, i === lines.length - 1), 0);
+
+/** The conveyor: x-offset of a line at local frame `t`.
+ *  enter (decelerating, still moving) → creep (with overshoot-relax) → exit accel. */
+const conveyorX = (t: number, dur: number, hasExit: boolean, hasEnterGlide: boolean): number => {
+  let x = 0;
+  if (hasEnterGlide) {
+    const g = lerp(t, [0, JZ.enterGlide], [0, 1], EASE.out);
+    x += (1 - g) * JZ.enterDist - g * JZ.relax; // decelerate through rest into the overshoot…
+    x += lerp(t, [JZ.enterGlide, JZ.enterGlide + 20], [0, JZ.relax], EASE.inOut); // …and relax back
+  }
+  x -= JZ.creep * t; // the ever-present creep
+  if (hasExit) {
+    const e0 = dur - JZ.exitF;
+    x -= lerp(t, [e0, dur], [0, JZ.exitDist], EASE.in); // accelerate into the cut
+  }
+  return x;
+};
+
+/** A word fades in IN PLACE: layout is reserved from frame 0 (visibility, not mounting),
+ *  so the centred line never re-flows — the reference accumulates left-anchored, x0 dead
+ *  steady while x1 grows. Mount-on-time was measured in our own render as −117px jolts. */
 const Word: React.FC<{t: string; at: number; f: number}> = ({t, at, f}) => {
   const p = lerp(f, [at, at + JZ.appendIn], [0, 1], EASE.uiEnter);
-  if (f < at) return null;
   return (
-    <span style={{display: 'inline-block', opacity: p, transform: `translateY(${(1 - p) * 18}px)`, whiteSpace: 'pre'}}>
+    <span
+      style={{
+        display: 'inline-block',
+        visibility: f < at ? 'hidden' : 'visible',
+        opacity: p,
+        transform: `translateY(${(1 - p) * 18}px)`,
+        whiteSpace: 'pre',
+      }}
+    >
       {t}
     </span>
   );
@@ -86,79 +121,69 @@ export const JumpZoomType: React.FC<{
   color?: string;
   fontFamily?: string;
   fontWeight?: number;
-}> = ({lines, fontSize = 64, color = '#14161c', fontFamily = FONT.sans, fontWeight = 700}) => {
+}> = ({lines, fontSize = 60, color = '#14161c', fontFamily = FONT.sans, fontWeight = 700}) => {
   const f = useCurrentFrame();
 
-  // walk the schedule to find the active line and its local clock
   let t = 0;
-  let active: {line: JZLine; local: number; start: number} | null = null;
-  let ended = 0;
-  for (const line of lines) {
-    const dur =
-      line.kind === 'open'
-        ? JZ.resolveIn + JZ.macroHold + JZ.jumpCut + line.tail.length * JZ.appendEvery + JZ.appendIn + JZ.wideHold
-        : line.kind === 'swap'
-          ? JZ.swapIn + line.tail.length * JZ.appendEvery + JZ.settleOut + JZ.wideHold
-          : JZ.climaxWipe + JZ.climaxSettle + JZ.climaxHold;
-    if (f < t + dur) {
-      active = {line, local: f - t, start: t};
+  let active: {line: JZLine; local: number; last: boolean} | null = null;
+  for (let i = 0; i < lines.length; i++) {
+    const dur = lineDur(lines[i], i === lines.length - 1);
+    if (f < t + dur || i === lines.length - 1) {
+      active = {line: lines[i], local: f - t, last: i === lines.length - 1};
       break;
     }
     t += dur;
-    ended++;
   }
-  if (!active) active = {line: lines[lines.length - 1], local: f - (t - 1), start: t};
+  const {line, local, last} = active!;
+  const dur = lineDur(line, last);
 
-  const {line, local} = active;
   let scale = 1;
-  let drift = 0;
+  let x = 0;
+  let y = 0;
   let node: React.ReactNode = null;
 
   if (line.kind === 'open') {
     const macroEnd = JZ.resolveIn + JZ.macroHold;
-    if (local < macroEnd + JZ.jumpCut) {
-      // macro: the head alone, big, DEAD STILL (the measured zero-zoom hold)
+    if (local < macroEnd) {
+      // macro: big, riding the conveyor, accelerating into the jump like any exit
       const a = lerp(local, [0, JZ.resolveIn], [0, 1], EASE.out);
       scale = JZ.macroScale;
+      x = -JZ.creep * local - lerp(local, [macroEnd - 14, macroEnd], [0, 26], EASE.in);
       node = <span style={{opacity: a}}>{line.head}</span>;
     } else {
-      // after the ONE-step jump-cut: reading frame, the line accumulates
-      const t0 = macroEnd + JZ.jumpCut;
+      // ONE-step jump-cut to the reading frame; the line accumulates while creeping
+      const lt = local - macroEnd;
       scale = 1;
+      x = conveyorX(lt, dur - macroEnd, !last, true);
       node = (
         <>
           <span style={{whiteSpace: 'pre'}}>{line.head} </span>
           {line.tail.map((w, i) => (
-            <Word key={i} t={i < line.tail.length - 1 ? `${w} ` : w} at={t0 + i * JZ.appendEvery} f={local} />
+            <Word key={i} t={i < line.tail.length - 1 ? `${w} ` : w} at={i * JZ.appendEvery} f={lt} />
           ))}
         </>
       );
     }
   } else if (line.kind === 'swap') {
-    // the swap phrase REPLACES the previous line at macro — a HARD swap: the head lands at
-    // full opacity on its first frame (the measured swap never shows an empty stage)
-    const a = 1;
-    const settleStart = JZ.swapIn + line.tail.length * JZ.appendEvery;
-    scale =
-      local < settleStart
-        ? JZ.swapScale
-        : lerp(local, [settleStart, settleStart + JZ.settleOut], [JZ.swapScale, 1], EASE.camera);
+    // lands whole in 1 frame at swapScale, micro-zooms IN across its life, rides the conveyor
+    scale = JZ.swapScale * (1 + JZ.swapZoom * Math.min(1, local / Math.max(1, dur - (last ? 0 : JZ.exitF))));
+    x = conveyorX(local, dur, !last, false);
     node = (
       <>
-        <span style={{opacity: a, whiteSpace: 'pre'}}>{line.head} </span>
+        <span style={{whiteSpace: 'pre'}}>{line.head} </span>
         {line.tail.map((w, i) => (
-          <Word key={i} t={i < line.tail.length - 1 ? `${w} ` : w} at={JZ.swapIn + i * JZ.appendEvery} f={local} />
+          <Word key={i} t={i < line.tail.length - 1 ? `${w} ` : w} at={JZ.appendEvery + i * JZ.appendEvery} f={local} />
         ))}
       </>
     );
   } else {
-    // climax: hard left→right wipe at the biggest scale, overshoot, settle, drift
-    const wipe = lerp(local, [0, JZ.climaxWipe], [0, 116], EASE.inOut); // % past full for the soft edge
-    scale =
-      local < JZ.climaxWipe
-        ? lerp(local, [0, JZ.climaxWipe], [JZ.climaxScale * 0.94, JZ.climaxScale * JZ.climaxOver], EASE.out)
-        : lerp(local, [JZ.climaxWipe, JZ.climaxWipe + JZ.climaxSettle], [JZ.climaxScale * JZ.climaxOver, JZ.climaxScale], EASE.camera);
-    drift = Math.max(0, local - JZ.climaxWipe - JZ.climaxSettle) * JZ.driftPerFrame;
+    // climax: wipes on left→right WHILE gliding left to rest; monotonic scale; then the lift
+    const wipe = lerp(local, [0, JZ.climaxWipe], [0, 112], EASE.inOut);
+    const glide = lerp(local, [0, JZ.climaxGlide], [0, 1], EASE.out);
+    const rest = Math.max(JZ.climaxWipe, JZ.climaxGlide);
+    scale = JZ.climaxScale * (1 + JZ.climaxZoomDrift * Math.min(1, local / rest));
+    x = (1 - glide) * JZ.climaxGlideDist;
+    y = Math.max(0, local - rest) * JZ.liftPerFrame;
     node = <span style={{clipPath: `inset(-20% ${Math.max(0, 100 - wipe)}% -20% -8%)`}}>{line.word}</span>;
   }
 
@@ -171,7 +196,7 @@ export const JumpZoomType: React.FC<{
           fontSize,
           color,
           letterSpacing: -1.2,
-          transform: `scale(${scale}) translateY(${drift / Math.max(0.001, scale)}px)`,
+          transform: `translate(${x}px, ${y}px) scale(${scale})`,
           whiteSpace: 'nowrap',
         }}
       >
