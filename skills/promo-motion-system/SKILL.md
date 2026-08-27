@@ -251,6 +251,20 @@ Logos, device marks, task glyphs, avatars are the **#1 tell** that a mock is fak
   (auth-gated, hotlink-blocked). It must read as an obvious placeholder + get a blocker note, never a
   lookalike of a real mark.
 
+### ⚑ LAW — FULL-SCREEN UI LIVES IN A BROWSER WINDOW
+
+A web product demo that fills the frame RAW reads as a mockup; the same pixels inside a
+browser window read as the real thing. Ruled on the hf-blog-editor promo (the editor was
+full-screened while other projects used browser chrome, and the difference showed).
+
+- Every ENTIRE-SCREEN web-UI demo mounts inside a browser-window container: tab/toolbar
+  chrome, traffic lights, URL display. Component close-ups (a rail card, a single control)
+  are exempt — they are already framed as objects.
+- The URL display must be HONEST: show the real domain (Safari-style domain-only display is
+  legal and clean) — never an invented deep path the capture cannot vouch for.
+- The chrome is part of the surface (it scales/crops with it), drawn from real proportions
+  (~44px bar at 720p), not a decorative frame around the scene.
+
 ### ⚑ LAW — MACRO CROP (the "zoomed manner")
 
 The default instinct is to scale a captured surface until it *fits* the frame. That is the wrong
@@ -999,7 +1013,10 @@ reads as motion rather than a cut.
 3. **Anticipation via stillness:** [B] holds a lone dot ~1.7s before a 0.35s assembly
    burst. Patience makes the payoff. Use before identity moments.
 4. Enter slower than exit; blur assists exits. [A]
-5. The frame never freezes; near-still during reads. [both]
+5. The frame never freezes; near-still during reads. [both] **Hard cap, ruled on the
+   hf-blog-editor burst scene: no stretch of TRUE stillness longer than ~0.5s (30f).**
+   Surface end-holds trim to fit; if a read needs longer, something must still carry
+   micro-motion (breathe, creep, a cursor drift) — viewers must never stare at a freeze.
 6. **Scale rhythm** (B): alternate macro/context every beat.
 7. Density arc: [A] tapers frantic→calm; [B] spends fast cuts ONLY in the world-tour
    montage, glides everywhere else; [C] has no fast passage at all — 4 cuts in 55s.

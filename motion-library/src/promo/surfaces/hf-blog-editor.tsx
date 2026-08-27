@@ -4,6 +4,7 @@ import {EASE, lerp} from '../../lib/ease';
 import {FONT} from '../../lib/fonts';
 import {ELEV} from '../../lib/palette';
 import {Burst3D, BURST_ITEMS, burstTextFrames, burstTextTiming} from '../../blocks/burst3d';
+import {JumpZoomType, jzFrames, JZLine} from '../../blocks/jump-zoom-type';
 import type {CueKind} from '../sound-kinds';
 import {SURFACE_W, SURFACE_H} from './frame';
 
@@ -187,6 +188,28 @@ const Cursor: React.FC<{x: number; y: number; press?: boolean; scale?: number}> 
   </svg>
 );
 
+/** Browser-window container (LAW: full-screen web UI lives in a browser window).
+ *  Real proportions (~44px bar), honest Safari-style domain-only URL display. */
+const BrowserWindow: React.FC<{children: React.ReactNode}> = ({children}) => (
+  <AbsoluteFill style={{background: '#fff'}}>
+    <div style={{height: 44, display: 'flex', alignItems: 'center', gap: 8, padding: '0 14px', borderBottom: `1px solid ${T.border}`, background: '#f6f7f9', fontFamily: SANS}}>
+      <span style={{width: 11, height: 11, borderRadius: '50%', background: '#ff5f57'}} />
+      <span style={{width: 11, height: 11, borderRadius: '50%', background: '#febc2e'}} />
+      <span style={{width: 11, height: 11, borderRadius: '50%', background: '#28c840'}} />
+      <div style={{flex: 1, display: 'flex', justifyContent: 'center'}}>
+        <span style={{display: 'inline-flex', alignItems: 'center', gap: 6, borderRadius: 8, background: '#fff', border: `1px solid ${T.border}`, padding: '4px 46px', fontSize: 12.5, color: T.body}}>
+          <svg width={10} height={12} viewBox="0 0 10 12" fill={T.mut}>
+            <path d="M2 5V3.5C2 1.84 3.34 0.5 5 0.5C6.66 0.5 8 1.84 8 3.5V5H8.5C9.05 5 9.5 5.45 9.5 6V10.5C9.5 11.05 9.05 11.5 8.5 11.5H1.5C0.95 11.5 0.5 11.05 0.5 10.5V6C0.5 5.45 0.95 5 1.5 5H2ZM3.2 3.5V5H6.8V3.5C6.8 2.5 6 1.7 5 1.7C4 1.7 3.2 2.5 3.2 3.5Z" />
+          </svg>
+          huggingface.co
+        </span>
+      </div>
+      <span style={{width: 55}} />
+    </div>
+    <div style={{position: 'absolute', top: 44, left: 0, right: 0, bottom: 0, overflow: 'hidden'}}>{children}</div>
+  </AbsoluteFill>
+);
+
 /* ── captured content: the "Designing Huggy" draft, verbatim ─────────────── */
 
 const MdSource: React.FC<{width: number}> = ({width}) => (
@@ -341,7 +364,7 @@ const BURST_FRAG: ((w: number, h: number) => React.ReactNode)[] = [
 
 const CLAIM = 'Write together. Publish as your team.';
 const CLAIM_TIMING = burstTextTiming(CLAIM); // lead derives from the soft-blur-in reveal of this exact copy
-export const BURST_SURFACE_FRAMES = burstTextFrames(CLAIM) + 46; // the claim holds alone after the cut
+export const BURST_SURFACE_FRAMES = burstTextFrames(CLAIM) + 20; // brief solo read (blank-stare law: never >30f truly still)
 export const BURST_CUES: {at: number; kind: CueKind}[] = [
   {at: CLAIM_TIMING.lead, kind: 'ui-rise'}, // the shoot
   {at: CLAIM_TIMING.lead + CLAIM_TIMING.shoot + CLAIM_TIMING.dwell + Math.floor(CLAIM_TIMING.back * (CLAIM_TIMING.cut ?? CLAIM_TIMING.jump)), kind: 'ui-swap'}, // the throw-out cut
@@ -374,8 +397,9 @@ export const BlogBurstSurface: React.FC = () => {
 
 export const WRITE_FRAMES = 360;
 export const WRITE_CUES: {at: number; kind: CueKind}[] = [
-  {at: 58, kind: 'ui-tick'}, // the Preview click
-  {at: 66, kind: 'ui-swap'}, // panes swap
+  {at: 46, kind: 'ui-rise'}, // the snap toward the chip
+  {at: 60, kind: 'ui-tick'}, // the Preview click
+  {at: 68, kind: 'ui-swap'}, // panes swap
 ];
 
 const Z_WRITE = 1.3;
@@ -384,49 +408,58 @@ const PAGE_W = 1280 / Z_WRITE; // the pane authored at captured metrics; one sca
 export const BlogWriteSurface: React.FC = () => {
   const f = useCurrentFrame();
   useCharter();
-  // cursor: enters low-right, decelerates onto the Preview chip
-  const cx = lerp(f, [14, 52], [PAGE_W * 0.72, PAGE_W - 130], EASE.inOut);
-  const cy = lerp(f, [14, 52], [520, 74], EASE.inOut);
-  const press = f >= 58 && f < 63;
-  const flipped = f >= 60;
-  const srcOut = lerp(f, [60, 72], [1, 0], EASE.in);
-  const prevIn = lerp(f, [64, 82], [0, 1], EASE.uiEnter);
-  const prevY = lerp(f, [64, 82], [16, 0], EASE.uiEnter);
-  const scroll = lerp(f, [104, 330], [0, 430], EASE.inOut);
+  // cursor: enters low-right, decelerates onto the PREVIEW chip (the right-most chip)
+  const cx = lerp(f, [14, 52], [PAGE_W * 0.72, PAGE_W - 74], EASE.inOut);
+  const cy = lerp(f, [14, 52], [500, 46], EASE.inOut);
+  const press = f >= 60 && f < 65;
+  const flipped = f >= 62;
+  const srcOut = lerp(f, [62, 74], [1, 0], EASE.in);
+  const prevIn = lerp(f, [66, 84], [0, 1], EASE.uiEnter);
+  const prevY = lerp(f, [66, 84], [16, 0], EASE.uiEnter);
+  const scroll = lerp(f, [140, 336], [0, 400], EASE.inOut);
+  // THE SNAP (pose3d fly-by grammar, motivated by the click): jump most of the zoom in 4
+  // frames, settle the remainder into the interaction point; dwell through click+swap;
+  // pull back out for the article read (the departure has a reason: the swap happened).
+  const zoomIn = lerp(f, [46, 50], [1, 1.42], EASE.in) * lerp(f, [50, 60], [1, 1.055], EASE.camera);
+  const zoomOut = lerp(f, [108, 134], [1, 1 / 1.499], EASE.camera);
+  const cam = zoomIn * zoomOut;
   return (
-    <AbsoluteFill style={{overflow: 'hidden'}}>
-      <div style={{position: 'absolute', left: 0, top: 0, width: PAGE_W, transformOrigin: '0% 0%', transform: `scale(${Z_WRITE})`}}>
-        {/* app bar — real copy, real icon */}
-        <div style={{display: 'flex', alignItems: 'center', gap: 12, padding: '11px 16px', borderBottom: `1px solid ${T.borderSoft}`, background: '#fff', fontFamily: SANS}}>
-          <div style={{display: 'flex', alignItems: 'center', gap: 6}}>
-            <svg width={20} height={20} viewBox="0 0 15 15" fill={T.blue}>
-              <path d="M3.417 12.75c-.32 0-.596-.114-.824-.342a1.126 1.126 0 0 1-.343-.825V3.417c0-.321.114-.597.343-.824.23-.228.503-.343.824-.343h8.166c.321 0 .596.114.825.343.228.229.342.503.342.824v8.166c0 .32-.114.596-.342.825a1.12 1.12 0 0 1-.825.342zm1.166-2.333h4.084V9.25H4.583v1.167m0-2.334h5.834V6.917H4.583v1.166m0-2.333h5.834V4.583H4.583V5.75" />
-            </svg>
-            <span style={{fontSize: 20, fontWeight: 700, color: '#000', whiteSpace: 'nowrap'}}>New Article</span>
+    <BrowserWindow>
+      <div style={{position: 'absolute', left: 0, top: 0, width: PAGE_W * Z_WRITE, height: 676, transformOrigin: '97% 8%', transform: `scale(${cam})`}}>
+        <div style={{position: 'absolute', left: 0, top: 0, width: PAGE_W, transformOrigin: '0% 0%', transform: `scale(${Z_WRITE})`}}>
+          {/* app bar - real copy, real icon */}
+          <div style={{display: 'flex', alignItems: 'center', gap: 12, padding: '11px 16px', borderBottom: `1px solid ${T.borderSoft}`, background: '#fff', fontFamily: SANS}}>
+            <div style={{display: 'flex', alignItems: 'center', gap: 6}}>
+              <svg width={20} height={20} viewBox="0 0 15 15" fill={T.blue}>
+                <path d="M3.417 12.75c-.32 0-.596-.114-.824-.342a1.126 1.126 0 0 1-.343-.825V3.417c0-.321.114-.597.343-.824.23-.228.503-.343.824-.343h8.166c.321 0 .596.114.825.343.228.229.342.503.342.824v8.166c0 .32-.114.596-.342.825a1.12 1.12 0 0 1-.825.342zm1.166-2.333h4.084V9.25H4.583v1.167m0-2.334h5.834V6.917H4.583v1.166m0-2.333h5.834V4.583H4.583V5.75" />
+              </svg>
+              <span style={{fontSize: 20, fontWeight: 700, color: '#000', whiteSpace: 'nowrap'}}>New Article</span>
+            </div>
+            <span style={{fontSize: 14, color: T.faint}}>Publish a community Article on Hugging Face Blog</span>
           </div>
-          <span style={{fontSize: 14, color: T.faint}}>Publish a community Article on Hugging Face Blog</span>
-        </div>
 
-        {/* editor pane (rail subtracted — this shot doesn't exercise it) */}
-        <div style={{position: 'relative', background: '#fff', minHeight: 620}}>
-          <div style={{position: 'absolute', right: 16, top: 12, zIndex: 10, display: 'flex', gap: 8}}>
-            <TagChip icon="info" label="Syntax guide" />
-            <TagChip icon="eye" label={flipped ? 'Edit' : 'Preview'} active={flipped} press={press ? 1 : 0} />
-          </div>
-          {/* markdown source */}
-          <div style={{position: 'absolute', left: 0, top: 0, right: 0, padding: '20px 32px 32px', opacity: srcOut}}>
-            <MdSource width={PAGE_W - 64 - 190} />
-          </div>
-          {/* rendered preview, replacing it */}
-          <div style={{position: 'absolute', left: 0, top: 0, right: 0, padding: '32px 40px', opacity: prevIn, transform: `translateY(${prevY - scroll}px)`}}>
-            <ProseArticle width={Math.min(768, PAGE_W - 80)} />
+          {/* editor pane (rail subtracted - this shot doesn't exercise it) */}
+          <div style={{position: 'relative', background: '#fff', minHeight: 620}}>
+            <div style={{position: 'absolute', right: 16, top: 12, zIndex: 10, display: 'flex', gap: 8}}>
+              <TagChip icon="info" label="Syntax guide" />
+              <TagChip icon="eye" label={flipped ? 'Edit' : 'Preview'} active={flipped} press={press ? 1 : 0} />
+            </div>
+            {/* markdown source */}
+            <div style={{position: 'absolute', left: 0, top: 0, right: 0, padding: '20px 32px 32px', opacity: srcOut}}>
+              <MdSource width={PAGE_W - 64 - 190} />
+            </div>
+            {/* rendered preview, replacing it */}
+            <div style={{position: 'absolute', left: 0, top: 0, right: 0, padding: '32px 40px', opacity: prevIn, transform: `translateY(${prevY - scroll}px)`}}>
+              <ProseArticle width={Math.min(768, PAGE_W - 80)} />
+            </div>
           </div>
         </div>
+        {f >= 14 && f < 120 && <Cursor x={cx * Z_WRITE} y={cy * Z_WRITE} press={press} />}
       </div>
-      {f >= 14 && f < 100 && <Cursor x={cx * Z_WRITE} y={cy * Z_WRITE} press={press} />}
-    </AbsoluteFill>
+    </BrowserWindow>
   );
 };
+
 
 /* ══════════════════════════════════════════════════════════════════════════
  * SURFACE 3 — hf-blog-team: the Coauthors section as a floating card.
@@ -519,65 +552,31 @@ export const BlogTeamSurface: React.FC = () => {
 };
 
 /* ══════════════════════════════════════════════════════════════════════════
- * SURFACE 4 — hf-blog-publish: pick the org, then the motivated dive onto
- * Publish. Page-level bleed composition: rail (URL section at its real place,
- * top of the right rail) + footer bar (real place, bottom). The camera obeys
- * the pose3d laws — the snap to the pill, dwell across click → modal →
- * confirm, and it never moves without a reason.
+ * SURFACE 4a — hf-blog-publish-zoom: back to the full editor (in its browser
+ * window, org already huggingface), and the motivated dive onto Publish —
+ * snap zoom, cursor click, cut. The modal is its OWN scene (depth-handoff).
  * ════════════════════════════════════════════════════════════════════════ */
 
-export const PUBLISH_FRAMES = 350;
-export const PUBLISH_CUES: {at: number; kind: CueKind}[] = [
-  {at: 64, kind: 'ui-tick'}, // picker
-  {at: 74, kind: 'ui-swap'}, // Chunte → huggingface
-  {at: 178, kind: 'ui-tick'}, // Publish
-  {at: 186, kind: 'ui-rise'}, // modal
-  {at: 292, kind: 'ui-tick'}, // confirm
+export const PUBZOOM_FRAMES = 150;
+export const PUBZOOM_CUES: {at: number; kind: CueKind}[] = [
+  {at: 44, kind: 'ui-rise'}, // the snap
+  {at: 80, kind: 'ui-tick'}, // Publish
 ];
 
-const PAGE2_W = 1280;
-const PAGE2_H = 720;
+const PAGE2_H = 676; // browser content height (720 - 44 chrome)
 
-export const BlogPublishSurface: React.FC = () => {
+export const BlogPublishZoomSurface: React.FC = () => {
   const f = useCurrentFrame();
-  // ── states
-  const pickerPress = f >= 64 && f < 69;
-  const picked = f >= 72;
-  const nsSwap = lerp(f, [72, 82], [0, 1], EASE.uiEnter);
-  const ring = lerp(f, [62, 70], [0, 1], EASE.out) * lerp(f, [96, 112], [1, 0], EASE.inOut);
-  const pubPress = f >= 178 && f < 184;
-  const modalIn = lerp(f, [184, 194], [0, 1], EASE.out); // measured: modal-in 0.16s ease-out
-  const confirmPress = f >= 292 && f < 298;
-  const modalOut = lerp(f, [298, 308], [1, 0], EASE.in);
-  const modalVis = f >= 184 && f < 308 ? Math.min(modalIn, modalOut) : 0;
-  // ── camera: URL row first, THE SNAP down to the pill, pull back for the modal
-  const CAM = [
-    {at: 0, z: 1.26, ox: 94, oy: 20}, // URL section (right rail, upper) — row fully in frame
-    {at: 130, z: 1.26, ox: 94, oy: 20},
-    {at: 136, z: 1.75, ox: 97, oy: 96}, // the snap: most of the distance instantly…
-    {at: 152, z: 1.85, ox: 98, oy: 97}, // …easing the remainder into the interaction point
-    {at: 214, z: 1.85, ox: 98, oy: 97},
-    {at: 238, z: 1.32, ox: 50, oy: 40}, // pull back — the modal owns the frame
-    {at: PUBLISH_FRAMES, z: 1.32, ox: 50, oy: 40},
-  ];
-  const seg = CAM.findIndex((k, i) => i < CAM.length - 1 && f >= k.at && f < CAM[i + 1].at);
-  const a = CAM[Math.max(0, seg)];
-  const b = CAM[Math.max(0, seg) + 1] ?? a;
-  const e = seg === 1 ? EASE.in : EASE.camera; // accelerate INTO the snap, settle out of it
-  const camz = lerp(f, [a.at, b.at], [a.z, b.z], e);
-  const camx = lerp(f, [a.at, b.at], [a.ox, b.ox], e);
-  const camy = lerp(f, [a.at, b.at], [a.oy, b.oy], e);
-  // ── cursor: chevron → publish pill → confirm
+  // THE SNAP onto the pill: jump most of the zoom in 4 frames, settle into the target
+  const zoom = lerp(f, [44, 48], [1, 1.6], EASE.in) * lerp(f, [48, 60], [1, 1.09], EASE.camera);
   const cur =
-    f < 130
-      ? {x: lerp(f, [16, 58], [700, 964], EASE.inOut), y: lerp(f, [16, 58], [560, 218], EASE.inOut), s: 1}
-      : f < 238
-        ? {x: lerp(f, [140, 172], [964, 1195], EASE.inOut), y: lerp(f, [140, 172], [218, 672], EASE.inOut), s: 0.85}
-        : {x: lerp(f, [244, 286], [1195, 800], EASE.inOut), y: lerp(f, [244, 286], [672, 412], EASE.inOut), s: 1};
-
+    f < 40
+      ? {x: lerp(f, [12, 40], [700, 1000], EASE.inOut), y: lerp(f, [12, 40], [420, 560], EASE.inOut)}
+      : {x: lerp(f, [40, 72], [1000, 1196], EASE.inOut), y: lerp(f, [40, 72], [560, 634], EASE.inOut)};
+  const press = f >= 80 && f < 86;
   return (
-    <AbsoluteFill style={{overflow: 'hidden'}}>
-      <div style={{position: 'absolute', left: 0, top: 0, width: PAGE2_W, height: PAGE2_H, transformOrigin: `${camx}% ${camy}%`, transform: `scale(${camz})`, background: '#fff'}}>
+    <BrowserWindow>
+      <div style={{position: 'absolute', left: 0, top: 0, width: 1280, height: PAGE2_H, transformOrigin: '97.5% 97%', transform: `scale(${zoom})`, background: '#fff'}}>
         {/* app bar (context) */}
         <div style={{display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', borderBottom: `1px solid ${T.borderSoft}`, fontFamily: SANS}}>
           <svg width={18} height={18} viewBox="0 0 15 15" fill={T.blue}>
@@ -588,40 +587,22 @@ export const BlogPublishSurface: React.FC = () => {
         </div>
 
         <div style={{display: 'flex', height: PAGE2_H - 47 - 53}}>
-          {/* editor pane — dimmed context, the shot doesn't exercise it */}
+          {/* editor pane — dimmed context */}
           <div style={{flex: 1, borderRight: `1px solid ${T.borderSoft}`, padding: '18px 26px', opacity: 0.55, overflow: 'hidden'}}>
             <div style={{transform: 'scale(0.82)', transformOrigin: '0 0'}}>
               <MdSource width={860} />
             </div>
           </div>
-          {/* the rail — Blog URL at its real place */}
-          <div style={{width: 400, padding: '18px 22px 0 22px', fontFamily: SANS, display: 'flex', flexDirection: 'column', gap: 26}}>
+          {/* the rail — org already picked: hf.co/blog/huggingface */}
+          <div style={{width: 400, padding: '18px 22px 0 22px', fontFamily: SANS, display: 'flex', flexDirection: 'column', gap: 24}}>
             <section>
               <div style={{fontSize: 15.2, fontWeight: 600, color: INK, marginBottom: 8}}>Blog URL</div>
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 4,
-                  borderRadius: 8,
-                  border: `1px solid ${ring > 0.05 ? '#93c5fd' : T.border}`,
-                  boxShadow: ring > 0.05 ? `0 0 0 4px rgba(191,219,254,${0.4 * ring})` : 'none',
-                  background: '#fff',
-                  padding: '10px 12px',
-                  fontSize: 14,
-                }}
-              >
+              <div style={{display: 'flex', alignItems: 'center', gap: 4, borderRadius: 8, border: `1px solid ${T.border}`, background: '#fff', padding: '10px 12px', fontSize: 14}}>
                 <span style={{color: T.faint, flex: 'none'}}>hf.co/blog/</span>
-                <span style={{position: 'relative', display: 'inline-flex', alignItems: 'center', flex: 'none'}}>
-                  {/* the captured behaviour: selecting updates the label (the OS menu is OS chrome, not product UI) */}
-                  <span style={{fontWeight: 500, color: INK, position: 'relative', display: 'inline-block', height: 20, width: 52 + nsSwap * 40, overflow: 'visible'}}>
-                    <span style={{position: 'absolute', left: 0, top: 0, opacity: 1 - nsSwap, whiteSpace: 'nowrap'}}>Chunte</span>
-                    <span style={{position: 'absolute', left: 0, top: 0, opacity: nsSwap, whiteSpace: 'nowrap', transform: `translateY(${(1 - nsSwap) * 8}px)`}}>huggingface</span>
-                  </span>
-                  <svg width={8} height={5} viewBox="0 0 12 7" fill="none" style={{marginLeft: 4, transform: pickerPress ? 'translateY(1px)' : 'none'}}>
-                    <path d="M1 1L6 6L11 1" stroke={T.faint} strokeWidth="1.5" />
-                  </svg>
-                </span>
+                <span style={{fontWeight: 500, color: INK}}>huggingface</span>
+                <svg width={8} height={5} viewBox="0 0 12 7" fill="none" style={{marginLeft: 2}}>
+                  <path d="M1 1L6 6L11 1" stroke={T.faint} strokeWidth="1.5" />
+                </svg>
                 <span style={{color: T.faint, flex: 'none'}}>/</span>
                 <span style={{color: INK, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>designing-huggy</span>
               </div>
@@ -645,7 +626,7 @@ export const BlogPublishSurface: React.FC = () => {
           </div>
         </div>
 
-        {/* footer bar — real place, real controls */}
+        {/* footer bar — the target */}
         <div style={{position: 'absolute', left: 0, right: 0, bottom: 0, borderTop: `1px solid ${T.borderSoft}`, background: '#fff', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 12, fontFamily: SANS}}>
           <span style={{display: 'inline-flex', alignItems: 'center', gap: 8, borderRadius: 8, border: `1px solid ${T.border}`, padding: '5px 10px'}}>
             <Img src={staticFile('hf-blog/chunte.png')} style={{width: 16, height: 16, borderRadius: '50%'}} />
@@ -658,54 +639,74 @@ export const BlogPublishSurface: React.FC = () => {
           </span>
           <span style={{flex: 1}} />
           <Pill kind="secondary" label="Save as draft" />
-          <Pill kind="primary" label="Publish" press={pubPress ? 1 : 0} />
+          <Pill kind="primary" label="Publish" press={press ? 1 : 0} />
         </div>
 
-        {/* the Publish modal — measured entrance: 0.16s ease-out, translateY(6px) scale(.985) */}
-        {modalVis > 0.001 && (
-          <div style={{position: 'absolute', inset: 0, background: `rgba(11,15,25,${0.55 * modalVis})`, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', paddingTop: 58, zIndex: 30}}>
-            <div
-              style={{
-                width: 480,
-                borderRadius: 12,
-                background: '#fff',
-                boxShadow: '0 25px 50px -12px rgba(0,0,0,0.35)',
-                overflow: 'hidden',
-                fontFamily: SANS,
-                opacity: modalVis,
-                transform: `translateY(${(1 - modalVis) * 6}px) scale(${0.985 + modalVis * 0.015})`,
-              }}
-            >
-              <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${T.borderSoft}`, padding: '16px 24px'}}>
-                <span style={{display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 18, fontWeight: 600, color: '#000'}}>
-                  <svg width={20} height={20} viewBox="0 0 15 15" fill={T.blue}>
-                    <path d="M3.417 12.75c-.32 0-.596-.114-.824-.342a1.126 1.126 0 0 1-.343-.825V3.417c0-.321.114-.597.343-.824.23-.228.503-.343.824-.343h8.166c.321 0 .596.114.825.343.228.229.342.503.342.824v8.166c0 .32-.114.596-.342.825a1.12 1.12 0 0 1-.825.342zm1.166-2.333h4.084V9.25H4.583v1.167m0-2.334h5.834V6.917H4.583v1.166m0-2.333h5.834V4.583H4.583V5.75" />
-                  </svg>
-                  Publish Article
-                </span>
-                <svg width={20} height={20} viewBox="0 0 32 32" fill={T.faint}>
-                  <path d="M24 9.4L22.6 8L16 14.6L9.4 8L8 9.4l6.6 6.6L8 22.6L9.4 24l6.6-6.6l6.6 6.6l1.4-1.4l-6.6-6.6L24 9.4z" />
-                </svg>
-              </div>
-              <div style={{padding: 24}}>
-                <div style={{fontSize: 16, color: T.body}}>
-                  Are you sure you want to publish this Article on <span style={{textDecoration: 'underline'}}>https://huggingface.co/blog</span>?
-                </div>
-                <div style={{marginTop: 16, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, borderRadius: 8, background: T.borderSoft, padding: 12, fontSize: 14, fontWeight: 600, color: T.body}}>
-                  Thumbnail preview
-                  <Img src={staticFile('hf-blog/thumb-huggy.svg')} style={{aspectRatio: '50/27', width: 240, borderRadius: 8, border: `1px solid ${T.border}`, objectFit: 'cover'}} />
-                </div>
-                <div style={{marginTop: 24, display: 'flex', justifyContent: 'flex-end', gap: 8}}>
-                  <Pill kind="secondary" label="Cancel" />
-                  <Pill kind="primary" label="Publish" press={confirmPress ? 1 : 0} />
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        <Cursor x={cur.x} y={cur.y} press={pickerPress || pubPress || confirmPress} scale={cur.s} />
+        <Cursor x={cur.x} y={cur.y} press={press} scale={f >= 44 ? 0.8 : 1} />
       </div>
-    </AbsoluteFill>
+    </BrowserWindow>
   );
 };
+
+/* ══════════════════════════════════════════════════════════════════════════
+ * SURFACE 4b — hf-blog-publish-modal: the Publish modal as its own scene,
+ * entered via depth-handoff. The cursor confirms; the beat lands; done.
+ * ════════════════════════════════════════════════════════════════════════ */
+
+export const PUBMODAL_FRAMES = 150;
+export const PUBMODAL_CUES: {at: number; kind: CueKind}[] = [
+  {at: 76, kind: 'ui-tick'}, // the confirm
+];
+
+export const BlogPublishModalSurface: React.FC = () => {
+  const f = useCurrentFrame();
+  const press = f >= 76 && f < 82;
+  const cur = {x: lerp(f, [16, 66], [930, 752], EASE.inOut), y: lerp(f, [16, 66], [300, 470], EASE.inOut)};
+  return (
+    <div style={{width: SURFACE_W, height: SURFACE_H, position: 'relative', display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
+      <div style={{position: 'relative', width: 480, borderRadius: 12, background: '#fff', boxShadow: ELEV.card, overflow: 'hidden', fontFamily: SANS}}>
+        <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${T.borderSoft}`, padding: '16px 24px'}}>
+          <span style={{display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 18, fontWeight: 600, color: '#000'}}>
+            <svg width={20} height={20} viewBox="0 0 15 15" fill={T.blue}>
+              <path d="M3.417 12.75c-.32 0-.596-.114-.824-.342a1.126 1.126 0 0 1-.343-.825V3.417c0-.321.114-.597.343-.824.23-.228.503-.343.824-.343h8.166c.321 0 .596.114.825.343.228.229.342.503.342.824v8.166c0 .32-.114.596-.342.825a1.12 1.12 0 0 1-.825.342zm1.166-2.333h4.084V9.25H4.583v1.167m0-2.334h5.834V6.917H4.583v1.166m0-2.333h5.834V4.583H4.583V5.75" />
+            </svg>
+            Publish Article
+          </span>
+          <svg width={20} height={20} viewBox="0 0 32 32" fill={T.faint}>
+            <path d="M24 9.4L22.6 8L16 14.6L9.4 8L8 9.4l6.6 6.6L8 22.6L9.4 24l6.6-6.6l6.6 6.6l1.4-1.4l-6.6-6.6L24 9.4z" />
+          </svg>
+        </div>
+        <div style={{padding: 24}}>
+          <div style={{fontSize: 16, color: T.body}}>
+            Are you sure you want to publish this Article on <span style={{textDecoration: 'underline'}}>https://huggingface.co/blog</span>?
+          </div>
+          <div style={{marginTop: 16, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, borderRadius: 8, background: T.borderSoft, padding: 12, fontSize: 14, fontWeight: 600, color: T.body}}>
+            Thumbnail preview
+            <Img src={staticFile('hf-blog/thumb-huggy.svg')} style={{aspectRatio: '50/27', width: 240, borderRadius: 8, border: `1px solid ${T.border}`, objectFit: 'cover'}} />
+          </div>
+          <div style={{marginTop: 24, display: 'flex', justifyContent: 'flex-end', gap: 8}}>
+            <Pill kind="secondary" label="Cancel" />
+            <Pill kind="primary" label="Publish" press={press ? 1 : 0} />
+          </div>
+        </div>
+      </div>
+      <Cursor x={cur.x} y={cur.y} press={press} scale={0.9} />
+    </div>
+  );
+};
+
+/* ══════════════════════════════════════════════════════════════════════════
+ * SURFACE 0 — hf-blog-jz-title: the intro through the jump-zoom-type block
+ * ("Introducing" macro → jump-cut → "the new Blog editor" accumulates on
+ * the conveyor). Block motion locked; copy + font are this promo's.
+ * ════════════════════════════════════════════════════════════════════════ */
+
+const JZ_TITLE_LINES: JZLine[] = [{kind: 'open', head: 'Introducing', tail: ['the', 'new', 'Blog', 'editor']}];
+export const JZTITLE_FRAMES = jzFrames(JZ_TITLE_LINES);
+export const JZTITLE_CUES: {at: number; kind: CueKind}[] = [{at: 28, kind: 'ui-swap'}]; // the jump-cut
+
+export const BlogJzTitleSurface: React.FC = () => (
+  <div style={{width: SURFACE_W, height: SURFACE_H, position: 'relative'}}>
+    <JumpZoomType lines={JZ_TITLE_LINES} fontSize={58} color="#14161c" fontFamily={SANS} />
+  </div>
+);

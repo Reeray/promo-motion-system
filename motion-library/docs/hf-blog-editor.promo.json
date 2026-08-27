@@ -2,38 +2,39 @@
   "v": 1,
   "id": "hf-blog-editor",
   "theme": "light",
+  "font": "hf",
   "grid": {
     "bpm": 120
   },
   "scenes": [
     {
-      "id": "intro",
+      "id": "title",
       "kind": "ui",
-      "surface": "hf-logo-animation",
+      "surface": "hf-blog-jz-title",
       "enter": "scale-pop-in",
       "exit": "scale-up-cut"
-    },
-    {
-      "id": "title",
-      "kind": "text",
-      "effect": "typewriter",
-      "copy": "Introducing the new Blog editor",
-      "size": "lg",
-      "hold": "normal",
-      "enter": "scale-pop-in",
-      "exit": "push-off-left"
     },
     {
       "id": "overview",
       "kind": "ui",
       "surface": "hf-blog-burst",
-      "enter": "glide-in",
-      "exit": "scale-up-cut"
+      "enter": "scale-pop-in",
+      "exit": "push-off-left"
     },
     {
       "id": "write",
       "kind": "ui",
       "surface": "hf-blog-write",
+      "enter": "glide-in",
+      "exit": "scale-up-cut"
+    },
+    {
+      "id": "team-title",
+      "kind": "text",
+      "effect": "mask-reveal-up",
+      "copy": "Click more and add more authors.",
+      "size": "md",
+      "hold": "normal",
       "enter": "scale-pop-in",
       "exit": "push-off-left"
     },
@@ -47,37 +48,33 @@
     {
       "id": "publish",
       "kind": "ui",
-      "surface": "hf-blog-publish",
+      "surface": "hf-blog-publish-zoom",
+      "enter": "scale-pop-in",
+      "exit": "scale-up-cut"
+    },
+    {
+      "id": "modal",
+      "kind": "ui",
+      "surface": "hf-blog-publish-modal",
       "enter": "scale-pop-in",
       "exit": "push-off-left"
     },
     {
-      "id": "payoff",
+      "id": "cta",
       "kind": "text",
-      "effect": "shimmer-sweep",
-      "copy": "hf.co/blog/huggingface/designing-huggy",
-      "sub": "Live on the Hugging Face Blog",
+      "effect": "spring-scale-in",
+      "copy": "Come post your AI articles on Hugging Face blog",
+      "sub": "Exclusive to Team & Enterprise",
       "size": "md",
       "hold": "long",
       "enter": "glide-in",
       "exit": "scale-up-cut"
     },
     {
-      "id": "cta",
-      "kind": "text",
-      "effect": "scale-down-fade",
-      "copy": "Start writing together",
-      "sub": "Exclusive to Team & Enterprise",
-      "size": "md",
-      "hold": "long",
-      "enter": "scale-pop-in",
-      "exit": "push-off-left"
-    },
-    {
       "id": "ending",
       "kind": "ui",
       "surface": "hf-logo-animation",
-      "enter": "glide-in",
+      "enter": "scale-pop-in",
       "exit": "scale-up-cut"
     }
   ],

@@ -113,6 +113,9 @@ export type SceneRaw = TextSceneRaw | UiSceneRaw;
  * Pick soft-light unless the product UI you captured needs to read as a distinctly white sheet
  * against something. */
 export type Theme = 'soft-light' | 'light' | 'dark';
+/** Promo-wide narration font. 'hf' = the product font (Source Sans 3) for brand-matched
+ *  promos — ruled on hf-blog-editor: stage text and surface text must not mix families. */
+export type FontTok = 'inter' | 'hf';
 export const THEMES: Theme[] = ['soft-light', 'light', 'dark'];
 
 /* ── SOUND ──────────────────────────────────────────────────────────────────────────────────
@@ -166,7 +169,7 @@ export const clampNudge = (ms: number | undefined): number => {
  *  live there — the grid is rhythm the picture is cut to, whether or not any audio is present. */
 export type PromoGrid = {bpm: number};
 
-export type PromoDocRaw = {v: 1; id: string; theme?: Theme; scenes: SceneRaw[]; sound?: PromoSound; grid?: PromoGrid};
+export type PromoDocRaw = {v: 1; id: string; theme?: Theme; font?: FontTok; scenes: SceneRaw[]; sound?: PromoSound; grid?: PromoGrid};
 
 /* ── Normalized: what components see. Every field present. ─────────────────── */
 type Base = {id: string; enter: IntroId; exit: OutroId; hold: HoldTok; entry: EntryTok};
@@ -175,7 +178,7 @@ type Base = {id: string; enter: IntroId; exit: OutroId; hold: HoldTok; entry: En
 export type TextScene = Base & {kind: 'text'; effect: string; copy: string; sub: string | null; size: SizeTok; framing?: Framing};
 export type UiScene = Base & {kind: 'ui'; surface: string; framing: Framing};
 export type Scene = TextScene | UiScene;
-export type PromoDoc = {v: 1; id: string; theme: Theme; scenes: Scene[]; sound: PromoSound; grid?: PromoGrid};
+export type PromoDoc = {v: 1; id: string; theme: Theme; font: FontTok; scenes: Scene[]; sound: PromoSound; grid?: PromoGrid};
 
 /** CONTENT RIDES THE TRANSITION (measured from the reference A/B, July 2026): a route change
  *  is ONE motion, and the incoming scene's content rides inside it. `entry` sets WHEN the
@@ -197,6 +200,7 @@ export const normalize = (raw: PromoDocRaw): PromoDoc => ({
   v: 1,
   id: raw.id,
   theme: raw.theme ?? 'soft-light',
+  font: raw.font ?? 'inter',
   ...(raw.grid ? {grid: raw.grid} : {}),
   // Clamped HERE so the editor's live preview and the CLI render land on identical values — the
   // clampFraming pattern. A hand-edited nudge of 9999 renders as 500, it does not render as 9999.
@@ -228,6 +232,7 @@ export const normalize = (raw: PromoDocRaw): PromoDoc => ({
 export const validate = (doc: PromoDoc): string[] => {
   const errs: string[] = [];
   const n = doc.scenes.length;
+  if (doc.font !== 'inter' && doc.font !== 'hf') errs.push(`unknown font token "${doc.font}"`);
   if (n < 1 || n > 12) errs.push(`a promo needs 1–12 scenes, got ${n}`);
 
   const seen = new Set<string>();

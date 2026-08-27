@@ -48,15 +48,15 @@ const Stage: React.FC<{pal: Pal; children: React.ReactNode}> = ({pal, children})
 /** The text object. This is the TextObject helper that was copy-pasted verbatim into
  *  HFStorageOverview, HFSpacesAgents and HFHardwareFilter — defined once now.
  *  `loop={false}` and an explicit `color` are mandatory (gate R5). */
-const TextBody: React.FC<{scene: TextScene; pal: Pal}> = ({scene, pal}) => {
+const TextBody: React.FC<{scene: TextScene; pal: Pal; font: string}> = ({scene, pal, font}) => {
   const f = useCurrentFrame();
   const spec = SPEC.get(scene.effect);
   if (!spec) return null;
   return (
     <div style={{textAlign: 'center'}}>
-      <SpecText spec={spec} sample={scene.copy} fontSize={SIZE[scene.size]} loop={false} bare color={pal.fg} />
+      <SpecText spec={spec} sample={scene.copy} fontSize={SIZE[scene.size]} loop={false} bare color={pal.fg} fontFamily={font} />
       {scene.sub && (
-        <div style={{marginTop: 20, fontSize: 18, color: pal.muted, opacity: lerp(f, [24, 40], [0, 1], EASE.out)}}>
+        <div style={{marginTop: 20, fontSize: 18, fontFamily: font, color: pal.muted, opacity: lerp(f, [24, 40], [0, 1], EASE.out)}}>
           {scene.sub}
         </div>
       )}
@@ -74,7 +74,7 @@ const SurfaceBody: React.FC<{scene: UiScene}> = ({scene}) => {
 /** One scene: intro on the way in, outro thrown at the very end.
  *  The outro starts at `frames - OUTRO.frames`, mirroring the hand-authored
  *  `start={S1 - T.THROW_DUR}` pattern, so the throw is cut exactly at the scene boundary. */
-const SceneView: React.FC<{p: PreparedScene; pal: Pal}> = ({p, pal}) => {
+const SceneView: React.FC<{p: PreparedScene; pal: Pal; font: string}> = ({p, pal, font}) => {
   const f = useCurrentFrame();
   const {scene, frames} = p;
 
@@ -95,7 +95,7 @@ const SceneView: React.FC<{p: PreparedScene; pal: Pal}> = ({p, pal}) => {
     else scale *= 1 + p2 * (TZ.SCALE_UP_TO - 1);
   }
 
-  const inner = scene.kind === 'text' ? <TextBody scene={scene} pal={pal} /> : <SurfaceBody scene={scene} />;
+  const inner = scene.kind === 'text' ? <TextBody scene={scene} pal={pal} font={font} /> : <SurfaceBody scene={scene} />;
   /* CONTENT RIDES THE TRANSITION: the scene's internal choreography starts contentDelay frames
    * in (a token fraction of the enter transition — ENTRY in schema.ts), so a route change reads
    * as ONE motion with the content riding inside it.
@@ -207,6 +207,7 @@ const MusicBed: React.FC<{src: string; level: number; total: number; list: Cue[]
 };
 
 export const Promo: React.FC<Prepared> = (prep) => {
+  const font = prep.doc.font === 'hf' ? FONT.hf : FONT.sans;
   const {doc, scenes} = prep;
   const pal = doc.theme === 'dark' ? PD : doc.theme === 'light' ? PX : PS;
   /* Only SOFT LIGHT separates by shadow. The other two put the card at a different luminance
@@ -225,7 +226,7 @@ export const Promo: React.FC<Prepared> = (prep) => {
           // The SAME array prepare() summed, so the composition length and the sum of these
           // sequences agree by construction — a rounding divergence cannot truncate the last scene.
           <Series.Sequence key={p.scene.id} durationInFrames={p.frames}>
-            <SceneView p={p} pal={pal} />
+            <SceneView p={p} pal={pal} font={font} />
           </Series.Sequence>
         ))}
       </Series>
