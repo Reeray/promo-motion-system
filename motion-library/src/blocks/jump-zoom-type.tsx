@@ -74,9 +74,10 @@ export const JZ = {
   creep: 1.0, // px/f leftward, all holds
   enterGlide: 12, // a fresh line decelerates over this many frames…
   enterDist: 18, // …covering this px beyond the creep
-  relax: 5, // the overshoot-relax: glides this far past rest, eases back gently
-  exitF: 18, // every non-final line's last frames accelerate left…
-  exitDist: 30, // px BEYOND the creep across the whole build — end-loaded, cut at ~-6px/f
+  exitF: 14, // the late LEAN: the final frames' sharp acceleration into the cut
+  exitDist: 26, // …travelling this many px
+  exitBridge: 10, // the BRIDGE: a quadratic build that starts while the last word is still
+  // arriving, so word-motion hands off to line-motion with no energy cliff
 } as const;
 
 const lineDur = (ln: JZLine, last: boolean): number => {
@@ -97,13 +98,18 @@ export const jzFrames = (lines: JZLine[]): number => lines.reduce((n, ln, i) => 
 const conveyorX = (t: number, dur: number, hasExit: boolean, hasEnterGlide: boolean, exitStart: number): number => {
   let x = 0;
   if (hasEnterGlide) {
+    // decelerate to rest — NO overshoot-relax: its rightward ease-back cancelled the creep
+    // to a net standstill right as the last word docked (the twice-reported pause)
     const g = lerp(t, [0, JZ.enterGlide], [0, 1], EASE.out);
-    x += (1 - g) * JZ.enterDist - g * JZ.relax; // decelerate through rest into the overshoot…
-    x += lerp(t, [JZ.enterGlide, JZ.enterGlide + 16], [0, JZ.relax], EASE.inOut); // …and relax back
+    x += (1 - g) * JZ.enterDist;
   }
   x -= JZ.creep * t; // the ever-present creep
   if (hasExit) {
-    x -= lerp(t, [exitStart, dur], [0, JZ.exitDist], EASE.in); // one long build into the cut
+    // BRIDGE: quadratic, velocity grows from zero IMMEDIATELY (no flat start — EASE.in's
+    // bezier sits at ~0 for its first third, which was the measured dead spot)…
+    x -= lerp(t, [exitStart, dur], [0, JZ.exitBridge], (v) => v * v);
+    // …and the LEAN: the sharp end-loaded acceleration into the cut
+    x -= lerp(t, [dur - JZ.exitF, dur], [0, JZ.exitDist], EASE.in);
   }
   return x;
 };
@@ -167,7 +173,7 @@ export const JumpZoomType: React.FC<{
       // ONE-step jump-cut to the reading frame; the line accumulates while creeping
       const lt = local - macroEnd;
       scale = JZ.smallScale;
-      x = conveyorX(lt, dur - macroEnd, !last, true, Math.max(JZ.enterGlide + 16, line.tail.length * JZ.appendEvery + JZ.appendIn));
+      x = conveyorX(lt, dur - macroEnd, !last, true, line.tail.length * JZ.appendEvery); // bridge starts as the last word arrives
       node = (
         <>
           <span style={{whiteSpace: 'pre'}}>{line.head} </span>
@@ -180,7 +186,7 @@ export const JumpZoomType: React.FC<{
   } else if (line.kind === 'swap') {
     // lands whole in 1 frame at swapScale, CONSTANT, riding the conveyor
     scale = JZ.swapScale;
-    x = conveyorX(local, dur, !last, false, line.tail.length * JZ.appendEvery + JZ.appendIn);
+    x = conveyorX(local, dur, !last, false, JZ.appendEvery * line.tail.length); // bridge starts as the last word arrives
     node = (
       <>
         <span style={{whiteSpace: 'pre'}}>{line.head} </span>
