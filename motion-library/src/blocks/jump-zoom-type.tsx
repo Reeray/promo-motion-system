@@ -6,7 +6,8 @@ import {FONT} from '../lib/fonts';
 /* ============================================================================
  * JUMP-ZOOM TYPE — a sentence on a leftward conveyor, told through camera jumps.
  *
- * STATUS: TEMPLATE UNDER REVIEW, round 2.
+ * STATUS: TEMPLATE UNDER REVIEW, round 3 (round-2 notes: exit travel 3x too far, swap
+ * zoom was letter-shape bias, words enter from the LEFT, velocity steps smoothed).
  * Round 1 missed the defining motion: it tracked bbox height/cy only, called the
  * holds "dead still", and invented a 1.75×→1 shrink on the swap line. Round 2
  * re-measured the reference (per-frame text-only component tracking, x0/cx/capH,
@@ -51,8 +52,9 @@ export const JZ = {
   appendEvery: 6, // a new word lands every…
   appendIn: 8, // …settling with fade + 18px rise
   wideHold: 40, // completed line reads (creeping all the while)
-  swapScale: 1.28, // a swap line enters at this ×reading size…
-  swapZoom: 0.1, // …and grows +10% across its visible life (micro zoom-in)
+  swapScale: 1.28, // a swap line enters at this ×reading size, CONSTANT — the earlier
+  // "+10% micro-zoom" was measurement bias: appending words with ascenders/descenders
+  // ('you') raise the median component height; letter shapes, not scale
   climaxScale: 1.9, // the climax word's size
   climaxZoomDrift: 0.02, // +2% drift after the wipe
   climaxWipe: 22, // hard left→right reveal
@@ -60,13 +62,14 @@ export const JZ = {
   climaxGlideDist: 130, // …covering this many px to rest
   climaxHold: 34, // final hold…
   liftPerFrame: -1.0, // …with the slow upward drift
-  // the conveyor
-  creep: 1.7, // px/f leftward, all holds
-  enterGlide: 16, // a fresh line decelerates over this many frames…
-  enterDist: 34, // …covering this px (plus creep)
-  relax: 8, // the overshoot-relax: glides this far past rest, eases back
-  exitF: 18, // every non-final line's last frames accelerate left…
-  exitDist: 62, // …through this px, and are CUT mid-motion
+  // the conveyor (re-measured after review: totals, not just rates — the exit moves
+  // ~30px ALL-IN at 720p including creep; the first cut moved 3x too far)
+  creep: 1.0, // px/f leftward, all holds
+  enterGlide: 14, // a fresh line decelerates over this many frames…
+  enterDist: 18, // …covering this px beyond the creep
+  relax: 5, // the overshoot-relax: glides this far past rest, eases back gently
+  exitF: 20, // every non-final line's last frames accelerate left…
+  exitDist: 10, // …adding this much BEYOND the creep — the cut lands at ~-5px/f
 } as const;
 
 const lineDur = (ln: JZLine, last: boolean): number => {
@@ -85,7 +88,7 @@ const conveyorX = (t: number, dur: number, hasExit: boolean, hasEnterGlide: bool
   if (hasEnterGlide) {
     const g = lerp(t, [0, JZ.enterGlide], [0, 1], EASE.out);
     x += (1 - g) * JZ.enterDist - g * JZ.relax; // decelerate through rest into the overshoot…
-    x += lerp(t, [JZ.enterGlide, JZ.enterGlide + 20], [0, JZ.relax], EASE.inOut); // …and relax back
+    x += lerp(t, [JZ.enterGlide, JZ.enterGlide + 24], [0, JZ.relax], EASE.inOut); // …and relax back
   }
   x -= JZ.creep * t; // the ever-present creep
   if (hasExit) {
@@ -106,7 +109,7 @@ const Word: React.FC<{t: string; at: number; f: number}> = ({t, at, f}) => {
         display: 'inline-block',
         visibility: f < at ? 'hidden' : 'visible',
         opacity: p,
-        transform: `translateY(${(1 - p) * 18}px)`,
+        transform: `translateX(${(1 - p) * -24}px)`, // measured: words arrive FROM THE LEFT
         whiteSpace: 'pre',
       }}
     >
@@ -148,7 +151,7 @@ export const JumpZoomType: React.FC<{
       // macro: big, riding the conveyor, accelerating into the jump like any exit
       const a = lerp(local, [0, JZ.resolveIn], [0, 1], EASE.out);
       scale = JZ.macroScale;
-      x = -JZ.creep * local - lerp(local, [macroEnd - 14, macroEnd], [0, 26], EASE.in);
+      x = -JZ.creep * local - lerp(local, [macroEnd - 14, macroEnd], [0, 16], EASE.in);
       node = <span style={{opacity: a}}>{line.head}</span>;
     } else {
       // ONE-step jump-cut to the reading frame; the line accumulates while creeping
@@ -165,8 +168,8 @@ export const JumpZoomType: React.FC<{
       );
     }
   } else if (line.kind === 'swap') {
-    // lands whole in 1 frame at swapScale, micro-zooms IN across its life, rides the conveyor
-    scale = JZ.swapScale * (1 + JZ.swapZoom * Math.min(1, local / Math.max(1, dur - (last ? 0 : JZ.exitF))));
+    // lands whole in 1 frame at swapScale, CONSTANT, riding the conveyor
+    scale = JZ.swapScale;
     x = conveyorX(local, dur, !last, false);
     node = (
       <>
