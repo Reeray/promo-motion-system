@@ -191,7 +191,7 @@ const Cursor: React.FC<{x: number; y: number; press?: boolean; scale?: number}> 
 /** Browser-window container (LAW: full-screen web UI lives in a browser window).
  *  Real proportions (~44px bar), honest Safari-style domain-only URL display. */
 const BrowserWindow: React.FC<{children: React.ReactNode}> = ({children}) => (
-  <AbsoluteFill style={{background: '#fff'}}>
+  <AbsoluteFill style={{background: '#fdfdfd', fontFamily: SANS}}>
     <div style={{height: 44, display: 'flex', alignItems: 'center', gap: 8, padding: '0 14px', borderBottom: `1px solid ${T.border}`, background: '#f6f7f9', fontFamily: SANS}}>
       <span style={{width: 11, height: 11, borderRadius: '50%', background: '#ff5f57'}} />
       <span style={{width: 11, height: 11, borderRadius: '50%', background: '#febc2e'}} />
