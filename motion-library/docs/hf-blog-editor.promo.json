@@ -32,7 +32,7 @@
       "id": "team-title",
       "kind": "text",
       "effect": "mask-reveal-up",
-      "copy": "Click more and add more authors.",
+      "copy": "Add Coauthors to write together",
       "size": "md",
       "hold": "normal",
       "enter": "scale-pop-in",

@@ -191,7 +191,7 @@ const Cursor: React.FC<{x: number; y: number; press?: boolean; scale?: number}> 
 /** Browser-window container (LAW: full-screen web UI lives in a browser window).
  *  Real proportions (~44px bar), honest Safari-style domain-only URL display. */
 const BrowserWindow: React.FC<{children: React.ReactNode}> = ({children}) => (
-  <AbsoluteFill style={{background: '#fdfdfd', fontFamily: SANS}}>
+  <div style={{width: SURFACE_W, height: SURFACE_H, position: 'relative', borderRadius: 12, overflow: 'hidden', background: '#fdfdfd', fontFamily: SANS, border: `1px solid ${T.border}`, boxShadow: ELEV.window}}>
     <div style={{height: 44, display: 'flex', alignItems: 'center', gap: 8, padding: '0 14px', borderBottom: `1px solid ${T.border}`, background: '#f6f7f9', fontFamily: SANS}}>
       <span style={{width: 11, height: 11, borderRadius: '50%', background: '#ff5f57'}} />
       <span style={{width: 11, height: 11, borderRadius: '50%', background: '#febc2e'}} />
@@ -207,7 +207,7 @@ const BrowserWindow: React.FC<{children: React.ReactNode}> = ({children}) => (
       <span style={{width: 55}} />
     </div>
     <div style={{position: 'absolute', top: 44, left: 0, right: 0, bottom: 0, overflow: 'hidden'}}>{children}</div>
-  </AbsoluteFill>
+  </div>
 );
 
 /* ── captured content: the "Designing Huggy" draft, verbatim ─────────────── */
@@ -403,13 +403,13 @@ export const WRITE_CUES: {at: number; kind: CueKind}[] = [
 ];
 
 const Z_WRITE = 1.3;
-const PAGE_W = 1280 / Z_WRITE; // the pane authored at captured metrics; one scale constant wins legibility
+const PAGE_W = SURFACE_W / Z_WRITE; // the pane authored at captured metrics; one scale constant wins legibility
 
 export const BlogWriteSurface: React.FC = () => {
   const f = useCurrentFrame();
   useCharter();
   // cursor: enters low-right, decelerates onto the PREVIEW chip (the right-most chip)
-  const cx = lerp(f, [14, 52], [PAGE_W * 0.72, PAGE_W - 74], EASE.inOut);
+  const cx = lerp(f, [14, 52], [PAGE_W * 0.72, PAGE_W - 70], EASE.inOut);
   const cy = lerp(f, [14, 52], [500, 46], EASE.inOut);
   const press = f >= 60 && f < 65;
   const flipped = f >= 62;
@@ -425,7 +425,7 @@ export const BlogWriteSurface: React.FC = () => {
   const cam = zoomIn * zoomOut;
   return (
     <BrowserWindow>
-      <div style={{position: 'absolute', left: 0, top: 0, width: PAGE_W * Z_WRITE, height: 676, transformOrigin: '97% 8%', transform: `scale(${cam})`}}>
+      <div style={{position: 'absolute', left: 0, top: 0, width: SURFACE_W, height: SURFACE_H - 44, transformOrigin: '97% 8%', transform: `scale(${cam})`}}>
         <div style={{position: 'absolute', left: 0, top: 0, width: PAGE_W, transformOrigin: '0% 0%', transform: `scale(${Z_WRITE})`}}>
           {/* app bar - real copy, real icon */}
           <div style={{display: 'flex', alignItems: 'center', gap: 12, padding: '11px 16px', borderBottom: `1px solid ${T.borderSoft}`, background: '#fff', fontFamily: SANS}}>
@@ -462,42 +462,67 @@ export const BlogWriteSurface: React.FC = () => {
 
 
 /* ══════════════════════════════════════════════════════════════════════════
- * SURFACE 3 — hf-blog-team: the Coauthors section as a floating card.
- * The cursor adds julien-c, then drags him into first position — place the
- * authors "in desired contribution order", exactly what the tooltip promises.
+ * SURFACE 3 — hf-blog-team: the Coauthors card. EXERCISE THE OPTION (a
+ * feature is a verb): + Add coauthor is clicked TWICE — julien-c lands,
+ * then merve — and the drag-handle reorders. One click is a screenshot;
+ * repeated cause→effect is the demonstration.
+ * NOTE: the demo page's add button is inert and names no candidates; the
+ * second author (merve, "M" monogram) extends the captured row pattern at
+ * the user's direction — same structure, different letter.
  * ════════════════════════════════════════════════════════════════════════ */
 
-export const TEAM_FRAMES = 290;
+export const TEAM_FRAMES = 330;
 export const TEAM_CUES: {at: number; kind: CueKind}[] = [
-  {at: 62, kind: 'ui-tick'}, // + Add coauthor
-  {at: 68, kind: 'ui-rise'}, // the row lands
-  {at: 148, kind: 'ui-tick'}, // grab
-  {at: 196, kind: 'ui-swap'}, // reorder committed
+  {at: 60, kind: 'ui-tick'}, // add #1
+  {at: 64, kind: 'ui-rise'}, // julien lands
+  {at: 112, kind: 'ui-tick'}, // add #2
+  {at: 116, kind: 'ui-rise'}, // merve lands
+  {at: 190, kind: 'ui-tick'}, // grab
+  {at: 256, kind: 'ui-swap'}, // reorder committed
 ];
 
 const ROW_H = 42 + 6; // row height + gap, card-local px
 
+const MerveRow: React.FC<{style?: React.CSSProperties}> = ({style}) => (
+  <div style={{display: 'flex', alignItems: 'center', gap: 10, borderRadius: 8, border: `1px solid ${T.border}`, background: '#fff', padding: '6px 10px', fontFamily: SANS, ...style}}>
+    <span style={{width: 28, height: 28, borderRadius: '50%', background: '#d1fae5', color: '#059669', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700}}>M</span>
+    <span style={{fontSize: 14, fontWeight: 500, color: '#1f2937'}}>merve</span>
+    <span style={{flex: 1}} />
+    <span style={{width: 16}} />
+  </div>
+);
+
 export const BlogTeamSurface: React.FC = () => {
   const f = useCurrentFrame();
   const CARD_W = 420;
-  // add
-  const press1 = f >= 62 && f < 67;
-  const added = f >= 66;
-  const rowIn = lerp(f, [66, 84], [0, 1], EASE.uiEnter);
-  // drag: julien (row 2) travels up one slot; chunte yields down
-  const grab = f >= 148 && f < 196;
-  const drag = lerp(f, [156, 190], [0, 1], EASE.inOut);
-  const julienY = added ? ROW_H * (1 - drag) : ROW_H;
+  const press1 = f >= 60 && f < 65;
+  const added1 = f >= 64;
+  const row1In = lerp(f, [64, 82], [0, 1], EASE.uiEnter);
+  const press2 = f >= 112 && f < 117;
+  const added2 = f >= 116;
+  const row2In = lerp(f, [116, 134], [0, 1], EASE.uiEnter);
+  // drag: julien (slot 1) travels to slot 0; chunte yields down; merve holds slot 2
+  const grab = f >= 190 && f < 256;
+  const drag = lerp(f, [196, 248], [0, 1], EASE.inOut);
+  const julienY = added1 ? ROW_H * (1 - drag) : ROW_H;
   const chunteY = ROW_H * drag;
-  // cursor path: in → add button → julien handle → drag up → release drift
-  const cx = f < 100 ? lerp(f, [18, 56], [CARD_W + 150, CARD_W - 96], EASE.inOut) : lerp(f, [104, 144], [CARD_W - 96, CARD_W - 46], EASE.inOut);
-  const addBtnY = added ? 52 + 2 * ROW_H : 52 + ROW_H;
+  const rows = 1 + (added1 ? 1 : 0) + (added2 ? 1 : 0);
+  const addBtnY = 52 + rows * ROW_H;
+  // cursor: → add, click; → add (moved down), click; → julien handle, drag up, release
+  const cx =
+    f < 100
+      ? lerp(f, [18, 54], [CARD_W + 150, CARD_W - 96], EASE.inOut)
+      : f < 150
+        ? CARD_W - 96
+        : lerp(f, [150, 186], [CARD_W - 96, CARD_W - 46], EASE.inOut);
   const cy =
     f < 100
-      ? lerp(f, [18, 56], [430, addBtnY + 18], EASE.inOut)
-      : grab || f >= 196
-        ? lerp(f, [156, 190], [52 + ROW_H + 20, 52 + 20], EASE.inOut)
-        : lerp(f, [104, 144], [addBtnY + 18, 52 + ROW_H + 20], EASE.inOut);
+      ? lerp(f, [18, 54], [430, 52 + ROW_H + 18], EASE.inOut)
+      : f < 150
+        ? lerp(f, [100, 110], [52 + ROW_H + 18, 52 + 2 * ROW_H + 18], EASE.inOut)
+        : grab || f >= 256
+          ? lerp(f, [196, 248], [52 + ROW_H + 20, 52 + 20], EASE.inOut)
+          : lerp(f, [150, 186], [52 + 2 * ROW_H + 18, 52 + ROW_H + 20], EASE.inOut);
   return (
     <div style={{width: SURFACE_W, height: SURFACE_H, position: 'relative', display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
       <div style={{position: 'relative', width: CARD_W, transform: 'scale(1.45)'}}>
@@ -510,42 +535,33 @@ export const BlogTeamSurface: React.FC = () => {
               <path d="M16 30a14 14 0 1 1 14-14a14 14 0 0 1-14 14zm0-26a12 12 0 1 0 12 12A12 12 0 0 0 16 4z" />
             </svg>
           </div>
-          <div style={{position: 'relative', height: added ? 2 * ROW_H - 6 : ROW_H - 6, transition: 'none'}}>
-            {/* Chunte — yields to second place during the drag */}
+          <div style={{position: 'relative', height: rows * ROW_H - 6}}>
             <AuthorRow who="chunte" you style={{position: 'absolute', left: 0, right: 0, top: chunteY, zIndex: 1}} />
-            {/* julien-c — lands, then is carried to first place */}
-            {added && (
+            {added1 && (
               <AuthorRow
                 who="julien"
                 grabbed={grab}
-                handleOpacity={f >= 120 && f < 210 ? 0.9 : 0}
-                style={{
-                  position: 'absolute',
-                  left: 0,
-                  right: 0,
-                  top: julienY + (1 - rowIn) * 14,
-                  opacity: rowIn,
-                  zIndex: 2,
-                  transform: grab ? 'scale(1.02)' : 'none',
-                }}
+                handleOpacity={f >= 160 && f < 270 ? 0.9 : 0}
+                style={{position: 'absolute', left: 0, right: 0, top: julienY + (1 - row1In) * 14, opacity: row1In, zIndex: 2, transform: grab ? 'scale(1.02)' : 'none'}}
               />
             )}
+            {added2 && <MerveRow style={{position: 'absolute', left: 0, right: 0, top: 2 * ROW_H + (1 - row2In) * 14, opacity: row2In}} />}
           </div>
           <div
             style={{
               marginTop: 6,
               borderRadius: 8,
-              border: `1px dashed ${press1 ? '#9ca3af' : '#d1d5db'}`,
+              border: `1px dashed ${press1 || press2 ? '#9ca3af' : '#d1d5db'}`,
               padding: '9px 12px',
               fontSize: 14,
-              color: press1 ? T.mut : T.faint,
-              background: press1 ? '#fafafa' : 'transparent',
+              color: press1 || press2 ? T.mut : T.faint,
+              background: press1 || press2 ? '#fafafa' : 'transparent',
             }}
           >
             + Add coauthor
           </div>
         </div>
-        {f >= 18 && f < 236 && <Cursor x={cx} y={cy} press={press1 || (f >= 148 && f < 196)} scale={0.8} />}
+        {f >= 18 && f < 290 && <Cursor x={cx} y={cy} press={press1 || press2 || (f >= 190 && f < 256)} scale={0.8} />}
       </div>
     </div>
   );
@@ -563,7 +579,7 @@ export const PUBZOOM_CUES: {at: number; kind: CueKind}[] = [
   {at: 80, kind: 'ui-tick'}, // Publish
 ];
 
-const PAGE2_H = 676; // browser content height (720 - 44 chrome)
+const PAGE2_H = SURFACE_H - 44; // browser content height inside the floating window
 
 export const BlogPublishZoomSurface: React.FC = () => {
   const f = useCurrentFrame();
@@ -571,12 +587,12 @@ export const BlogPublishZoomSurface: React.FC = () => {
   const zoom = lerp(f, [44, 48], [1, 1.6], EASE.in) * lerp(f, [48, 60], [1, 1.09], EASE.camera);
   const cur =
     f < 40
-      ? {x: lerp(f, [12, 40], [700, 1000], EASE.inOut), y: lerp(f, [12, 40], [420, 560], EASE.inOut)}
-      : {x: lerp(f, [40, 72], [1000, 1196], EASE.inOut), y: lerp(f, [40, 72], [560, 634], EASE.inOut)};
+      ? {x: lerp(f, [12, 40], [640, 930], EASE.inOut), y: lerp(f, [12, 40], [380, 500], EASE.inOut)}
+      : {x: lerp(f, [40, 72], [930, 1092], EASE.inOut), y: lerp(f, [40, 72], [500, 560], EASE.inOut)};
   const press = f >= 80 && f < 86;
   return (
     <BrowserWindow>
-      <div style={{position: 'absolute', left: 0, top: 0, width: 1280, height: PAGE2_H, transformOrigin: '97.5% 97%', transform: `scale(${zoom})`, background: '#fff'}}>
+      <div style={{position: 'absolute', left: 0, top: 0, width: SURFACE_W, height: PAGE2_H, transformOrigin: '97.5% 96%', transform: `scale(${zoom})`, background: '#fff'}}>
         {/* app bar (context) */}
         <div style={{display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', borderBottom: `1px solid ${T.borderSoft}`, fontFamily: SANS}}>
           <svg width={18} height={18} viewBox="0 0 15 15" fill={T.blue}>
@@ -621,6 +637,7 @@ export const BlogPublishZoomSurface: React.FC = () => {
               <div style={{display: 'flex', flexDirection: 'column', gap: 6}}>
                 <AuthorRow who="julien" />
                 <AuthorRow who="chunte" you />
+                <MerveRow />
               </div>
             </section>
           </div>
