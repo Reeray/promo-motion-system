@@ -3,7 +3,7 @@ import {AbsoluteFill, Img, continueRender, delayRender, staticFile, useCurrentFr
 import {EASE, lerp} from '../../lib/ease';
 import {FONT} from '../../lib/fonts';
 import {ELEV} from '../../lib/palette';
-import {Burst3D, BURST_ITEMS, BURST_TIMING, BURST_FRAMES} from '../../blocks/burst3d';
+import {Burst3D, BURST_ITEMS, burstTextFrames, burstTextTiming} from '../../blocks/burst3d';
 import type {CueKind} from '../sound-kinds';
 import {SURFACE_W, SURFACE_H} from './frame';
 
@@ -339,25 +339,29 @@ const BURST_FRAG: ((w: number, h: number) => React.ReactNode)[] = [
   ),
 ];
 
-export const BURST_SURFACE_FRAMES = BURST_FRAMES + 60; // the claim holds alone after the cut
+const CLAIM = 'Write together. Publish as your team.';
+const CLAIM_TIMING = burstTextTiming(CLAIM); // lead derives from the soft-blur-in reveal of this exact copy
+export const BURST_SURFACE_FRAMES = burstTextFrames(CLAIM) + 46; // the claim holds alone after the cut
 export const BURST_CUES: {at: number; kind: CueKind}[] = [
-  {at: BURST_TIMING.lead, kind: 'ui-rise'}, // the shoot
-  {at: BURST_TIMING.lead + BURST_TIMING.shoot + BURST_TIMING.dwell + Math.floor(BURST_TIMING.back * (BURST_TIMING.cut ?? BURST_TIMING.jump)), kind: 'ui-swap'}, // the throw-out cut
+  {at: CLAIM_TIMING.lead, kind: 'ui-rise'}, // the shoot
+  {at: CLAIM_TIMING.lead + CLAIM_TIMING.shoot + CLAIM_TIMING.dwell + Math.floor(CLAIM_TIMING.back * (CLAIM_TIMING.cut ?? CLAIM_TIMING.jump)), kind: 'ui-swap'}, // the throw-out cut
 ];
 
 export const BlogBurstSurface: React.FC = () => {
-  const f = useCurrentFrame();
   useCharter();
-  const tIn = lerp(f, [0, 10], [0, 1], EASE.out);
   // Non-bleed surfaces mount inside a shrink-to-fit transform wrapper — an AbsoluteFill root
   // collapses there (absolute children size nothing). Root must be the measured surface box.
   return (
     <div style={{width: SURFACE_W, height: SURFACE_H, position: 'relative'}}>
-      <Burst3D items={BURST_ITEMS} timing={BURST_TIMING} renderItem={(i, item) => BURST_FRAG[i % BURST_FRAG.length](item.size[0], item.size[1])}>
-        <div style={{textAlign: 'center', fontFamily: SANS, opacity: tIn}}>
-          <div style={{fontSize: 42, fontWeight: 700, color: '#14161c', letterSpacing: -0.6}}>Write together. Publish as your team.</div>
-        </div>
-      </Burst3D>
+      <Burst3D
+        items={BURST_ITEMS}
+        timing={CLAIM_TIMING}
+        renderItem={(i, item) => BURST_FRAG[i % BURST_FRAG.length](item.size[0], item.size[1])}
+        centerText={CLAIM}
+        centerFontSize={42}
+        centerColor="#14161c"
+        centerFontFamily={SANS}
+      />
     </div>
   );
 };

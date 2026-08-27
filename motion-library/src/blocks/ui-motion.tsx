@@ -3,8 +3,7 @@ import {ChipTokenize, LogTheater, LogTheaterZoomed, CameraPush} from '../clips/C
 import {LogoAnimationSurface, ANIM_FRAMES} from '../promo/surfaces/hf-logo-animation';
 import {DollyFlybyDemo} from '../demo/pose3d-demo';
 import {DOLLY_FLYBY_FRAMES} from './pose3d';
-import {BurstOrbitDemo} from '../demo/burst3d-demo';
-import {BURST_FRAMES} from './burst3d';
+import {BurstOrbitDemo, BURST_DEMO_FRAMES} from '../demo/burst3d-demo';
 
 /* UI-motion blocks (GPT-5.5 house standard) — same Block shape as the typography and
  * transition sets.
@@ -72,7 +71,7 @@ export const UI_BLOCKS: Block[] = [
     category: 'ui',
     source: 'pose3d family · orbit',
     poster: 40, // mid-dwell: the cloud fully out, the brusher grazing the headline
-    durationInFrames: BURST_FRAMES,
+    durationInFrames: BURST_DEMO_FRAMES,
     fps: 60,
     wide: true,
     desc: 'Many UI frames shoot out of a centre text line into a 3D ORBIT and carousel around it — one constant angular velocity runs the whole piece (shoot, hold and return are only the radial coordinate breathing on top of a rotation that never stops), the orbit plane is x/z so frames swing toward the camera and recede behind the text (perspective does the size work), and facing is one derived rule of orbit phase. Uneven by design: clumped phases, hard size/depth contrast, one small frame grazing the headline on its front pass. Birth snaps in at 60% of the path; the return is an accelerating throw hard-cut at 70% of its leg (~50% radius) on one global frame. Items are a plain data table — re-aim the burst without touching the motion; centre line and card content free via children/renderItem.',

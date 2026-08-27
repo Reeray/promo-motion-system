@@ -1,6 +1,6 @@
 import React from 'react';
 import {FONT} from '../lib/palette';
-import {Burst3D, BURST_FRAMES, BURST_ITEMS, BURST_TIMING} from '../blocks/burst3d';
+import {Burst3D, BURST_ITEMS, burstTextFrames, burstTextTiming} from '../blocks/burst3d';
 
 /* ============================================================================
  * BURST3D DEMO — gallery demo of the admitted orbit burst (BURST_TIMING defaults:
@@ -108,20 +108,19 @@ const MiniFrame: React.FC<{index: number; w: number; h: number}> = ({index, w, h
   );
 };
 
-const CenterLine: React.FC = () => (
-  <div style={{textAlign: 'center', fontFamily: FONT.sans}}>
-    <div style={{fontSize: 13, letterSpacing: 2.2, textTransform: 'uppercase', color: MUTED, marginBottom: 12, fontWeight: 600}}>
-      One platform
-    </div>
-    <div style={{fontSize: 44, fontWeight: 650, color: INK, letterSpacing: -0.8}}>Everything ships together</div>
-  </div>
-);
+const DEMO_TEXT = 'Everything ships together';
+export const BURST_DEMO_FRAMES = burstTextFrames(DEMO_TEXT);
 
-/** Gallery block: the admitted orbit burst at its ruled defaults, no reel chrome. */
+/** Gallery block: the admitted orbit burst with its soft-blur-in centre reveal. */
 export const BurstOrbitDemo: React.FC = () => (
   <div style={{position: 'absolute', inset: 0, background: '#0b0d10'}}>
-    <Burst3D items={BURST_ITEMS} timing={BURST_TIMING} renderItem={(i, item) => <MiniFrame index={i} w={item.size[0]} h={item.size[1]} />}>
-      <CenterLine />
-    </Burst3D>
+    <Burst3D
+      items={BURST_ITEMS}
+      timing={burstTextTiming(DEMO_TEXT)}
+      renderItem={(i, item) => <MiniFrame index={i} w={item.size[0]} h={item.size[1]} />}
+      centerText={DEMO_TEXT}
+      centerFontSize={44}
+      centerColor={INK}
+    />
   </div>
 );

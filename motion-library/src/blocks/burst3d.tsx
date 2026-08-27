@@ -1,6 +1,8 @@
 import React from 'react';
 import {useCurrentFrame} from 'remotion';
 import {EASE} from './../lib/ease';
+import {SpecText, countUnits, timeline, type Spec} from './animate-text/SpecText';
+import SOFT_BLUR from './animate-text/specs/soft-blur-in.json';
 
 /* ============================================================================
  * BURST3D — many UI frames shoot out of a centre text line into a 3D ORBIT,
@@ -124,12 +126,37 @@ const Frame3D: React.FC<{item: BurstItem; timing: BurstTiming; children: React.R
   );
 };
 
+/* ── centre-text reveal (soft-blur-in) ───────────────────────────────────────
+ * The centre line is a TEXT-ANIMATION-layer citizen: when `centerText` is set the block
+ * renders it through SpecText with the soft-blur-in spec (per-character blur/rise, timing
+ * locked in the spec). The reveal runs during the lead — use `burstTextTiming()` so the
+ * lead DERIVES from the spec's enter total for that exact copy (never hand-typed). */
+
+export const burstTextLead = (text: string): number =>
+  Math.ceil((timeline(SOFT_BLUR as unknown as Spec, countUnits(text, 'per-character')).enterTotal / 1000) * 60) + 6;
+
+/** The admitted timing with the lead grown to fit the centre text's reveal. */
+export const burstTextTiming = (text: string): BurstTiming => ({...BURST_TIMING, lead: burstTextLead(text)});
+
+/** Total frames of a text-mode burst (reveal-lead + flight + settle breath). */
+export const burstTextFrames = (text: string): number => {
+  const t = burstTextTiming(text);
+  return t.lead + t.shoot + t.dwell + Math.ceil(t.back * (t.cut ?? t.jump)) + 14;
+};
+
 export const Burst3D: React.FC<{
   items: BurstItem[];
   timing: BurstTiming;
   renderItem: (index: number, item: BurstItem) => React.ReactNode;
-  children?: React.ReactNode; // the centre line
-}> = ({items, timing, renderItem, children}) => {
+  /** Centre line as a soft-blur-in reveal — the block's own text treatment. */
+  centerText?: string;
+  centerFontSize?: number;
+  centerColor?: string;
+  centerFontFamily?: string;
+  centerFontWeight?: number;
+  /** Custom centre content (used when centerText is not set). */
+  children?: React.ReactNode;
+}> = ({items, timing, renderItem, centerText, centerFontSize = 42, centerColor = '#14161c', centerFontFamily, centerFontWeight = 700, children}) => {
   const f = useCurrentFrame();
   // the centre breathes with the burst: a virtual zero-delay flight drives its spotlight scale
   const g = burstProgress(f, 0, timing);
@@ -158,7 +185,38 @@ export const Burst3D: React.FC<{
           transform: `translateZ(60px) scale(${1 + 0.04 * g})`,
         }}
       >
-        {children}
+        {centerText ? (
+          f < timing.lead ? (
+            /* the reveal — runs while the stage is otherwise empty, so its per-glyph blur
+             * filters never coexist with the 3D fragments (filtered subtrees inside a
+             * preserve-3d scene get dropped by the compositor once depth sorting starts) */
+            <SpecText
+              spec={SOFT_BLUR as unknown as Spec}
+              sample={centerText}
+              bare
+              loop={false}
+              fontSize={centerFontSize}
+              color={centerColor}
+              fontFamily={centerFontFamily}
+              fontWeight={centerFontWeight}
+            />
+          ) : (
+            /* filter-free static twin, swapped in on the exact frame the flights begin —
+             * same wrapper metrics, same per-char spans (kerning off in both), so the
+             * swap is pixel-stable and the text stays depth-sortable under the brush */
+            <div style={{maxWidth: 1120, padding: '0 60px', textAlign: 'center'}}>
+              <div style={{display: 'inline-block', fontFamily: centerFontFamily ?? undefined, fontSize: centerFontSize, fontWeight: centerFontWeight, letterSpacing: -1.4, color: centerColor, lineHeight: 1.16}}>
+                {[...centerText].map((ch, i) => (
+                  <span key={i} style={{whiteSpace: 'pre'}}>
+                    {ch}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )
+        ) : (
+          children
+        )}
       </div>
     </div>
   );

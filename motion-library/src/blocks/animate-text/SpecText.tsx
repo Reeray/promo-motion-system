@@ -104,7 +104,18 @@ export const countUnits = (sample: string, target: Spec['target']) =>
 /* `color` MUST be set when placing a text block on a fixed-palette stage (e.g. a dark
    promo). The default is theme-aware and falls back to dark ink, which is invisible on a
    dark stage — the same failure mode as putting a light-UI mockup in dark mode. */
-export const SpecText: React.FC<{spec: Spec; sample: string; fontSize?: number; loop?: boolean; bare?: boolean; color?: string}> = ({spec, sample, fontSize = 56, loop = true, bare = false, color = P.fg}) => {
+export const SpecText: React.FC<{
+  spec: Spec;
+  sample: string;
+  fontSize?: number;
+  loop?: boolean;
+  bare?: boolean;
+  color?: string;
+  /** CONTENT-layer overrides (a block's font is content, like its copy) — timing stays locked. */
+  fontFamily?: string;
+  fontWeight?: number;
+  letterSpacing?: number;
+}> = ({spec, sample, fontSize = 56, loop = true, bare = false, color = P.fg, fontFamily = SANS, fontWeight = 600, letterSpacing = -1.4}) => {
   const f = useCurrentFrame();
   const {fps} = useVideoConfig();
   const ms = (f / fps) * 1000;
@@ -131,7 +142,7 @@ export const SpecText: React.FC<{spec: Spec; sample: string; fontSize?: number; 
 
   const content = (
     <div style={{perspective: 900, maxWidth: 1120, padding: '0 60px', textAlign: 'center'}}>
-      <div style={{display: 'inline-block', transformStyle: 'preserve-3d', fontFamily: SANS, fontSize, fontWeight: 600, letterSpacing: -1.4, color, lineHeight: 1.16}}>
+      <div style={{display: 'inline-block', transformStyle: 'preserve-3d', fontFamily, fontSize, fontWeight, letterSpacing, color, lineHeight: 1.16}}>
         {lines.map((line, li) => (
           <span key={li} style={{display: 'block'}}>
             {line.map((u, ui) => render(u, `${li}-${ui}`))}
