@@ -25,7 +25,7 @@ const SPEC = new Map(ANIMATE_TEXT_EFFECTS.map((e) => [e.id, e.spec]));
  *  line of text. Better to refuse than to render an eight-second title nobody asked for. */
 export const SCENE_WARN = 240;
 export const SCENE_MAX = 480;
-export const TOTAL_MAX = 1200; // 20s — this system exists for quick, simple promos
+export const TOTAL_MAX = 3600; // 60s — the MEDIUM house-standard ceiling (skill Blueprint 3: 40–60s); raised from 20s when the first MEDIUM-tier doc (hf-blog-editor, ~35s approved treatment) hit the old quick-promo cap
 
 /** Body length of a scene, before its intro floor and outro are applied. */
 const bodyFrames = (s: Scene): number => {

@@ -7,6 +7,7 @@ motion-library/out/
 # brand/device assets, downloaded at build time for fidelity. See public/README.md
 motion-library/public/hf-avatars/
 motion-library/public/hf-hardware/
+motion-library/public/hf-blog/
 
 # ALL audio is user-supplied. Nothing audio ships with this repo: cue timings are derived
 # by the system, but the sounds themselves are yours to provide via the editor.

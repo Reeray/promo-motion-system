@@ -21,7 +21,7 @@ import {loadFont as loadSourceSans} from '@remotion/google-fonts/SourceSans3';
 const inter = loadInter('normal', {weights: ['400', '500', '600', '700'], subsets: ['latin']});
 const plex = loadPlexMono('normal', {weights: ['400', '500', '600'], subsets: ['latin']});
 // Product font for Hugging Face UI mocks (measured: HF body is Source Sans Pro / Source Sans 3).
-const sourceSans = loadSourceSans('normal', {weights: ['400', '600'], subsets: ['latin']});
+const sourceSans = loadSourceSans('normal', {weights: ['400', '600', '700'], subsets: ['latin']});
 
 // Loader-registered family names (Inter / IBM Plex Mono), with generic fallbacks.
 export const FONT = {

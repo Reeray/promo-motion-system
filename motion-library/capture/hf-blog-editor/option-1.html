@@ -1,0 +1,434 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>New Article · Option 1 — HF Blog Editor demo</title>
+<link rel="icon" href="assets/huggingface_logo-noborder.svg" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet" />
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+	theme: {
+		extend: {
+			colors: {
+				gray: { 350: "#b3bcc9", 850: "#141c2e", 925: "#101623", 950: "#0b0f19" },
+				yellow: { 50:"#fffbeb",100:"#fef3c7",200:"#fde68a",300:"#fcd34d",400:"#fbbf24",500:"#f59e0b",600:"#d97706",700:"#b45309",800:"#92400e",900:"#78350f" }
+			},
+			fontSize: { smd: ["0.9375rem", { lineHeight: "1.4375rem" }] },
+			fontFamily: {
+				sans: ['"Source Sans Pro"', '"Source Sans 3"', "ui-sans-serif", "system-ui", "sans-serif"],
+				mono: ['"IBM Plex Mono"', "ui-monospace", "monospace"],
+				serif: ["Charter", "Georgia", "serif"]
+			}
+		}
+	}
+};
+</script>
+<link rel="stylesheet" href="hf.css" />
+</head>
+<body class="flex min-h-screen flex-col bg-white text-gray-800 antialiased">
+
+<!-- ══ Hub header ══ -->
+<header class="border-b border-gray-100 bg-white">
+	<div class="mx-auto flex h-16 max-w-[1536px] items-center px-4">
+		<a href="index.html" class="mr-2 flex flex-none items-center">
+			<img alt="Hugging Face's logo" class="w-7 md:mr-2" src="assets/huggingface_logo-noborder.svg" />
+			<span class="hidden whitespace-nowrap text-lg font-bold md:block">Hugging Face</span>
+		</a>
+		<div class="relative mr-2 flex-1 sm:max-w-sm">
+			<svg class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" viewBox="0 0 32 32" fill="currentColor"><path d="M30 28.59L22.45 21A11 11 0 1 0 21 22.45L28.59 30zM5 14a9 9 0 1 1 9 9a9 9 0 0 1-9-9z"/></svg>
+			<input class="w-full rounded-lg border border-gray-200 py-1.5 pl-9 pr-3 text-sm placeholder-gray-400 shadow-inner outline-none focus:ring-1 focus:ring-inset focus:ring-indigo-200" placeholder="Search models, datasets, users..." />
+		</div>
+		<nav class="ml-auto flex items-center gap-5 max-lg:hidden">
+			<a href="#" class="navlink group hover:text-indigo-700"><svg class="text-gray-500 group-hover:text-indigo-500" viewBox="0 0 24 24" fill="currentColor"><path d="M20.23 7.24L12 12L3.77 7.24a1.98 1.98 0 0 1 .7-.71L11 2.76c.62-.35 1.38-.35 2 0l6.53 3.77c.29.173.531.418.7.71z" opacity=".25"/><path d="M12 12v9.5a2.09 2.09 0 0 1-.91-.21L4.5 17.48a2.003 2.003 0 0 1-1-1.73v-7.5a2.06 2.06 0 0 1 .27-1.01L12 12z" opacity=".5"/><path d="M20.5 8.25v7.5a2.003 2.003 0 0 1-1 1.73l-6.62 3.82c-.275.13-.576.198-.88.2V12l8.23-4.76c.175.308.268.656.27 1.01z"/></svg>Models</a>
+			<a href="#" class="navlink group hover:text-red-700"><svg class="text-gray-500 group-hover:text-red-500" viewBox="0 0 25 25" fill="currentColor"><ellipse cx="12.5" cy="5" fill-opacity="0.25" rx="7.5" ry="2"/><path d="M12.5 15C16.6421 15 20 14.1046 20 13V20C20 21.1046 16.6421 22 12.5 22C8.35786 22 5 21.1046 5 20V13C5 14.1046 8.35786 15 12.5 15Z" opacity="0.5"/><path d="M12.5 7C16.6421 7 20 6.10457 20 5V11.5C20 12.6046 16.6421 13.5 12.5 13.5C8.35786 13.5 5 12.6046 5 11.5V5C5 6.10457 8.35786 7 12.5 7Z" opacity="0.5"/><path d="M5.23628 12C5.08204 12.1598 5 12.8273 5 13C5 14.1046 8.35786 15 12.5 15C16.6421 15 20 14.1046 20 13C20 12.8273 19.918 12.1598 19.7637 12C18.9311 12.8626 15.9947 13.5 12.5 13.5C9.0053 13.5 6.06886 12.8626 5.23628 12Z"/></svg>Datasets</a>
+			<a href="#" class="navlink group hover:text-blue-700"><svg class="text-gray-500 group-hover:text-blue-500" viewBox="0 0 25 25" fill="currentColor"><path opacity=".5" d="M6.016 14.674v4.31h4.31v-4.31h-4.31ZM14.674 14.674v4.31h4.31v-4.31h-4.31ZM6.016 6.016v4.31h4.31v-4.31h-4.31Z"/><path opacity=".75" fill-rule="evenodd" clip-rule="evenodd" d="M3 4.914C3 3.857 3.857 3 4.914 3h6.514c.884 0 1.628.6 1.848 1.414a5.171 5.171 0 0 1 7.31 7.31c.815.22 1.414.964 1.414 1.848v6.514A1.914 1.914 0 0 1 20.086 22H4.914A1.914 1.914 0 0 1 3 20.086V4.914Zm3.016 1.102v4.31h4.31v-4.31h-4.31Zm0 12.968v-4.31h4.31v4.31h-4.31Zm8.658 0v-4.31h4.31v4.31h-4.31Zm0-10.813a2.155 2.155 0 1 1 4.31 0 2.155 2.155 0 0 1-4.31 0Z"/><path opacity=".25" d="M16.829 6.016a2.155 2.155 0 1 0 0 4.31 2.155 2.155 0 0 0 0-4.31Z"/></svg>Spaces</a>
+			<a href="#" class="navlink group hover:text-blue-800"><svg class="!text-blue-600" viewBox="0 0 48 48" fill="none"><path opacity="0.25" d="M36 4H12C7.58172 4 4 7.58172 4 12V36C4 40.4183 7.58172 44 12 44H36C40.4183 44 44 40.4183 44 36V12C44 7.58172 40.4183 4 36 4Z" fill="currentColor"/><path opacity="0.5" d="M31 11H17C13.6863 11 11 13.6863 11 17V31C11 34.3137 13.6863 37 17 37H31C34.3137 37 37 34.3137 37 31V17C37 13.6863 34.3137 11 31 11Z" fill="currentColor"/><path d="M27 18H21C19.3431 18 18 19.3431 18 21V27C18 28.6569 19.3431 30 21 30H27C28.6569 30 30 28.6569 30 27V21C30 19.3431 28.6569 18 27 18Z" fill="currentColor"/></svg>Buckets<span class="-mt-2 ml-0.5 rounded bg-blue-500/10 px-1 text-[0.6rem] font-semibold leading-tight text-blue-700">NEW</span></a>
+			<a href="#" class="navlink group hover:text-yellow-700"><svg class="text-gray-500 group-hover:text-yellow-500" viewBox="0 0 16 16" fill="currentColor"><path d="m2.28 3.7-.3.16a.67.67 0 0 0-.34.58v8.73l.01.04.02.07.01.04.03.06.02.04.02.03.04.06.05.05.04.04.06.04.06.04.08.04.08.02h.05l.07.02h.11l.04-.01.07-.02.03-.01.07-.03.22-.12a5.33 5.33 0 0 1 5.15.1.67.67 0 0 0 .66 0 5.33 5.33 0 0 1 5.33 0 .67.67 0 0 0 1-.58V4.36a.67.67 0 0 0-.34-.5l-.3-.17v7.78a.63.63 0 0 1-.87.59 4.9 4.9 0 0 0-4.35.35l-.65.39a.29.29 0 0 1-.15.04.29.29 0 0 1-.16-.04l-.65-.4a4.9 4.9 0 0 0-4.34-.34.63.63 0 0 1-.87-.59V3.7Z"/><path fill-rule="evenodd" clip-rule="evenodd" d="M8 3.1a5.99 5.99 0 0 0-5.3-.43.66.66 0 0 0-.42.62v8.18c0 .45.46.76.87.59a4.9 4.9 0 0 1 4.34.35l.65.39c.05.03.1.04.16.04.05 0 .1-.01.15-.04l.65-.4a4.9 4.9 0 0 1 4.35-.34.63.63 0 0 0 .86-.59V3.3a.67.67 0 0 0-.41-.62 5.99 5.99 0 0 0-5.3.43l-.3.17L8 3.1Z" opacity=".4"/><path d="M8.73 4.97a.43.43 0 1 0-.86 0v5.48a.43.43 0 1 0 .86 0V4.96Z"/></svg>Docs</a>
+			<a href="#" class="navlink group hover:text-indigo-700"><svg class="text-gray-500 group-hover:text-indigo-500" viewBox="0 0 12 12" fill="none"><path fill-rule="evenodd" clip-rule="evenodd" d="M4.9 1.35a3.16 3.16 0 0 0-2.8 2.07L.37 8.58C0 9.71.7 10.65 1.86 10.65H7.3a3.2 3.2 0 0 0 2.84-2.07l1.67-5.16c.36-1.13-.3-2.07-1.46-2.07H4.91Zm.4 2.07L3.57 8.47h3.57l.36-1.12H5.4l.28-.91h1.75l.4-1.1H6.07l.3-.83h2l.36-1.1H5.27h.04Z" fill="currentColor"/></svg>Enterprise</a>
+			<a href="#" class="navlink hover:text-black">Pricing</a>
+			<button class="text-gray-500 hover:text-gray-800"><svg class="h-5 w-6" viewBox="0 0 32 18" fill="currentColor"><path fill-rule="evenodd" clip-rule="evenodd" d="M14.4504 3.30221C14.4504 2.836 14.8284 2.45807 15.2946 2.45807H28.4933C28.9595 2.45807 29.3374 2.836 29.3374 3.30221C29.3374 3.76842 28.9595 4.14635 28.4933 4.14635H15.2946C14.8284 4.14635 14.4504 3.76842 14.4504 3.30221Z"/><path fill-rule="evenodd" clip-rule="evenodd" d="M14.4504 9.00002C14.4504 8.53382 14.8284 8.15588 15.2946 8.15588H28.4933C28.9595 8.15588 29.3374 8.53382 29.3374 9.00002C29.3374 9.46623 28.9595 9.84417 28.4933 9.84417H15.2946C14.8284 9.84417 14.4504 9.46623 14.4504 9.00002Z"/><path fill-rule="evenodd" clip-rule="evenodd" d="M14.4504 14.6978C14.4504 14.2316 14.8284 13.8537 15.2946 13.8537H28.4933C28.9595 13.8537 29.3374 14.2316 29.3374 14.6978C29.3374 15.164 28.9595 15.542 28.4933 15.542H15.2946C14.8284 15.542 14.4504 15.164 14.4504 14.6978Z"/><path fill-rule="evenodd" clip-rule="evenodd" d="M1.94549 6.87377C2.27514 6.54411 2.80962 6.54411 3.13928 6.87377L6.23458 9.96907L9.32988 6.87377C9.65954 6.54411 10.194 6.54411 10.5237 6.87377C10.8533 7.20343 10.8533 7.73791 10.5237 8.06756L6.23458 12.3567L1.94549 8.06756C1.61583 7.73791 1.61583 7.20343 1.94549 6.87377Z"/></svg></button>
+		</nav>
+		<img src="assets/chunte.png" alt="Chunte" class="ml-5 h-8 w-8 flex-none rounded-full ring-1 ring-gray-200" />
+	</div>
+</header>
+
+<!-- ══ Editor app bar: title · theme · Blog Discussion ══ -->
+<div class="sticky top-0 z-20 border-b border-gray-100 bg-white">
+	<div class="mx-auto flex max-w-[1536px] items-center justify-between gap-4 px-4 py-2.5">
+		<div class="flex min-w-0 items-center gap-3">
+			<div class="flex items-center gap-1.5">
+				<svg class="h-5 w-5 min-w-5 text-blue-600" viewBox="0 0 15 15" fill="currentColor"><path d="M3.417 12.75c-.32 0-.596-.114-.824-.342a1.126 1.126 0 0 1-.343-.825V3.417c0-.321.114-.597.343-.824.23-.228.503-.343.824-.343h8.166c.321 0 .596.114.825.343.228.229.342.503.342.824v8.166c0 .32-.114.596-.342.825a1.12 1.12 0 0 1-.825.342zm1.166-2.333h4.084V9.25H4.583v1.167m0-2.334h5.834V6.917H4.583v1.166m0-2.333h5.834V4.583H4.583V5.75"/></svg>
+				<h1 class="whitespace-nowrap text-xl font-bold text-black">New Article</h1>
+			</div>
+			<p class="min-w-0 translate-y-px truncate text-sm text-gray-400 max-md:hidden">Publish a community Article on Hugging Face Blog</p>
+		</div>
+		<div class="flex items-center gap-3">
+			<!-- theme mode toggle (same component, relocated to the app bar) -->
+			<div class="flex items-center rounded-full border border-gray-100 bg-white px-0.5 py-0.5">
+				<button class="flex h-5 w-5 items-center justify-center rounded-full bg-yellow-50 text-yellow-500" title="Light theme">
+					<svg class="h-3.5 w-3.5" viewBox="0 0 32 32" fill="currentColor"><path d="M16 12.005a4 4 0 1 1-4 4a4.005 4.005 0 0 1 4-4m0-2a6 6 0 1 0 6 6a6 6 0 0 0-6-6z"/><path d="M5.394 6.813l1.414-1.415l3.506 3.506L8.9 10.318z"/><path d="M2 15.005h5v2H2z"/><path d="M5.394 25.197L8.9 21.691l1.414 1.415l-3.506 3.505z"/><path d="M15 25.005h2v5h-2z"/><path d="M21.687 23.106l1.414-1.415l3.506 3.506l-1.414 1.414z"/><path d="M25 15.005h5v2h-5z"/><path d="M21.687 8.904l3.506-3.506l1.414 1.415l-3.506 3.505z"/><path d="M15 2.005h2v5h-2z"/></svg>
+				</button>
+				<button class="flex h-5 w-5 items-center justify-center rounded-full text-gray-400 hover:text-gray-600" title="Dark theme">
+					<svg class="h-3 w-3" viewBox="0 0 32 32" fill="currentColor"><path d="M13.502 5.414a15.075 15.075 0 0 0 11.594 18.194a11.113 11.113 0 0 1-7.975 3.39c-.138 0-.278.005-.418 0a11.094 11.094 0 0 1-3.2-21.584M14.98 3a1.002 1.002 0 0 0-.175.016a13.096 13.096 0 0 0 1.825 25.981c.164.006.328 0 .49 0a13.072 13.072 0 0 0 10.703-5.555a1.01 1.01 0 0 0-.783-1.565A13.08 13.08 0 0 1 15.89 4.38A1.015 1.015 0 0 0 14.98 3z"/></svg>
+				</button>
+				<button class="flex h-5 w-5 items-center justify-center rounded-full text-gray-400 hover:text-gray-600" title="System theme">
+					<svg class="h-3 w-3" viewBox="0 0 32 32" fill="currentColor"><path d="M26 22.5H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h20a2 2 0 0 1 2 2v13.5a2 2 0 0 1-2 2ZM6 7v13.5h20V7H6ZM2 26a1 1 0 0 1 1-1h26a1 1 0 1 1 0 2H3a1 1 0 0 1-1-1Z"/></svg>
+				</button>
+			</div>
+			<a class="tag" href="https://huggingface.co/spaces/blog-explorers/README/discussions/5" target="_blank">
+				<svg class="h-3.5 w-3.5 text-black" viewBox="0 0 32 32" fill="currentColor"><path d="M17 22v-8h-4v2h2v6h-3v2h8v-2h-3z"/><path d="M16 8a1.5 1.5 0 1 0 1.5 1.5A1.5 1.5 0 0 0 16 8z"/><path d="M16 30a14 14 0 1 1 14-14a14 14 0 0 1-14 14zm0-26a12 12 0 1 0 12 12A12 12 0 0 0 16 4z"/></svg>
+				<span>Blog Discussion</span>
+			</a>
+		</div>
+	</div>
+</div>
+
+<!-- ══ Main: editor ┃ article settings panel, on the gradient page ══ -->
+<div class="flex flex-1 bg-gradient-to-t from-gray-50 to-white">
+<div class="mx-auto flex w-full max-w-[1536px] items-stretch px-4">
+
+	<!-- Editor pane -->
+	<div class="relative min-w-0 flex-1 border-x border-gray-100 bg-white">
+		<!-- syntax guide + preview -->
+		<div class="absolute right-4 top-3 z-10 flex items-center gap-2">
+			<div class="relative">
+				<button id="syntax-btn" class="tag">
+					<svg class="h-3.5 w-3.5 text-black" viewBox="0 0 32 32" fill="currentColor"><path d="M17 22v-8h-4v2h2v6h-3v2h8v-2h-3z"/><path d="M16 8a1.5 1.5 0 1 0 1.5 1.5A1.5 1.5 0 0 0 16 8z"/><path d="M16 30a14 14 0 1 1 14-14a14 14 0 0 1-14 14zm0-26a12 12 0 1 0 12 12A12 12 0 0 0 16 4z"/></svg>
+					<span>Syntax guide</span>
+				</button>
+				<div id="syntax-popover" class="popover popover-down !w-80 p-4">
+					<div class="max-h-96 overflow-y-auto pr-1">
+						<ul class="list-disc space-y-2 pl-4 text-sm text-gray-500">
+							<li>
+								Write your article using <a href="https://github.com/adam-p/markdown-here/wiki/Markdown-Here-Cheatsheet" target="_blank" class="text-blue-500 underline">Markdown</a>.
+								<details class="mt-1" open>
+									<summary class="cursor-pointer">Commonly used syntax</summary>
+									<div class="mb-2 mt-2 overflow-hidden rounded-md border border-gray-200">
+										<table class="w-full table-auto bg-white text-sm text-gray-600">
+											<tbody class="[&_td]:border-gray-200 [&_td]:px-2 [&_td]:py-1 [&_td:not(:last-child)]:border-r [&_tr:not(:last-child)_td]:border-b">
+												<tr><td># Header<br />...<br />###### Header</td><td>H1 Header<br />...<br />H6 Header</td></tr>
+												<tr><td>*italics* or _italics_</td><td><em>italics</em></td></tr>
+												<tr><td>**bold**</td><td><strong>bold</strong></td></tr>
+												<tr><td>[Link](https://...)</td><td><a class="underline">Link</a></td></tr>
+												<tr><td>* item 1<br />* item 2</td><td>&bull; item 1<br />&bull; item 2</td></tr>
+												<tr><td>1. item 1<br />2. item 2</td><td>1. item 1<br />2. item 2</td></tr>
+												<tr><td>&gt; quoted text</td><td><span class="border-l-2 border-gray-200 pl-2">quoted text</span></td></tr>
+												<tr><td>`inline code`</td><td><code class="bg-gray-200/50 px-1">inline code</code></td></tr>
+												<tr><td>```<br />code block<br />```</td><td><span class="block rounded-md border border-gray-200 bg-gray-200/50 p-1.5"><code>code block</code></span></td></tr>
+											</tbody>
+										</table>
+									</div>
+								</details>
+							</li>
+							<li>Start your post with a h1 header (<code class="rounded-sm bg-gray-300/30 px-1">#</code>), it will be used as the article title.</li>
+							<li>
+								Use <a href="https://en.wikibooks.org/wiki/LaTeX/Mathematics#Mathematics_environments" target="_blank" class="text-blue-500 underline">LaTeX</a> to add math expressions:
+								<span class="mt-0.5 block"><span class="rounded-sm bg-gray-300/50 px-1">\\(...\\)</span> for inline formulas · <span class="rounded-sm bg-gray-300/50 px-1">$$…$$</span> for displayed equations</span>
+							</li>
+						</ul>
+					</div>
+				</div>
+			</div>
+			<button data-preview-toggle data-state="edit" class="tag">
+				<svg class="h-3.5 w-3.5 text-gray-500" viewBox="0 0 24 24" fill="currentColor"><path d="M12 5c-5 0-9 4.5-10 7 1 2.5 5 7 10 7s9-4.5 10-7c-1-2.5-5-7-10-7zm0 11.5A4.5 4.5 0 1 1 16.5 12 4.5 4.5 0 0 1 12 16.5zm0-7A2.5 2.5 0 1 0 14.5 12 2.5 2.5 0 0 0 12 9.5z"/></svg>
+				<span class="lbl">Preview</span>
+			</button>
+		</div>
+
+		<!-- panel handle: settings icon + iOS-style grab bar, floated off the panel edge -->
+		<button id="collapse-handle" class="handle-zone" title="Hide article settings" aria-label="Toggle article settings panel">
+			<svg class="zone-gear h-4 w-4" viewBox="0 0 9 7" fill="currentColor"><path d="M8.537 1.153H7.361A1.445 1.445 0 0 0 5.954 0c-.689 0-1.263.49-1.407 1.153H.5v.576h4.047a1.445 1.445 0 0 0 1.407 1.153c.689 0 1.263-.49 1.407-1.153h1.176v-.576M5.954 2.305a.847.847 0 0 1-.861-.864c0-.49.373-.865.861-.865s.861.375.861.865-.373.864-.861.864M.5 5.764h1.177a1.445 1.445 0 0 0 1.406 1.152c.69 0 1.263-.49 1.407-1.152h4.047v-.577H4.49a1.445 1.445 0 0 0-1.407-1.152c-.688 0-1.263.49-1.406 1.152H.5v.577M3.083 4.61c.488 0 .862.375.862.864 0 .49-.374.865-.862.865a.847.847 0 0 1-.86-.865c0-.49.372-.864.86-.864"/></svg>
+			<span class="ios-handle"></span>
+		</button>
+
+		<!-- markdown source: "Designing Huggy" draft -->
+		<div id="md-source" data-editor class="cm px-8 pb-8 pt-5"><span class="h"># Designing Huggy: Behind Hugging Face&rsquo;s Brand Assets</span>
+
+A look at how we craft Huggy — the face of Hugging Face — and the
+design system behind HFBA.
+
+<span class="h">## From emoji to mascot</span>
+
+Huggy started as the 🤗 emoji and grew into a full character system:
+
+- Vector-first: every pose starts as simple geometry
+- One yellow <span class="str">`#FFD21E`</span>, one orange <span class="str">`#FF9D0B`</span>
+- Expressions scale from 16px favicons to conference banners
+
+<span class="h">## Generating variations</span>
+
+We fine-tuned a LoRA on curated poses to explore new ones:
+
+<span class="fence codebg">```python</span><span class="codebg"><span class="kw">from</span> diffusers <span class="kw">import</span> DiffusionPipeline
+
+pipe = DiffusionPipeline.from_pretrained(<span class="str">"black-forest-labs/FLUX.1-dev"</span>)
+pipe.load_lora_weights(<span class="str">"Chunte/huggy-style-v6-lora"</span>)
+image = pipe(<span class="str">"huggy waving, flat vector, brand yellow"</span>).images[0]</span><span class="fence codebg">```</span>
+
+<span class="quote">&gt; A mascot is a promise: the product should feel like this.</span>
+
+![Huggy poses](https://huggingface.co/datasets/Chunte/documentation-images/resolve/main/huggy-poses.png)
+</div>
+
+		<!-- rendered preview -->
+		<div id="md-preview" data-editor class="prose-charter hidden max-w-3xl px-10 py-8">
+			<h1>Designing Huggy: Behind Hugging Face&rsquo;s Brand Assets</h1>
+			<p>A look at how we craft Huggy — the face of Hugging Face — and the design system behind HFBA.</p>
+			<h2>From emoji to mascot</h2>
+			<p>Huggy started as the 🤗 emoji and grew into a full character system:</p>
+			<ul>
+				<li>Vector-first: every pose starts as simple geometry</li>
+				<li>One yellow <code>#FFD21E</code>, one orange <code>#FF9D0B</code></li>
+				<li>Expressions scale from 16px favicons to conference banners</li>
+			</ul>
+			<h2>Generating variations</h2>
+			<p>We fine-tuned a LoRA on curated poses to explore new ones:</p>
+			<pre><code>from diffusers import DiffusionPipeline
+
+pipe = DiffusionPipeline.from_pretrained("black-forest-labs/FLUX.1-dev")
+pipe.load_lora_weights("Chunte/huggy-style-v6-lora")
+image = pipe("huggy waving, flat vector, brand yellow").images[0]</code></pre>
+			<blockquote>A mascot is a promise: the product should feel like this.</blockquote>
+			<img src="assets/thumb-huggy.svg" alt="Huggy poses" />
+		</div>
+
+		<!-- "Untitled" — brand-new draft: placeholder + common syntax examples -->
+		<div id="md-source-new" data-editor class="cm-scaffold hidden px-8 pb-8 pt-5">
+			<div><span class="scaffold-caret"></span># Your title here</div>
+			<div>&nbsp;</div>
+			<div>Your post content here...</div>
+			<div class="mt-7">
+				<div>## Section heading</div>
+				<div>&nbsp;</div>
+				<div>**bold** and *italic*</div>
+				<div>[link text](https://hf.co)</div>
+			</div>
+			<button id="scaffold-guide-link" class="mt-7 flex items-center gap-1.5 font-sans text-xs text-gray-400 hover:text-gray-600">
+				<svg class="h-3.5 w-3.5 flex-none" viewBox="0 0 32 32" fill="currentColor"><path d="M17 22v-8h-4v2h2v6h-3v2h8v-2h-3z"/><path d="M16 8a1.5 1.5 0 1 0 1.5 1.5A1.5 1.5 0 0 0 16 8z"/><path d="M16 30a14 14 0 1 1 14-14a14 14 0 0 1-14 14zm0-26a12 12 0 1 0 12 12A12 12 0 0 0 16 4z"/></svg>
+				<span>See full <span class="underline underline-offset-2">syntax guide</span></span>
+			</button>
+		</div>
+		<div id="md-preview-new" data-editor class="hidden px-10 py-20 text-center">
+			<p class="font-sans text-sm text-gray-400">Nothing to preview yet — start writing and your article will render here.</p>
+		</div>
+
+		<!-- "Test" draft — the saved-draft example -->
+		<div id="md-source-test" data-editor class="cm hidden px-8 pb-8 pt-5"><span class="h"># Testing the community blog editor end to end</span>
+
+A scratch draft to poke at the Hub blog editor.
+
+- Saved to the server, so it has history
+- Safe to close the tab and come back later
+
+<span class="quote">&gt; Nothing to see here — just testing.</span>
+</div>
+		<div id="md-preview-test" data-editor class="prose-charter hidden max-w-3xl px-10 py-8">
+			<h1>Testing the community blog editor end to end</h1>
+			<p>A scratch draft to poke at the Hub blog editor.</p>
+			<ul>
+				<li>Saved to the server, so it has history</li>
+				<li>Safe to close the tab and come back later</li>
+			</ul>
+			<blockquote>Nothing to see here — just testing.</blockquote>
+		</div>
+	</div>
+
+	<!-- Article settings panel -->
+	<aside id="meta-panel" class="relative flex w-[420px] flex-none flex-col gap-7 pb-8 pl-6 pr-0 pt-5 max-lg:fixed max-lg:inset-y-0 max-lg:right-0 max-lg:z-40 max-lg:w-[min(420px,88vw)] max-lg:overflow-y-auto max-lg:border-l max-lg:border-gray-100 max-lg:bg-white max-lg:pl-8 max-lg:pr-6 max-lg:shadow-2xl">
+		<!-- drawer close handle (small screens only) -->
+		<button id="panel-close" class="absolute left-0 top-1/2 flex h-24 w-6 -translate-y-1/2 items-center justify-center opacity-50 transition-opacity hover:opacity-100 lg:hidden" title="Hide article settings">
+			<span class="ios-handle"></span>
+		</button>
+
+		<!-- Blog URL -->
+		<section>
+			<div class="mb-2 flex items-center justify-between">
+				<h3 class="text-[0.95rem] font-semibold text-gray-900">Blog URL</h3>
+				<span class="hf-tip cursor-default text-gray-400" data-tip="The URL of the blog post. You can publish it under your user name or an organization. Organizations must subscribe to Team or Enterprise to host articles.">
+					<svg class="h-4 w-4" viewBox="0 0 32 32" fill="currentColor"><path d="M17 22v-8h-4v2h2v6h-3v2h8v-2h-3z"/><path d="M16 8a1.5 1.5 0 1 0 1.5 1.5A1.5 1.5 0 0 0 16 8z"/><path d="M16 30a14 14 0 1 1 14-14a14 14 0 0 1-14 14zm0-26a12 12 0 1 0 12 12A12 12 0 0 0 16 4z"/></svg>
+				</span>
+			</div>
+			<div class="flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm focus-within:border-blue-300 focus-within:ring-4 focus-within:ring-blue-200/40">
+				<span class="flex-none text-gray-400">hf.co/blog/</span>
+				<!-- namespace picker: visible label hugs the selected name, native select sits on top -->
+				<span class="relative flex flex-none items-center">
+					<span id="ns-label" class="whitespace-pre font-medium text-gray-900">Chunte</span>
+					<svg class="ml-1 h-2 w-2 flex-none text-gray-400" viewBox="0 0 12 7" fill="none"><path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="1.5"/></svg>
+					<select id="ns-select" aria-label="Publish under" class="absolute inset-0 cursor-pointer opacity-0">
+						<option selected>Chunte</option>
+						<option>dev-mode-explorers</option>
+						<option>huggingface</option>
+						<option>social-post-explorers</option>
+					</select>
+				</span>
+				<span class="flex-none text-gray-400">/</span>
+				<input id="slug-input" class="min-w-0 flex-1 bg-transparent text-gray-900 placeholder-gray-400 outline-none" placeholder="my-first-article" value="designing-huggy" />
+			</div>
+		</section>
+
+		<!-- Blog thumbnail -->
+		<section>
+			<div class="mb-2 flex items-baseline justify-between">
+				<h3 class="text-[0.95rem] font-semibold text-gray-900">Blog thumbnail</h3>
+				<span class="text-xs text-gray-400">recommended 1200×648</span>
+			</div>
+			<div data-thumb-filled class="relative aspect-[50/27] overflow-hidden rounded-lg border border-gray-200 bg-gray-100">
+				<img src="assets/thumb-huggy.svg" alt="blog thumbnail" class="h-full w-full object-cover object-center" />
+				<button data-thumb-replace title="Replace thumbnail" class="thumb-replace">
+					<svg class="h-3.5 w-3.5" viewBox="0 0 32 32" fill="currentColor"><path d="M12 10H6.78A11 11 0 0 1 27 16h2A13 13 0 0 0 6 7.68V4H4v8h8zm8 12h5.22A11 11 0 0 1 5 16H3a13 13 0 0 0 23 8.32V28h2v-8h-8z"/></svg>
+				</button>
+			</div>
+			<div data-thumb-empty class="hidden">
+				<button data-thumb-add class="flex aspect-[50/27] w-full flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-gray-300 bg-gray-50/40 text-gray-500 hover:border-gray-400 hover:bg-gray-50 hover:text-gray-700">
+					<svg class="mb-1 h-6 w-6" viewBox="0 0 12 12" fill="currentColor"><path fill-rule="evenodd" clip-rule="evenodd" d="M9.43334 5.17408C9.23363 5.17408 9.07173 5.01218 9.07173 4.81247V3.12196H7.38118C7.18146 3.12196 7.01956 2.96006 7.01956 2.76035C7.01956 2.56063 7.18146 2.39874 7.38118 2.39874H9.07173V0.708293C9.07173 0.508579 9.23363 0.34668 9.43334 0.34668C9.63306 0.34668 9.79496 0.508579 9.79496 0.708293V2.39874H11.4854C11.6851 2.39874 11.847 2.56063 11.847 2.76035C11.847 2.96006 11.6851 3.12196 11.4854 3.12196H9.79496V4.81247C9.79496 5.01218 9.63306 5.17408 9.43334 5.17408ZM4.83695 2.41915C5.03055 2.41915 5.1875 2.57609 5.1875 2.7697C5.1875 2.96329 5.03056 3.12024 4.83696 3.12024L4.58824 3.12025L1.71198 3.12025V7.03585L3.03667 5.77739C3.17494 5.64681 3.36198 5.57351 3.55695 5.57351C3.75191 5.57351 3.93895 5.64681 4.07723 5.77739L6.13991 7.73694L6.72657 7.17955C6.86484 7.04901 7.05194 6.97569 7.24688 6.97569C7.44183 6.97569 7.62887 7.04901 7.76714 7.17955L9.09185 8.43803L9.09185 7.67737L9.09185 7.34583C9.09186 7.14204 9.25706 6.97684 9.46085 6.97684C9.66464 6.97684 9.82984 7.14205 9.82984 7.34584L9.82984 7.67737L9.82983 10.1312C9.82983 10.3171 9.75208 10.4954 9.61369 10.6269C9.47525 10.7584 9.28756 10.8322 9.09185 10.8322H1.71198C1.51626 10.8322 1.32855 10.7584 1.19015 10.6269C1.05175 10.4954 0.973999 10.3171 0.973999 10.1312V3.12025C0.973999 2.93431 1.05175 2.75599 1.19015 2.62451C1.32855 2.49303 1.51626 2.41916 1.71198 2.41916L4.58824 2.41916L4.83695 2.41915ZM9.09185 10.1312H1.71198V8.02788L3.55695 6.27516L5.6196 8.2347C5.75786 8.36529 5.94496 8.43856 6.13991 8.43856C6.33485 8.43856 6.52189 8.36529 6.66016 8.2347L7.24688 7.67737L9.09185 9.43006V10.1312Z"/></svg>
+					<span class="text-sm font-semibold text-gray-700">Add a thumbnail</span>
+					<span class="text-xs text-gray-400">Click to browse</span>
+				</button>
+			</div>
+			<p class="mt-2 text-xs text-gray-400">Shown on the blog feed and social share cards.</p>
+		</section>
+
+		<!-- Coauthors -->
+		<section>
+			<div class="mb-2 flex items-center justify-between">
+				<h3 data-authors-label class="text-[0.95rem] font-semibold text-gray-900">Coauthors</h3>
+				<span class="hf-tip cursor-default text-gray-400" data-tip="Place the authors, including yourself, in desired contribution order. The authors must be following you on hf.co to be added as a coauthor.">
+					<svg class="h-4 w-4" viewBox="0 0 32 32" fill="currentColor"><path d="M17 22v-8h-4v2h2v6h-3v2h8v-2h-3z"/><path d="M16 8a1.5 1.5 0 1 0 1.5 1.5A1.5 1.5 0 0 0 16 8z"/><path d="M16 30a14 14 0 1 1 14-14a14 14 0 0 1-14 14zm0-26a12 12 0 1 0 12 12A12 12 0 0 0 16 4z"/></svg>
+				</span>
+			</div>
+			<div class="space-y-1.5">
+				<div id="coauthor-chunte" class="author-row group flex items-center gap-2.5 rounded-lg border border-gray-200 bg-white px-2.5 py-1.5">
+					<img src="assets/chunte.png" class="h-7 w-7 rounded-full" alt="Chunte" />
+					<span class="text-sm font-medium text-gray-800">Chunte</span>
+					<span class="rounded bg-gray-100 px-1 text-xs text-gray-500">you</span>
+					<span class="flex-1"></span>
+					<span class="h-4 w-4"></span>
+					<span class="flex h-4 w-4 cursor-grab items-center justify-center leading-none text-gray-300 opacity-0 transition-opacity group-hover:opacity-100" title="Drag to reorder">⠿</span>
+				</div>
+				<div id="coauthor-julien" class="author-row group flex items-center gap-2.5 rounded-lg border border-gray-200 bg-white px-2.5 py-1.5">
+					<span class="flex h-7 w-7 items-center justify-center rounded-full bg-indigo-100 text-xs font-bold text-indigo-600">J</span>
+					<span class="text-sm font-medium text-gray-800">julien-c</span>
+					<span class="flex-1"></span>
+					<button class="flex h-4 w-4 items-center justify-center text-gray-400 opacity-0 transition-opacity hover:text-red-500 group-hover:opacity-100" title="Remove coauthor">
+						<svg class="h-3.5 w-3.5" viewBox="0 0 32 32" fill="currentColor"><path d="M24 9.4L22.6 8L16 14.6L9.4 8L8 9.4l6.6 6.6L8 22.6L9.4 24l6.6-6.6l6.6 6.6l1.4-1.4l-6.6-6.6L24 9.4z"/></svg>
+					</button>
+					<span class="flex h-4 w-4 cursor-grab items-center justify-center leading-none text-gray-300 opacity-0 transition-opacity group-hover:opacity-100" title="Drag to reorder">⠿</span>
+				</div>
+				<button class="w-full rounded-lg border border-dashed border-gray-300 px-3 py-2.5 text-left text-sm text-gray-400 hover:border-gray-400 hover:text-gray-600">+ Add coauthor</button>
+			</div>
+		</section>
+
+		<!-- guidelines -->
+		<div class="border-t border-gray-100 pt-5 text-xs leading-relaxed text-gray-400">
+			<svg class="-mt-0.5 mr-1 inline-block h-3.5 w-3.5" viewBox="0 0 32 32" fill="currentColor"><path d="M16 23a1.5 1.5 0 1 0 1.5 1.5A1.5 1.5 0 0 0 16 23z"/><path d="M15 12h2v9h-2z"/><path d="M29 30H3a1 1 0 0 1-.887-1.461l13-25a1 1 0 0 1 1.774 0l13 25A1 1 0 0 1 29 30zM4.65 28h22.7l.001-.003L16.002 6.17h-.004L4.648 27.997z"/></svg>
+			We only accept articles focused on AI and reserve the right to take action on any content at our discretion. View the Article guidelines
+			<a class="underline" href="https://huggingface.co/blog-explorers" target="_blank">here</a>.
+		</div>
+	</aside>
+</div>
+</div>
+
+<!-- ══ Footer action bar ══ -->
+<div class="sticky bottom-0 z-20 border-t border-gray-100 bg-white py-2.5">
+	<div class="mx-auto flex min-h-[2rem] max-w-[1536px] items-center gap-3 px-4">
+		<!-- draft selector -->
+		<div class="relative">
+			<button id="draft-btn" class="flex h-8 items-center gap-2 rounded-lg border border-gray-200 bg-white px-2.5 text-sm hover:bg-gray-50">
+				<img src="assets/chunte.png" class="h-4 w-4 rounded-full" alt="" />
+				<span id="draft-chip-label" class="max-w-[220px] truncate font-medium text-gray-800">Designing Huggy: Behind Hugging Face&rsquo;s…</span>
+				<span id="draft-chip-unsaved" class="-mr-1.5 rounded bg-gray-100 px-1.5 py-px text-[11px] font-medium text-gray-500">unsaved</span>
+			</button>
+			<div id="draft-popover" class="popover !w-72 p-3">
+				<div class="mb-3 flex flex-col text-[0.9rem]">
+					<div class="mb-2 flex items-center justify-between gap-1.5 font-semibold">
+						<div class="flex items-center gap-1.5">
+							<img src="assets/chunte.png" alt="Chunte" class="h-4 w-4 rounded-full" />
+							Chunte
+						</div>
+						<button title="Create a new Article under your own profile" class="rounded-sm border border-gray-200 p-1 text-gray-500 hover:text-gray-900">
+							<svg class="h-2 w-2" viewBox="0 0 17 17" fill="currentColor"><path fill-rule="evenodd" clip-rule="evenodd" d="M9.5 2C9.5 1.17157 8.82843 0.5 8 0.5C7.17157 0.5 6.5 1.17157 6.5 2V7H1.5C0.671573 7 0 7.67157 0 8.5C0 9.32843 0.671573 10 1.5 10H6.5V15C6.5 15.8284 7.17157 16.5 8 16.5C8.82843 16.5 9.5 15.8284 9.5 15V10H14.5C15.3284 10 16 9.32843 16 8.5C16 7.67157 15.3284 7 14.5 7H9.5V2Z"/></svg>
+						</button>
+					</div>
+					<button id="row-huggy" data-draft="huggy" class="mb-px flex w-full items-center justify-between gap-1.5 truncate rounded-lg bg-black px-1.5 py-0.5 text-left text-gray-200">
+						<span class="truncate">Designing Huggy: Behind Hugging…</span>
+						<span id="row-huggy-unsaved" class="rounded bg-white/30 px-1.5 py-px text-[11px] font-medium text-white">unsaved</span>
+					</button>
+					<button id="row-test" data-draft="test" class="mb-px flex w-full items-center justify-between gap-1.5 truncate rounded-lg px-1.5 py-0.5 text-left text-gray-500 hover:text-gray-900">
+						<span class="truncate">Testing the community blog editor end to end</span>
+					</button>
+					<button id="row-new" data-draft="new" class="mb-px flex w-full items-center justify-between gap-1.5 truncate rounded-lg px-1.5 py-0.5 text-left text-gray-500 hover:text-gray-900">
+						<span class="truncate italic">Untitled</span>
+					</button>
+				</div>
+				<div class="flex flex-col text-[0.9rem]">
+					<div class="flex items-center justify-between gap-1.5 font-semibold">
+						<div class="flex items-center gap-1.5">
+							<img src="assets/huggingface.png" alt="huggingface" class="h-4 w-4 rounded-sm" />
+							huggingface
+						</div>
+						<button title="Create a new Article under huggingface organization" class="rounded-sm border border-gray-200 p-1 text-gray-500 hover:text-gray-900">
+							<svg class="h-2 w-2" viewBox="0 0 17 17" fill="currentColor"><path fill-rule="evenodd" clip-rule="evenodd" d="M9.5 2C9.5 1.17157 8.82843 0.5 8 0.5C7.17157 0.5 6.5 1.17157 6.5 2V7H1.5C0.671573 7 0 7.67157 0 8.5C0 9.32843 0.671573 10 1.5 10H6.5V15C6.5 15.8284 7.17157 16.5 8 16.5C8.82843 16.5 9.5 15.8284 9.5 15V10H14.5C15.3284 10 16 9.32843 16 8.5C16 7.67157 15.3284 7 14.5 7H9.5V2Z"/></svg>
+						</button>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- save state -->
+		<span id="status-unsaved" class="flex items-center gap-1.5 text-sm text-gray-500">
+			<span class="h-1.5 w-1.5 rounded-full bg-amber-400"></span>
+			Unsaved changes
+		</span>
+		<span class="flex items-center gap-1.5">
+			<span id="status-saved" class="hidden text-sm text-gray-400">
+				<span data-saved-label>Saved 2 min ago</span>
+			</span>
+			<span id="saved-dot" class="hidden text-gray-300">·</span>
+			<button id="history-btn" class="hidden text-sm text-gray-400 underline-offset-2 hover:text-gray-600 hover:underline">History</button>
+		</span>
+
+		<span class="flex-1"></span>
+		<button id="btn-delete" class="pill pill-danger hidden">Delete draft</button>
+		<button id="btn-save" class="pill pill-secondary">Save as draft</button>
+		<button data-publish-open class="pill pill-primary">Publish</button>
+	</div>
+</div>
+
+<!-- ══ Publish modal ══ -->
+<div id="publish-modal" class="modal-overlay">
+	<div class="modal">
+		<div class="flex items-center justify-between border-b border-gray-100 px-6 py-4">
+			<h2 class="flex items-center gap-1.5 text-lg font-semibold text-black"><svg class="h-5 w-5 text-blue-600" viewBox="0 0 15 15" fill="currentColor"><path d="M3.417 12.75c-.32 0-.596-.114-.824-.342a1.126 1.126 0 0 1-.343-.825V3.417c0-.321.114-.597.343-.824.23-.228.503-.343.824-.343h8.166c.321 0 .596.114.825.343.228.229.342.503.342.824v8.166c0 .32-.114.596-.342.825a1.12 1.12 0 0 1-.825.342zm1.166-2.333h4.084V9.25H4.583v1.167m0-2.334h5.834V6.917H4.583v1.166m0-2.333h5.834V4.583H4.583V5.75"/></svg>Publish Article</h2>
+			<button data-publish-close class="text-gray-400 hover:text-gray-700">
+				<svg class="h-5 w-5" viewBox="0 0 32 32" fill="currentColor"><path d="M24 9.4L22.6 8L16 14.6L9.4 8L8 9.4l6.6 6.6L8 22.6L9.4 24l6.6-6.6l6.6 6.6l1.4-1.4l-6.6-6.6L24 9.4z"/></svg>
+			</button>
+		</div>
+		<div class="p-6">
+			<p class="text-gray-700">Are you sure you want to publish this Article on <a href="https://huggingface.co/blog" target="_blank" class="underline">https://huggingface.co/blog</a>?</p>
+			<div class="mt-4 flex flex-col items-center gap-2 rounded-lg bg-gray-100 p-3 text-sm font-semibold text-gray-700">
+				Thumbnail preview
+				<img src="assets/thumb-huggy.svg" alt="blog thumbnail" class="aspect-[50/27] w-60 rounded-lg border object-cover object-center" />
+				<div class="flex flex-col items-center gap-1.5">
+					<button class="btn gap-x-1.5">
+						<svg class="h-4 w-4" viewBox="0 0 21 20" fill="currentColor"><path d="M16.9756 3.25671H4.47559C4.14407 3.25671 3.82612 3.38183 3.5917 3.60452C3.35728 3.82722 3.22559 4.12927 3.22559 4.44421V16.3192C3.22559 16.6342 3.35728 16.9362 3.5917 17.1589C3.82612 17.3816 4.14407 17.5067 4.47559 17.5067H16.9756C17.3071 17.5067 17.625 17.3816 17.8595 17.1589C18.0939 16.9362 18.2256 16.6342 18.2256 16.3192V4.44421C18.2256 4.12927 18.0939 3.82722 17.8595 3.60452C17.625 3.38183 17.3071 3.25671 16.9756 3.25671ZM16.9756 16.3192H4.47559V12.7567L7.60059 9.78796L11.0943 13.107C11.3285 13.3282 11.6454 13.4523 11.9756 13.4523C12.3058 13.4523 12.6226 13.3282 12.8568 13.107L13.8506 12.163L16.9756 15.1317V16.3192Z"/></svg>
+						Change thumbnail
+					</button>
+					<p class="text-xs font-normal text-gray-500">Recommended size: 1200×648px (ratio 50:27)</p>
+				</div>
+			</div>
+			<div class="mt-6 flex flex-wrap items-center justify-end gap-2">
+				<button data-publish-close class="pill pill-secondary">Cancel</button>
+				<button data-publish-confirm class="pill pill-primary">Publish</button>
+			</div>
+		</div>
+	</div>
+</div>
+
+<div id="toast" class="toast"><img src="assets/huggingface_logo-noborder.svg" class="h-5 w-5" alt="" /><span></span></div>
+
+<script src="demo.js"></script>
+</body>
+</html>

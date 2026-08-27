@@ -49,8 +49,52 @@ import {
 } from './hf-spaces-agents';
 import {LogoEndingSurface, ENDING_FRAMES, ENDING_CUES} from './hf-logo-ending';
 import {LogoAnimationSurface, ANIM_FRAMES, ANIM_CUES} from './hf-logo-animation';
+import {
+  BlogBurstSurface,
+  BlogWriteSurface,
+  BlogTeamSurface,
+  BlogPublishSurface,
+  BURST_SURFACE_FRAMES,
+  BURST_CUES,
+  WRITE_FRAMES,
+  WRITE_CUES,
+  TEAM_FRAMES,
+  TEAM_CUES,
+  PUBLISH_FRAMES,
+  PUBLISH_CUES,
+} from './hf-blog-editor';
 
 export const SURFACES: Record<string, Surface> = {
+  'hf-blog-burst': {
+    id: 'hf-blog-burst',
+    label: 'HF · Blog editor — fragments orbit the claim',
+    frames: BURST_SURFACE_FRAMES,
+    cues: BURST_CUES,
+    Comp: BlogBurstSurface,
+  },
+  'hf-blog-write': {
+    id: 'hf-blog-write',
+    label: 'HF · Blog editor — write, then Preview',
+    frames: WRITE_FRAMES,
+    bleed: true,
+    cues: WRITE_CUES,
+    Comp: BlogWriteSurface,
+  },
+  'hf-blog-team': {
+    id: 'hf-blog-team',
+    label: 'HF · Blog editor — coauthors add + reorder',
+    frames: TEAM_FRAMES,
+    cues: TEAM_CUES,
+    Comp: BlogTeamSurface,
+  },
+  'hf-blog-publish': {
+    id: 'hf-blog-publish',
+    label: 'HF · Blog editor — publish as the org',
+    frames: PUBLISH_FRAMES,
+    bleed: true,
+    cues: PUBLISH_CUES,
+    Comp: BlogPublishSurface,
+  },
   'hf-storage-repositories': {
     id: 'hf-storage-repositories',
     label: 'HF · Settings › Repositories storage',

@@ -1,0 +1,87 @@
+{
+  "v": 1,
+  "id": "hf-blog-editor",
+  "theme": "light",
+  "grid": {
+    "bpm": 120
+  },
+  "scenes": [
+    {
+      "id": "intro",
+      "kind": "ui",
+      "surface": "hf-logo-animation",
+      "enter": "scale-pop-in",
+      "exit": "scale-up-cut"
+    },
+    {
+      "id": "title",
+      "kind": "text",
+      "effect": "typewriter",
+      "copy": "Introducing the new Blog editor",
+      "size": "lg",
+      "hold": "normal",
+      "enter": "scale-pop-in",
+      "exit": "push-off-left"
+    },
+    {
+      "id": "overview",
+      "kind": "ui",
+      "surface": "hf-blog-burst",
+      "enter": "glide-in",
+      "exit": "scale-up-cut"
+    },
+    {
+      "id": "write",
+      "kind": "ui",
+      "surface": "hf-blog-write",
+      "enter": "scale-pop-in",
+      "exit": "push-off-left"
+    },
+    {
+      "id": "team",
+      "kind": "ui",
+      "surface": "hf-blog-team",
+      "enter": "glide-in",
+      "exit": "scale-up-cut"
+    },
+    {
+      "id": "publish",
+      "kind": "ui",
+      "surface": "hf-blog-publish",
+      "enter": "scale-pop-in",
+      "exit": "push-off-left"
+    },
+    {
+      "id": "payoff",
+      "kind": "text",
+      "effect": "shimmer-sweep",
+      "copy": "hf.co/blog/huggingface/designing-huggy",
+      "sub": "Live on the Hugging Face Blog",
+      "size": "md",
+      "hold": "long",
+      "enter": "glide-in",
+      "exit": "scale-up-cut"
+    },
+    {
+      "id": "cta",
+      "kind": "text",
+      "effect": "scale-down-fade",
+      "copy": "Start writing together",
+      "sub": "Exclusive to Team & Enterprise",
+      "size": "md",
+      "hold": "long",
+      "enter": "scale-pop-in",
+      "exit": "push-off-left"
+    },
+    {
+      "id": "ending",
+      "kind": "ui",
+      "surface": "hf-logo-animation",
+      "enter": "glide-in",
+      "exit": "scale-up-cut"
+    }
+  ],
+  "sound": {
+    "sfx": "on"
+  }
+}
