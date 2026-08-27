@@ -4,6 +4,7 @@ import {EASE, lerp} from '../../lib/ease';
 import {FONT} from '../../lib/fonts';
 import {ELEV} from '../../lib/palette';
 import {Burst3D, BURST_ITEMS, burstTextFrames, burstTextTiming} from '../../blocks/burst3d';
+import {Pose3D, flybyAimedAt, DOLLY_FLYBY_FRAMES, FLYBY_BEATS} from '../../blocks/pose3d';
 import {JumpZoomType, jzFrames, JZLine} from '../../blocks/jump-zoom-type';
 import type {CueKind} from '../sound-kinds';
 import {SURFACE_W, SURFACE_H} from './frame';
@@ -190,8 +191,10 @@ const Cursor: React.FC<{x: number; y: number; press?: boolean; scale?: number}> 
 
 /** Browser-window container (LAW: full-screen web UI lives in a browser window).
  *  Real proportions (~44px bar), honest Safari-style domain-only URL display. */
-const BrowserWindow: React.FC<{children: React.ReactNode}> = ({children}) => (
-  <div style={{width: SURFACE_W, height: SURFACE_H, position: 'relative', borderRadius: 12, overflow: 'hidden', background: '#fdfdfd', fontFamily: SANS, border: `1px solid ${T.border}`, boxShadow: ELEV.window}}>
+export const BROWSER_W = 1080; // twice the stage margin of the surface box — the window floats
+export const BROWSER_H = 580;
+const BrowserWindow: React.FC<{children: React.ReactNode; elevation?: boolean}> = ({children, elevation = true}) => (
+  <div style={{width: BROWSER_W, height: BROWSER_H, position: 'relative', borderRadius: 12, overflow: 'hidden', background: '#fdfdfd', fontFamily: SANS, border: `1px solid ${T.border}`, boxShadow: elevation ? ELEV.window : 'none'}}>
     <div style={{height: 44, display: 'flex', alignItems: 'center', gap: 8, padding: '0 14px', borderBottom: `1px solid ${T.border}`, background: '#f6f7f9', fontFamily: SANS}}>
       <span style={{width: 11, height: 11, borderRadius: '50%', background: '#ff5f57'}} />
       <span style={{width: 11, height: 11, borderRadius: '50%', background: '#febc2e'}} />
@@ -207,6 +210,24 @@ const BrowserWindow: React.FC<{children: React.ReactNode}> = ({children}) => (
       <span style={{width: 55}} />
     </div>
     <div style={{position: 'absolute', top: 44, left: 0, right: 0, bottom: 0, overflow: 'hidden'}}>{children}</div>
+  </div>
+);
+
+/** Anchored cursor: the LANDING is layout-anchored (same right/bottom anchors as the
+ *  target, so text-width guesses can never miss); the APPROACH happens in transform
+ *  space and ends at (0,0). Fixes the recurring misclick class for good. */
+const AnchoredCursor: React.FC<{
+  anchor: React.CSSProperties; // e.g. {right: 49, top: 22} — where the TIP should land, minus the tip offset
+  fromX: number;
+  fromY: number;
+  t: number; // 0..1 approach progress (eased by caller)
+  press?: boolean;
+  scale?: number;
+}> = ({anchor, fromX, fromY, t, press, scale = 1}) => (
+  <div style={{position: 'absolute', zIndex: 40, ...anchor, transform: `translate(${(1 - t) * fromX}px, ${(1 - t) * fromY}px)`}}>
+    <svg width={26} height={26} viewBox="0 0 24 24" style={{transform: `scale(${(press ? 0.82 : 1) * scale})`, filter: 'drop-shadow(0 3px 7px rgba(16,22,38,0.35))'}}>
+      <path d="M5 3 L19 12.5 L12.6 13.8 L15.6 20.4 L13 21.5 L10.1 14.8 L5 19 Z" fill="#fff" stroke="#111827" strokeWidth="1.5" />
+    </svg>
   </div>
 );
 
@@ -395,71 +416,73 @@ export const BlogBurstSurface: React.FC = () => {
  * auto-scrolls (camera dead still — the content is the motion).
  * ════════════════════════════════════════════════════════════════════════ */
 
-export const WRITE_FRAMES = 360;
+export const WRITE_FRAMES = DOLLY_FLYBY_FRAMES + 40; // the admitted fly-by + a flat settle (its own f0-16 approach is the lead)
 export const WRITE_CUES: {at: number; kind: CueKind}[] = [
-  {at: 46, kind: 'ui-rise'}, // the snap toward the chip
-  {at: 60, kind: 'ui-tick'}, // the Preview click
-  {at: 68, kind: 'ui-swap'}, // panes swap
+  {at: FLYBY_BEATS.press, kind: 'ui-tick'}, // the Preview click, on the block's own clock
+  {at: FLYBY_BEATS.release + 3, kind: 'ui-swap'}, // panes swap
 ];
 
-const Z_WRITE = 1.3;
-const PAGE_W = SURFACE_W / Z_WRITE; // the pane authored at captured metrics; one scale constant wins legibility
+const Z_WRITE = 1.18; // editor page inside the window, one scale constant
+const PAGE_W = BROWSER_W / Z_WRITE;
 
+/** The write beat IS a pose3d-dolly-flyby: the browser window breaks the picture plane,
+ *  the camera dives at the Preview chip (aim retargeted per the motivated-camera law),
+ *  the click and pane swap happen inside the dwell, and the departure is the pull-out.
+ *  No scrolling — the dwell shows the rendered article's head, and that is the point. */
 export const BlogWriteSurface: React.FC = () => {
   const f = useCurrentFrame();
   useCharter();
-  // cursor: enters low-right, decelerates onto the PREVIEW chip (the right-most chip)
-  const cx = lerp(f, [14, 52], [PAGE_W * 0.72, PAGE_W - 70], EASE.inOut);
-  const cy = lerp(f, [14, 52], [500, 46], EASE.inOut);
-  const press = f >= 60 && f < 65;
-  const flipped = f >= 62;
-  const srcOut = lerp(f, [62, 74], [1, 0], EASE.in);
-  const prevIn = lerp(f, [66, 84], [0, 1], EASE.uiEnter);
-  const prevY = lerp(f, [66, 84], [16, 0], EASE.uiEnter);
-  const scroll = lerp(f, [140, 336], [0, 400], EASE.inOut);
-  // THE SNAP (pose3d fly-by grammar, motivated by the click): jump most of the zoom in 4
-  // frames, settle the remainder into the interaction point; dwell through click+swap;
-  // pull back out for the article read (the departure has a reason: the swap happened).
-  const zoomIn = lerp(f, [46, 50], [1, 1.42], EASE.in) * lerp(f, [50, 60], [1, 1.055], EASE.camera);
-  const zoomOut = lerp(f, [108, 134], [1, 1 / 1.499], EASE.camera);
-  const cam = zoomIn * zoomOut;
+  const fb = f; // the fly-by reads the same clock; its pose clamps flat after the last key
+  const B = FLYBY_BEATS;
+  const press = fb >= B.press && fb < B.release;
+  const flipped = fb >= B.press + 2;
+  const srcOut = lerp(fb, [B.release, B.release + 10], [1, 0], EASE.in);
+  const prevIn = lerp(fb, [B.release + 2, B.loaded], [0, 1], EASE.uiEnter);
+  const prevY = lerp(fb, [B.release + 2, B.loaded], [14, 0], EASE.uiEnter);
+  const curT = lerp(fb, [B.cursorEnter, B.cursorArrive], [0, 1], EASE.inOut);
   return (
-    <BrowserWindow>
-      <div style={{position: 'absolute', left: 0, top: 0, width: SURFACE_W, height: SURFACE_H - 44, transformOrigin: '97% 8%', transform: `scale(${cam})`}}>
-        <div style={{position: 'absolute', left: 0, top: 0, width: PAGE_W, transformOrigin: '0% 0%', transform: `scale(${Z_WRITE})`}}>
-          {/* app bar - real copy, real icon */}
-          <div style={{display: 'flex', alignItems: 'center', gap: 12, padding: '11px 16px', borderBottom: `1px solid ${T.borderSoft}`, background: '#fff', fontFamily: SANS}}>
-            <div style={{display: 'flex', alignItems: 'center', gap: 6}}>
-              <svg width={20} height={20} viewBox="0 0 15 15" fill={T.blue}>
-                <path d="M3.417 12.75c-.32 0-.596-.114-.824-.342a1.126 1.126 0 0 1-.343-.825V3.417c0-.321.114-.597.343-.824.23-.228.503-.343.824-.343h8.166c.321 0 .596.114.825.343.228.229.342.503.342.824v8.166c0 .32-.114.596-.342.825a1.12 1.12 0 0 1-.825.342zm1.166-2.333h4.084V9.25H4.583v1.167m0-2.334h5.834V6.917H4.583v1.166m0-2.333h5.834V4.583H4.583V5.75" />
-              </svg>
-              <span style={{fontSize: 20, fontWeight: 700, color: '#000', whiteSpace: 'nowrap'}}>New Article</span>
-            </div>
-            <span style={{fontSize: 14, color: T.faint}}>Publish a community Article on Hugging Face Blog</span>
-          </div>
+    <div style={{width: SURFACE_W, height: SURFACE_H, position: 'relative', display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
+      <Pose3D keys={flybyAimedAt(0.94, 0.1)} width={BROWSER_W} height={BROWSER_H} smooth>
+        {() => (
+          <BrowserWindow elevation={false}>
+            <div style={{position: 'absolute', left: 0, top: 0, width: PAGE_W, transformOrigin: '0% 0%', transform: `scale(${Z_WRITE})`}}>
+              {/* app bar - real copy, real icon */}
+              <div style={{display: 'flex', alignItems: 'center', gap: 12, padding: '11px 16px', borderBottom: `1px solid ${T.borderSoft}`, background: '#fff', fontFamily: SANS}}>
+                <div style={{display: 'flex', alignItems: 'center', gap: 6}}>
+                  <svg width={20} height={20} viewBox="0 0 15 15" fill={T.blue}>
+                    <path d="M3.417 12.75c-.32 0-.596-.114-.824-.342a1.126 1.126 0 0 1-.343-.825V3.417c0-.321.114-.597.343-.824.23-.228.503-.343.824-.343h8.166c.321 0 .596.114.825.343.228.229.342.503.342.824v8.166c0 .32-.114.596-.342.825a1.12 1.12 0 0 1-.825.342zm1.166-2.333h4.084V9.25H4.583v1.167m0-2.334h5.834V6.917H4.583v1.166m0-2.333h5.834V4.583H4.583V5.75" />
+                  </svg>
+                  <span style={{fontSize: 20, fontWeight: 700, color: '#000', whiteSpace: 'nowrap'}}>New Article</span>
+                </div>
+                <span style={{fontSize: 14, color: T.faint}}>Publish a community Article on Hugging Face Blog</span>
+              </div>
 
-          {/* editor pane (rail subtracted - this shot doesn't exercise it) */}
-          <div style={{position: 'relative', background: '#fff', minHeight: 620}}>
-            <div style={{position: 'absolute', right: 16, top: 12, zIndex: 10, display: 'flex', gap: 8}}>
-              <TagChip icon="info" label="Syntax guide" />
-              <TagChip icon="eye" label={flipped ? 'Edit' : 'Preview'} active={flipped} press={press ? 1 : 0} />
+              {/* editor pane (rail subtracted - this shot doesn't exercise it) */}
+              <div style={{position: 'relative', background: '#fff', minHeight: 480}}>
+                <div style={{position: 'absolute', right: 16, top: 12, zIndex: 10, display: 'flex', gap: 8}}>
+                  <TagChip icon="info" label="Syntax guide" />
+                  <TagChip icon="eye" label={flipped ? 'Edit' : 'Preview'} active={flipped} press={press ? 1 : 0} />
+                </div>
+                {/* markdown source */}
+                <div style={{position: 'absolute', left: 0, top: 0, right: 0, padding: '20px 32px 32px', opacity: srcOut}}>
+                  <MdSource width={PAGE_W - 64 - 190} />
+                </div>
+                {/* rendered preview, replacing it — the head of the article, no scroll */}
+                <div style={{position: 'absolute', left: 0, top: 0, right: 0, padding: '28px 40px', opacity: prevIn, transform: `translateY(${prevY}px)`}}>
+                  <ProseArticle width={Math.min(720, PAGE_W - 80)} />
+                </div>
+                {/* cursor: tip layout-anchored to the Preview chip's own right-edge geometry */}
+                {fb >= B.cursorEnter && fb < 78 && (
+                  <AnchoredCursor anchor={{right: 40, top: 20}} fromX={-360} fromY={330} t={curT} press={press} />
+                )}
+              </div>
             </div>
-            {/* markdown source */}
-            <div style={{position: 'absolute', left: 0, top: 0, right: 0, padding: '20px 32px 32px', opacity: srcOut}}>
-              <MdSource width={PAGE_W - 64 - 190} />
-            </div>
-            {/* rendered preview, replacing it */}
-            <div style={{position: 'absolute', left: 0, top: 0, right: 0, padding: '32px 40px', opacity: prevIn, transform: `translateY(${prevY - scroll}px)`}}>
-              <ProseArticle width={Math.min(768, PAGE_W - 80)} />
-            </div>
-          </div>
-        </div>
-        {f >= 14 && f < 120 && <Cursor x={cx * Z_WRITE} y={cy * Z_WRITE} press={press} />}
-      </div>
-    </BrowserWindow>
+          </BrowserWindow>
+        )}
+      </Pose3D>
+    </div>
   );
 };
-
 
 /* ══════════════════════════════════════════════════════════════════════════
  * SURFACE 3 — hf-blog-team: the Coauthors card. EXERCISE THE OPTION (a
@@ -579,89 +602,88 @@ export const PUBZOOM_CUES: {at: number; kind: CueKind}[] = [
   {at: 80, kind: 'ui-tick'}, // Publish
 ];
 
-const PAGE2_H = SURFACE_H - 44; // browser content height inside the floating window
-
+/** The whole WINDOW zooms toward the interaction point (never an inner-page zoom):
+ *  transform-origin sits on the Publish pill in window coordinates. */
 export const BlogPublishZoomSurface: React.FC = () => {
   const f = useCurrentFrame();
-  // THE SNAP onto the pill: jump most of the zoom in 4 frames, settle into the target
-  const zoom = lerp(f, [44, 48], [1, 1.6], EASE.in) * lerp(f, [48, 60], [1, 1.09], EASE.camera);
-  const cur =
-    f < 40
-      ? {x: lerp(f, [12, 40], [640, 930], EASE.inOut), y: lerp(f, [12, 40], [380, 500], EASE.inOut)}
-      : {x: lerp(f, [40, 72], [930, 1092], EASE.inOut), y: lerp(f, [40, 72], [500, 560], EASE.inOut)};
+  const zoom = lerp(f, [44, 48], [1, 1.5], EASE.in) * lerp(f, [48, 60], [1, 1.08], EASE.camera);
   const press = f >= 80 && f < 86;
+  const curT = lerp(f, [14, 72], [0, 1], EASE.inOut);
   return (
-    <BrowserWindow>
-      <div style={{position: 'absolute', left: 0, top: 0, width: SURFACE_W, height: PAGE2_H, transformOrigin: '97.5% 96%', transform: `scale(${zoom})`, background: '#fff'}}>
-        {/* app bar (context) */}
-        <div style={{display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', borderBottom: `1px solid ${T.borderSoft}`, fontFamily: SANS}}>
-          <svg width={18} height={18} viewBox="0 0 15 15" fill={T.blue}>
-            <path d="M3.417 12.75c-.32 0-.596-.114-.824-.342a1.126 1.126 0 0 1-.343-.825V3.417c0-.321.114-.597.343-.824.23-.228.503-.343.824-.343h8.166c.321 0 .596.114.825.343.228.229.342.503.342.824v8.166c0 .32-.114.596-.342.825a1.12 1.12 0 0 1-.825.342zm1.166-2.333h4.084V9.25H4.583v1.167m0-2.334h5.834V6.917H4.583v1.166m0-2.333h5.834V4.583H4.583V5.75" />
-          </svg>
-          <span style={{fontSize: 18, fontWeight: 700, color: '#000'}}>New Article</span>
-          <span style={{fontSize: 13, color: T.faint}}>Publish a community Article on Hugging Face Blog</span>
-        </div>
+    <div style={{width: SURFACE_W, height: SURFACE_H, position: 'relative', display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
+      <div style={{transformOrigin: '94.6% 96%', transform: `scale(${zoom})`}}>
+        <BrowserWindow>
+          <div style={{position: 'absolute', left: 0, top: 0, width: BROWSER_W, height: BROWSER_H - 44, background: '#fff'}}>
+            {/* app bar (context) */}
+            <div style={{display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', borderBottom: `1px solid ${T.borderSoft}`, fontFamily: SANS}}>
+              <svg width={18} height={18} viewBox="0 0 15 15" fill={T.blue}>
+                <path d="M3.417 12.75c-.32 0-.596-.114-.824-.342a1.126 1.126 0 0 1-.343-.825V3.417c0-.321.114-.597.343-.824.23-.228.503-.343.824-.343h8.166c.321 0 .596.114.825.343.228.229.342.503.342.824v8.166c0 .32-.114.596-.342.825a1.12 1.12 0 0 1-.825.342zm1.166-2.333h4.084V9.25H4.583v1.167m0-2.334h5.834V6.917H4.583v1.166m0-2.333h5.834V4.583H4.583V5.75" />
+              </svg>
+              <span style={{fontSize: 18, fontWeight: 700, color: '#000'}}>New Article</span>
+              <span style={{fontSize: 13, color: T.faint}}>Publish a community Article on Hugging Face Blog</span>
+            </div>
 
-        <div style={{display: 'flex', height: PAGE2_H - 47 - 53}}>
-          {/* editor pane — dimmed context */}
-          <div style={{flex: 1, borderRight: `1px solid ${T.borderSoft}`, padding: '18px 26px', opacity: 0.55, overflow: 'hidden'}}>
-            <div style={{transform: 'scale(0.82)', transformOrigin: '0 0'}}>
-              <MdSource width={860} />
+            <div style={{display: 'flex', height: BROWSER_H - 44 - 47 - 53}}>
+              {/* editor pane — dimmed context */}
+              <div style={{flex: 1, borderRight: `1px solid ${T.borderSoft}`, padding: '16px 24px', opacity: 0.55, overflow: 'hidden'}}>
+                <div style={{transform: 'scale(0.72)', transformOrigin: '0 0'}}>
+                  <MdSource width={860} />
+                </div>
+              </div>
+              {/* the rail — org already picked: hf.co/blog/huggingface */}
+              <div style={{width: 380, padding: '16px 20px 0 20px', fontFamily: SANS, display: 'flex', flexDirection: 'column', gap: 18, overflow: 'hidden'}}>
+                <section>
+                  <div style={{fontSize: 15.2, fontWeight: 600, color: INK, marginBottom: 8}}>Blog URL</div>
+                  <div style={{display: 'flex', alignItems: 'center', gap: 4, borderRadius: 8, border: `1px solid ${T.border}`, background: '#fff', padding: '9px 12px', fontSize: 14}}>
+                    <span style={{color: T.faint, flex: 'none'}}>hf.co/blog/</span>
+                    <span style={{fontWeight: 500, color: INK}}>huggingface</span>
+                    <svg width={8} height={5} viewBox="0 0 12 7" fill="none" style={{marginLeft: 2}}>
+                      <path d="M1 1L6 6L11 1" stroke={T.faint} strokeWidth="1.5" />
+                    </svg>
+                    <span style={{color: T.faint, flex: 'none'}}>/</span>
+                    <span style={{color: INK, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>designing-huggy</span>
+                  </div>
+                </section>
+                <section>
+                  <div style={{display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 8}}>
+                    <span style={{fontSize: 15.2, fontWeight: 600, color: INK}}>Blog thumbnail</span>
+                    <span style={{fontSize: 12, color: T.faint}}>recommended 1200×648</span>
+                  </div>
+                  <div style={{position: 'relative', aspectRatio: '50/27', overflow: 'hidden', borderRadius: 8, border: `1px solid ${T.border}`, background: T.borderSoft}}>
+                    <Img src={staticFile('hf-blog/thumb-huggy.svg')} style={{width: '100%', height: '100%', objectFit: 'cover'}} />
+                  </div>
+                </section>
+                <section>
+                  <div style={{fontSize: 15.2, fontWeight: 600, color: INK, marginBottom: 8}}>Coauthors</div>
+                  <div style={{display: 'flex', flexDirection: 'column', gap: 6}}>
+                    <AuthorRow who="julien" />
+                    <AuthorRow who="chunte" you />
+                    <MerveRow />
+                  </div>
+                </section>
+              </div>
+            </div>
+
+            {/* footer bar — the target; cursor tip anchored to the pill's own geometry */}
+            <div style={{position: 'absolute', left: 0, right: 0, bottom: 0, borderTop: `1px solid ${T.borderSoft}`, background: '#fff', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 12, fontFamily: SANS}}>
+              <span style={{display: 'inline-flex', alignItems: 'center', gap: 8, borderRadius: 8, border: `1px solid ${T.border}`, padding: '5px 10px'}}>
+                <Img src={staticFile('hf-blog/chunte.png')} style={{width: 16, height: 16, borderRadius: '50%'}} />
+                <span style={{fontSize: 14, fontWeight: 500, color: '#1f2937', maxWidth: 200, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>Designing Huggy: Behind Hugging Face’s…</span>
+                <span style={{borderRadius: 4, background: T.borderSoft, padding: '1px 6px', fontSize: 11, fontWeight: 500, color: T.mut}}>unsaved</span>
+              </span>
+              <span style={{display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 14, color: T.mut}}>
+                <span style={{width: 6, height: 6, borderRadius: '50%', background: T.amber}} />
+                Unsaved changes
+              </span>
+              <span style={{flex: 1}} />
+              <Pill kind="secondary" label="Save as draft" />
+              <Pill kind="primary" label="Publish" press={press ? 1 : 0} />
+              <AnchoredCursor anchor={{right: 52, bottom: 2}} fromX={-420} fromY={-260} t={curT} press={press} scale={0.9} />
             </div>
           </div>
-          {/* the rail — org already picked: hf.co/blog/huggingface */}
-          <div style={{width: 400, padding: '18px 22px 0 22px', fontFamily: SANS, display: 'flex', flexDirection: 'column', gap: 24}}>
-            <section>
-              <div style={{fontSize: 15.2, fontWeight: 600, color: INK, marginBottom: 8}}>Blog URL</div>
-              <div style={{display: 'flex', alignItems: 'center', gap: 4, borderRadius: 8, border: `1px solid ${T.border}`, background: '#fff', padding: '10px 12px', fontSize: 14}}>
-                <span style={{color: T.faint, flex: 'none'}}>hf.co/blog/</span>
-                <span style={{fontWeight: 500, color: INK}}>huggingface</span>
-                <svg width={8} height={5} viewBox="0 0 12 7" fill="none" style={{marginLeft: 2}}>
-                  <path d="M1 1L6 6L11 1" stroke={T.faint} strokeWidth="1.5" />
-                </svg>
-                <span style={{color: T.faint, flex: 'none'}}>/</span>
-                <span style={{color: INK, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>designing-huggy</span>
-              </div>
-            </section>
-            <section>
-              <div style={{display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 8}}>
-                <span style={{fontSize: 15.2, fontWeight: 600, color: INK}}>Blog thumbnail</span>
-                <span style={{fontSize: 12, color: T.faint}}>recommended 1200×648</span>
-              </div>
-              <div style={{position: 'relative', aspectRatio: '50/27', overflow: 'hidden', borderRadius: 8, border: `1px solid ${T.border}`, background: T.borderSoft}}>
-                <Img src={staticFile('hf-blog/thumb-huggy.svg')} style={{width: '100%', height: '100%', objectFit: 'cover'}} />
-              </div>
-            </section>
-            <section>
-              <div style={{fontSize: 15.2, fontWeight: 600, color: INK, marginBottom: 8}}>Coauthors</div>
-              <div style={{display: 'flex', flexDirection: 'column', gap: 6}}>
-                <AuthorRow who="julien" />
-                <AuthorRow who="chunte" you />
-                <MerveRow />
-              </div>
-            </section>
-          </div>
-        </div>
-
-        {/* footer bar — the target */}
-        <div style={{position: 'absolute', left: 0, right: 0, bottom: 0, borderTop: `1px solid ${T.borderSoft}`, background: '#fff', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 12, fontFamily: SANS}}>
-          <span style={{display: 'inline-flex', alignItems: 'center', gap: 8, borderRadius: 8, border: `1px solid ${T.border}`, padding: '5px 10px'}}>
-            <Img src={staticFile('hf-blog/chunte.png')} style={{width: 16, height: 16, borderRadius: '50%'}} />
-            <span style={{fontSize: 14, fontWeight: 500, color: '#1f2937', maxWidth: 220, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>Designing Huggy: Behind Hugging Face’s…</span>
-            <span style={{borderRadius: 4, background: T.borderSoft, padding: '1px 6px', fontSize: 11, fontWeight: 500, color: T.mut}}>unsaved</span>
-          </span>
-          <span style={{display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 14, color: T.mut}}>
-            <span style={{width: 6, height: 6, borderRadius: '50%', background: T.amber}} />
-            Unsaved changes
-          </span>
-          <span style={{flex: 1}} />
-          <Pill kind="secondary" label="Save as draft" />
-          <Pill kind="primary" label="Publish" press={press ? 1 : 0} />
-        </div>
-
-        <Cursor x={cur.x} y={cur.y} press={press} scale={f >= 44 ? 0.8 : 1} />
+        </BrowserWindow>
       </div>
-    </BrowserWindow>
+    </div>
   );
 };
 
@@ -678,7 +700,7 @@ export const PUBMODAL_CUES: {at: number; kind: CueKind}[] = [
 export const BlogPublishModalSurface: React.FC = () => {
   const f = useCurrentFrame();
   const press = f >= 76 && f < 82;
-  const cur = {x: lerp(f, [16, 66], [930, 752], EASE.inOut), y: lerp(f, [16, 66], [300, 470], EASE.inOut)};
+  const curT = lerp(f, [16, 66], [0, 1], EASE.inOut);
   return (
     <div style={{width: SURFACE_W, height: SURFACE_H, position: 'relative', display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
       <div style={{position: 'relative', width: 480, borderRadius: 12, background: '#fff', boxShadow: ELEV.card, overflow: 'hidden', fontFamily: SANS}}>
@@ -701,13 +723,13 @@ export const BlogPublishModalSurface: React.FC = () => {
             Thumbnail preview
             <Img src={staticFile('hf-blog/thumb-huggy.svg')} style={{aspectRatio: '50/27', width: 240, borderRadius: 8, border: `1px solid ${T.border}`, objectFit: 'cover'}} />
           </div>
-          <div style={{marginTop: 24, display: 'flex', justifyContent: 'flex-end', gap: 8}}>
+          <div style={{marginTop: 24, display: 'flex', justifyContent: 'flex-end', gap: 8, position: 'relative'}}>
             <Pill kind="secondary" label="Cancel" />
             <Pill kind="primary" label="Publish" press={press ? 1 : 0} />
+            <AnchoredCursor anchor={{right: 32, top: 12}} fromX={220} fromY={-190} t={curT} press={press} scale={0.9} />
           </div>
         </div>
       </div>
-      <Cursor x={cur.x} y={cur.y} press={press} scale={0.9} />
     </div>
   );
 };

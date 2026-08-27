@@ -209,6 +209,18 @@ export const DOLLY_FLYBY_KEYS: PoseKey[] = [
 ];
 export const DOLLY_FLYBY_FRAMES = 90;
 
+/** Retarget the fly-by's aim. The key table is LOCKED choreography; the AIM is content —
+ *  the motivated-camera law says fx/fy point at the interaction that motivates the move.
+ *  The walk's proportions are preserved: each key's offset from centre scales toward the
+ *  new target by the same ratio the original table used (shoulders ~0.38 of the dwell). */
+export const flybyAimedAt = (fx: number, fy: number): PoseKey[] =>
+  DOLLY_FLYBY_KEYS.map((k) => {
+    if (k.pose.fx === undefined) return k;
+    const rx = (k.pose.fx - 0.5) / 0.26; // original dwell offset 0.26 (0.76 - 0.5)
+    const ry = ((k.pose.fy ?? 0.5) - 0.5) / 0.28;
+    return {...k, pose: {...k.pose, fx: 0.5 + (fx - 0.5) * rx, fy: 0.5 + (fy - 0.5) * ry}};
+  });
+
 /** The interaction beats the fly-by dwells FOR — one clock shared by camera and content.
  *  Content reads these to time its cursor/press/load/result; the pose table above is spaced
  *  so the dwell brackets press→result. Frames, 60fps. */
