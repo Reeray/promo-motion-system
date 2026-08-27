@@ -6,8 +6,10 @@ import {FONT} from '../lib/fonts';
 /* ============================================================================
  * JUMP-ZOOM TYPE — a sentence on a leftward conveyor, told through camera jumps.
  *
- * STATUS: TEMPLATE UNDER REVIEW. Whole block fastened to 2.5s (150f) by rescaling the
- * time table ~0.55x, structure and rates kept. Earlier round notes: round 3 (round-2 notes: exit travel 3x too far, swap
+ * STATUS: TEMPLATE UNDER REVIEW. Paced to ~3s (182f) the second way: uniform 0.55x
+ * compression broke the easing feel (fixed distances over fewer frames = steeper curves),
+ * so the HOLDS were shortened while every motion phase keeps its round-4 frame count -
+ * the curves are untouched, only the stillness is briefer. Earlier round notes: round 3 (round-2 notes: exit travel 3x too far, swap
  * zoom was letter-shape bias, words enter from the LEFT, velocity steps smoothed).
  * Round 1 missed the defining motion: it tracked bbox height/cy only, called the
  * holds "dead still", and invented a 1.75×→1 shrink on the swap line. Round 2
@@ -51,29 +53,29 @@ export type JZLine =
 
 /* ── the measured motion table (60fps frames · 720p px) ──────────────────── */
 export const JZ = {
-  resolveIn: 6, // the macro head fades in (stand-in for the ignored glyph morph)
-  macroHold: 18, // macro phrase rides the conveyor…
+  resolveIn: 8, // the macro head fades in (stand-in for the ignored glyph morph)
+  macroHold: 20, // macro phrase rides the conveyor…
   macroScale: 2.6, // …at this scale (pushed past the measured 2.2 — ruled: MORE contrast)
-  appendEvery: 4, // a new word lands every…
-  appendIn: 5, // …settling with fade + 18px rise
-  wideHold: 20, // completed line reads (creeping all the while)
+  appendEvery: 5, // a new word lands every…
+  appendIn: 8, // …settling with fade + 18px rise
+  wideHold: 21, // completed line reads (creeping all the while)
   smallScale: 0.9, // the accumulated line reads slightly UNDER reading size — deepens the drop
   swapScale: 2.1, // a swap line is BIG (the ruled size-contrast pattern: big -> small ->
   // big -> BIG-if-one-word / small-if-more), CONSTANT for its whole life — the earlier
   // "+10% micro-zoom" was measurement bias (descenders raise median component height)
   climaxScale: 2.5, // the climax word is the BIGGEST — CONSTANT (no drift, no lift; ruled)
   climaxJump: 20, // the wipe SNAPS to this % instantly (the snap law), then eases the rest
-  climaxWipe: 11, // …over this many frames
-  climaxGlide: 20, // the decelerating entry glide…
+  climaxWipe: 14, // …over this many frames
+  climaxGlide: 28, // the decelerating entry glide…
   climaxGlideDist: 130, // …covering this many px to rest
-  climaxHold: 18, // final hold
+  climaxHold: 12, // final hold
   // the conveyor (re-measured after review: totals, not just rates — the exit moves
   // ~30px ALL-IN at 720p including creep; the first cut moved 3x too far)
   creep: 1.0, // px/f leftward, all holds
-  enterGlide: 8, // a fresh line decelerates over this many frames…
+  enterGlide: 12, // a fresh line decelerates over this many frames…
   enterDist: 18, // …covering this px beyond the creep
   relax: 5, // the overshoot-relax: glides this far past rest, eases back gently
-  exitF: 11, // every non-final line's last frames accelerate left…
+  exitF: 18, // every non-final line's last frames accelerate left…
   exitDist: 26, // …adding this much BEYOND the creep — a visible lean, cut at ~-6px/f
 } as const;
 
@@ -93,7 +95,7 @@ const conveyorX = (t: number, dur: number, hasExit: boolean, hasEnterGlide: bool
   if (hasEnterGlide) {
     const g = lerp(t, [0, JZ.enterGlide], [0, 1], EASE.out);
     x += (1 - g) * JZ.enterDist - g * JZ.relax; // decelerate through rest into the overshoot…
-    x += lerp(t, [JZ.enterGlide, JZ.enterGlide + 14], [0, JZ.relax], EASE.inOut); // …and relax back
+    x += lerp(t, [JZ.enterGlide, JZ.enterGlide + 16], [0, JZ.relax], EASE.inOut); // …and relax back
   }
   x -= JZ.creep * t; // the ever-present creep
   if (hasExit) {
@@ -156,7 +158,7 @@ export const JumpZoomType: React.FC<{
       // macro: big, riding the conveyor, accelerating into the jump like any exit
       const a = lerp(local, [0, JZ.resolveIn], [0, 1], EASE.out);
       scale = JZ.macroScale;
-      x = -JZ.creep * local - lerp(local, [macroEnd - 8, macroEnd], [0, 16], EASE.in);
+      x = -JZ.creep * local - lerp(local, [macroEnd - 12, macroEnd], [0, 16], EASE.in);
       node = <span style={{opacity: a}}>{line.head}</span>;
     } else {
       // ONE-step jump-cut to the reading frame; the line accumulates while creeping
