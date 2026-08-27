@@ -35,6 +35,10 @@ import {FONT} from '../lib/fonts';
  *                   overshoot anywhere (every scale approach is monotonic).
  *                   After it rests: the slow upward drift, the exit breath.
  *
+ *   SIZE CONTRAST    the ruled phase pattern: BIG (macro open) -> small (the
+ *                     accumulated line) -> BIG (swap) -> BIG if the final line is
+ *                     one word (climax) / small if it carries several.
+ *
  * TEMPLATE CONTRACT (block law): the motion table is locked — it is the
  * measurement. The line list (copy, emphasis, climax) is content, free per video.
  * ========================================================================== */
@@ -52,16 +56,15 @@ export const JZ = {
   appendEvery: 6, // a new word lands every…
   appendIn: 8, // …settling with fade + 18px rise
   wideHold: 40, // completed line reads (creeping all the while)
-  swapScale: 1.28, // a swap line enters at this ×reading size, CONSTANT — the earlier
-  // "+10% micro-zoom" was measurement bias: appending words with ascenders/descenders
-  // ('you') raise the median component height; letter shapes, not scale
-  climaxScale: 1.9, // the climax word's size
-  climaxZoomDrift: 0.02, // +2% drift after the wipe
-  climaxWipe: 22, // hard left→right reveal
+  swapScale: 1.8, // a swap line is BIG (the ruled size-contrast pattern: big -> small ->
+  // big -> BIG-if-one-word / small-if-more), CONSTANT for its whole life — the earlier
+  // "+10% micro-zoom" was measurement bias (descenders raise median component height)
+  climaxScale: 1.9, // the climax word's size — CONSTANT (no drift, no lift; ruled)
+  climaxJump: 40, // the wipe SNAPS to this % instantly (the snap law), then eases the rest
+  climaxWipe: 20, // …over this many frames
   climaxGlide: 36, // the decelerating entry glide…
   climaxGlideDist: 130, // …covering this many px to rest
-  climaxHold: 34, // final hold…
-  liftPerFrame: -1.0, // …with the slow upward drift
+  climaxHold: 34, // final hold
   // the conveyor (re-measured after review: totals, not just rates — the exit moves
   // ~30px ALL-IN at 720p including creep; the first cut moved 3x too far)
   creep: 1.0, // px/f leftward, all holds
@@ -69,7 +72,7 @@ export const JZ = {
   enterDist: 18, // …covering this px beyond the creep
   relax: 5, // the overshoot-relax: glides this far past rest, eases back gently
   exitF: 20, // every non-final line's last frames accelerate left…
-  exitDist: 10, // …adding this much BEYOND the creep — the cut lands at ~-5px/f
+  exitDist: 26, // …adding this much BEYOND the creep — a visible lean, cut at ~-6px/f
 } as const;
 
 const lineDur = (ln: JZLine, last: boolean): number => {
@@ -109,7 +112,7 @@ const Word: React.FC<{t: string; at: number; f: number}> = ({t, at, f}) => {
         display: 'inline-block',
         visibility: f < at ? 'hidden' : 'visible',
         opacity: p,
-        transform: `translateX(${(1 - p) * -24}px)`, // measured: words arrive FROM THE LEFT
+        transform: `translateX(${(1 - p) * 24}px)`, // words arrive from the RIGHT, sliding left into their slot
         whiteSpace: 'pre',
       }}
     >
@@ -180,13 +183,12 @@ export const JumpZoomType: React.FC<{
       </>
     );
   } else {
-    // climax: wipes on left→right WHILE gliding left to rest; monotonic scale; then the lift
-    const wipe = lerp(local, [0, JZ.climaxWipe], [0, 112], EASE.inOut);
+    // climax: the wipe SNAPS to climaxJump% on frame one and eases the rest (the snap law),
+    // WHILE gliding left to rest. Scale constant; no lift.
+    const wipe = lerp(local, [0, JZ.climaxWipe], [JZ.climaxJump, 112], EASE.out);
     const glide = lerp(local, [0, JZ.climaxGlide], [0, 1], EASE.out);
-    const rest = Math.max(JZ.climaxWipe, JZ.climaxGlide);
-    scale = JZ.climaxScale * (1 + JZ.climaxZoomDrift * Math.min(1, local / rest));
+    scale = JZ.climaxScale;
     x = (1 - glide) * JZ.climaxGlideDist;
-    y = Math.max(0, local - rest) * JZ.liftPerFrame;
     node = <span style={{clipPath: `inset(-20% ${Math.max(0, 100 - wipe)}% -20% -8%)`}}>{line.word}</span>;
   }
 
