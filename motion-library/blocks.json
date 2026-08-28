@@ -1,6 +1,6 @@
 {
   "generated": "npm run blocks",
-  "total": 31,
+  "total": 32,
   "orphanSpecs": [
     "depth-parallax-words",
     "kinetic-center-build",
@@ -305,6 +305,15 @@
           "tag": null,
           "source": "HF logo intro · 2s-uniform / opening",
           "desc": "The complete brand animation, ten keyframes on a ten-hit rhythm: the “Hugging Face” wordmark degrades letter-by-letter into real photo objects (waving hand, stone, oil barrel, rubber duck), the objects are refined into HF product icons, then the row squeezes inward and hard-cuts into the logo landing its own downbeat with one ~3% overshoot. Raw material → product → brand. Transparent, so it plays over the video’s own theme. The handoff’s default build: 2s-uniform table fastened x0.75 by review — 90 frames, exactly 1.5s.",
+          "durationInFrames": null,
+          "fps": 60
+        },
+        {
+          "name": "corner-anchor-zoom",
+          "category": "ui",
+          "tag": null,
+          "source": "hf-blog-editor promo · ruled",
+          "desc": "The corner-anchored crop as one round trip: regular browser window → axis-handoff into a STATIC macro crop at 60% occupancy (the anchor corner sits INSIDE the frame with a stage margin — rounded corner and elevation visible, only the two opposite edges overflow; no zoom animation, the crop is a framing reached by the transition) → the macOS cursor lands on the control that motivated the framing, presses, and the outro begins ~10 frames later (exit-on-click: the transition is the click’s consequence) → axis-handoff back to the window at rest with the state flipped — the delta is the shot. Momentum tail throughout: every view’s enter decelerates into a leftward creep the outro accelerates away. Window content free via render-prop.",
           "durationInFrames": null,
           "fps": 60
         },

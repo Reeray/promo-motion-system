@@ -4,6 +4,8 @@ import {LogoAnimationSurface, ANIM_FRAMES} from '../promo/surfaces/hf-logo-anima
 import {DollyFlybyDemo} from '../demo/pose3d-demo';
 import {DOLLY_FLYBY_FRAMES} from './pose3d';
 import {BurstOrbitDemo, BURST_DEMO_FRAMES} from '../demo/burst3d-demo';
+import {CornerAnchorZoomDemo} from '../demo/corner-anchor-demo';
+import {CAZ_FRAMES} from './corner-anchor-zoom';
 
 /* UI-motion blocks (GPT-5.5 house standard) — same Block shape as the typography and
  * transition sets.
@@ -54,6 +56,16 @@ export const UI_BLOCKS: Block[] = [
     wide: true,
     desc: 'The complete brand animation, ten keyframes on a ten-hit rhythm: the “Hugging Face” wordmark degrades letter-by-letter into real photo objects (waving hand, stone, oil barrel, rubber duck), the objects are refined into HF product icons, then the row squeezes inward and hard-cuts into the logo landing its own downbeat with one ~3% overshoot. Raw material → product → brand. Transparent, so it plays over the video’s own theme. The handoff’s default build: 2s-uniform table fastened x0.75 by review — 90 frames, exactly 1.5s.',
     Comp: LogoAnimationSurface,
+  },
+  {
+    name: 'corner-anchor-zoom',
+    category: 'ui',
+    source: 'hf-blog-editor promo · ruled',
+    poster: 100, // mid-crop: cursor over the control, the framing at its 60%
+    durationInFrames: CAZ_FRAMES,
+    fps: 60,
+    desc: 'The corner-anchored crop as one round trip: regular browser window → axis-handoff into a STATIC macro crop at 60% occupancy (the anchor corner sits INSIDE the frame with a stage margin — rounded corner and elevation visible, only the two opposite edges overflow; no zoom animation, the crop is a framing reached by the transition) → the macOS cursor lands on the control that motivated the framing, presses, and the outro begins ~10 frames later (exit-on-click: the transition is the click’s consequence) → axis-handoff back to the window at rest with the state flipped — the delta is the shot. Momentum tail throughout: every view’s enter decelerates into a leftward creep the outro accelerates away. Window content free via render-prop.',
+    Comp: CornerAnchorZoomDemo,
   },
   {
     name: 'pose3d-dolly-flyby',

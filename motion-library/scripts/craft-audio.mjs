@@ -432,7 +432,11 @@ const plinkVoice = (freq, ms) => {
   mix(m, decay(sweep(buf(ms), freq * 5.404, freq * 5.404, 0.06), rate * 2.4));
   mix(m, decay(bandpass(noise(buf(10), rnd, 0.5), 3000, 1.1), 500));
   attack(m, 3);
-  return panTo(fadeOut(m, Math.max(10, ms * 0.25)), 0);
+  // authored 2.5dB under the one-shot ceiling: tonal + bright reads far louder than the
+  // mechanical thocks at equal peak. Measured against the reference: plinks sit at ~3.7x
+  // the local music rms there; at the full -15dB ceiling ours measured 4.5x (median).
+  const ch = master(panTo(fadeOut(m, Math.max(10, ms * 0.25)), 0), PEAK_ONESHOT * 0.75);
+  return {ch, noNormalize: true};
 };
 
 /* ============================================================================

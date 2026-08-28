@@ -191,7 +191,7 @@ const main = async () => {
     // the constant layer: the beat tick on EVERY beat, shaker 8ths under it
     for (let b = 0; b < beats; b++) {
       const t = fMs(p.start + b * prep.beat);
-      const tg = intro ? 0.55 : 1; // the intro breathes: ticks at half level
+      const tg = intro ? 0.75 : 1; // the intro breathes (ref-measured: its intro sits ~5dB under the body, not 13)
       put(panTo(hat(grooveRnd, 0.115 * tg), 0.3), t);
       put(panTo(shaker(shakerRnd, 0.05 * tg), 0.2), t);
       put(panTo(shaker(shakerRnd, 0.034 * tg), -0.25), t + beatMs / 2);
@@ -253,7 +253,7 @@ const main = async () => {
         for (let st = 0; st < 1; st += step) {
           const idx = Math.round(((b + st) * 2) % 8);
           const [note, oct] = chord[idx];
-          put(panTo(keysBright(NOTE(note, oct), beatMs * step * 0.9, intro ? 0.07 : 0.085), st === 0 ? 0.18 : -0.18), t + st * beatMs);
+          put(panTo(keysBright(NOTE(note, oct), beatMs * step * 0.9, intro ? 0.105 : 0.085), st === 0 ? 0.18 : -0.18), t + st * beatMs);
         }
       }
       if (!intro)

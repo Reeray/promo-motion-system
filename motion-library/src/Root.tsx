@@ -6,6 +6,7 @@ import {Labeled} from './lib/Labeled';
 import {ChipTokenize, LogTheater, LogTheaterZoomed, CameraPush} from './clips/C';
 import {ANIMATE_TEXT_BLOCKS} from './blocks/animate-text';
 import {TRANSITION_BLOCKS} from './blocks/transitions';
+import {UI_BLOCKS} from './blocks/ui-motion';
 import {Promo} from './promo/Promo';
 import {prepare} from './promo/prepare';
 import {PromoDocRaw} from './promo/schema';
@@ -98,6 +99,9 @@ export const Root: React.FC = () => (
     />
     {ANIMATE_TEXT_BLOCKS.map((b) => (
       <Composition key={b.name} id={slug(b.name)} component={b.Comp} durationInFrames={dur(b)} fps={b.fps ?? 30} width={1280} height={720} />
+    ))}
+    {UI_BLOCKS.filter((b) => b.durationInFrames).map((b) => (
+      <Composition key={b.name} id={'ui-' + slug(b.name).slice(3)} component={b.Comp} durationInFrames={dur(b)} fps={b.fps ?? 30} width={1280} height={720} />
     ))}
     {TRANSITION_BLOCKS.map((b) => (
       <Composition
