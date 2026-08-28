@@ -322,7 +322,7 @@ export const BURST_CUES: {at: number; kind: CueKind}[] = [
 const ClaimLine: React.FC = () => (
   <div style={{display: 'flex', alignItems: 'center', gap: 13, fontFamily: SANS, fontSize: 42, fontWeight: 700, color: '#14161c', letterSpacing: -0.6, whiteSpace: 'nowrap'}}>
     <span>Write together.</span>
-    <span style={{background: '#000', color: '#fff', borderRadius: 9999, padding: '6px 26px', fontWeight: 650, display: 'inline-block', transform: 'translateY(-1px)'}}>Publish</span>
+    <span style={{background: '#000', color: '#fff', borderRadius: 9999, padding: '3px 17px', fontSize: 33, fontWeight: 650, display: 'inline-block'}}>Publish</span>
     <span>as your team.</span>
   </div>
 );
