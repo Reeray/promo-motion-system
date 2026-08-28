@@ -44,6 +44,13 @@ const WORD_STEP_MS = 85;
 const THROW_PX = 20; // 30px @1920
 const GLIDE_PX = 80; // 120px @1920
 const SCALE_UP_TO = 1.062;
+// THE MOMENTUM TAIL (ruled): a scene never settles to zero velocity. The enter's
+// deceleration hands into this residual creep along the EXIT axis, and the outro
+// accelerates that same motion away - decelerate -> creep -> accelerate, the conveyor
+// grammar at scene scale. NOT extra movement added on top: the same x / scale the
+// transitions already animate, with its easing extended until the next scene takes it.
+const CREEP_PX = 0.06; // px/f leftward (3.6px/s) toward a push-off-left exit
+const CREEP_Z = 0.0001; // scale/f (0.6%/s) toward a scale-up-cut exit
 const POP_FROM = 0.76;
 
 // Frame counts at the library's own 60fps, kept so existing promos and the gallery keep their
@@ -54,8 +61,8 @@ const SCALE_UP_DUR = msToFrames(SCALE_UP_MS, FPS);
 const POP_DUR = msToFrames(POP_MS, FPS);
 const WORD_STEP = msToFrames(WORD_STEP_MS, FPS);
 
-export const T = {THROW_PX, THROW_DUR, GLIDE_PX, GLIDE_DUR, WORD_STEP, THROW_MS, GLIDE_MS, WORD_STEP_MS};
-export const TZ = {SCALE_UP_TO, SCALE_UP_DUR, POP_FROM, POP_DUR, SCALE_UP_MS, POP_MS};
+export const T = {THROW_PX, THROW_DUR, GLIDE_PX, GLIDE_DUR, WORD_STEP, THROW_MS, GLIDE_MS, WORD_STEP_MS, CREEP_PX};
+export const TZ = {SCALE_UP_TO, SCALE_UP_DUR, POP_FROM, POP_DUR, SCALE_UP_MS, POP_MS, CREEP: CREEP_Z};
 
 /* ── Primitives (hooks) — for hand-rolled composition ────────────────────── */
 

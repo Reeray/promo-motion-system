@@ -53,8 +53,7 @@ const TextBody: React.FC<{scene: TextScene; pal: Pal; font: string}> = ({scene, 
   const spec = SPEC.get(scene.effect);
   if (!spec) return null;
   return (
-    // the object drifts through its whole read (momentum law: a held card is never frozen)
-    <div style={{textAlign: 'center', transform: `scale(${1 + f * 0.00035})`}}>
+    <div style={{textAlign: 'center'}}>
       <SpecText spec={spec} sample={scene.copy} fontSize={SIZE[scene.size]} loop={false} bare color={pal.fg} fontFamily={font} />
       {scene.sub && (
         <div style={{marginTop: 22, fontSize: 26, fontFamily: font, color: pal.muted, opacity: lerp(f, [24, 40], [0, 1], EASE.out)}}>
@@ -88,6 +87,12 @@ const SceneView: React.FC<{p: PreparedScene; pal: Pal; font: string}> = ({p, pal
   let scale = 1;
   if (scene.enter === 'glide-in') x = lerp(f, [0, T.GLIDE_DUR], [T.GLIDE_PX, 0], EASE.out);
   else scale = lerp(f, [0, TZ.POP_DUR], [TZ.POP_FROM, 1], EASE.camera);
+
+  // THE MOMENTUM TAIL: the enter never fully settles - a residual creep along the EXIT
+  // axis runs until the outro accelerates it away, so the scene's easing momentum extends
+  // into the next scene instead of dying mid-hold. One rule here; surfaces stay still.
+  if (scene.exit === 'push-off-left') x -= f * T.CREEP_PX;
+  else scale *= 1 + f * TZ.CREEP;
 
   // outro — short throw, cut at peak; never animates off screen
   if (f >= outAt) {

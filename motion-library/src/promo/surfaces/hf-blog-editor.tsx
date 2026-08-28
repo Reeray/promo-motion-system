@@ -359,7 +359,7 @@ export const BlogBurstSurface: React.FC = () => {
           mirrors the 3D copy's geometry (centre scale breathe × the z=60 perspective
           magnification 1.058) so the handoff is seamless. */}
       {f >= returnStart && (
-        <div style={{position: 'absolute', inset: 0, zIndex: 10, display: 'flex', justifyContent: 'center', alignItems: 'center', transform: `scale(${1.058 * (1 + 0.04 * g) * (1 + Math.max(0, f - (returnStart + CT.back)) * 0.0004)})`}}>
+        <div style={{position: 'absolute', inset: 0, zIndex: 10, display: 'flex', justifyContent: 'center', alignItems: 'center', transform: `scale(${1.058 * (1 + 0.04 * g)})`}}>
           <ClaimLine pulse={Math.min(0.2, pulse)} />
         </div>
       )}
@@ -410,24 +410,15 @@ const EditorPage: React.FC<{mode: 'md' | 'preview'; flipped?: boolean; press?: n
   </div>
 );
 
-/** The ambient breathe (camera token ~2%/s): an at-rest scene is never frozen —
- *  idle means boring; the frame always carries this much life. */
-const Breathe: React.FC<{f: number; children: React.ReactNode}> = ({f, children}) => (
-  <div style={{transform: `scale(${1 + f * 0.00035})`}}>{children}</div>
-);
-
 /* a) the editor at rest */
 export const WRITEA_FRAMES = 64;
 export const BlogEditorBrowserSurface: React.FC = () => {
-  const f = useCurrentFrame();
   useCharter();
   return (
     <div style={{width: SURFACE_W, height: SURFACE_H, position: 'relative', display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
-      <Breathe f={f}>
-        <BrowserWindow>
-          <EditorPage mode="md" />
-        </BrowserWindow>
-      </Breathe>
+      <BrowserWindow>
+        <EditorPage mode="md" />
+      </BrowserWindow>
     </div>
   );
 };
@@ -442,18 +433,17 @@ export const BlogPreviewZoomSurface: React.FC = () => {
   const press = f >= 71 && f < 77;
   const flipped = f >= 73;
   const curT = lerp(f, [10, 64], [0, 1], EASE.inOut);
-  const creep = 1 + f * 0.00028; // momentum through the beat: the crop keeps pressing deeper
   return (
     <AbsoluteFill style={{overflow: 'hidden', background: '#fdfdfd', fontFamily: SANS}}>
-      {/* corner-anchored macro crop, ~75% occupancy: the window's top-right corner sits
-          INSIDE the frame with a stage margin (you can see it is still the floating
-          window, now huge); the left and bottom edges run off-frame — the overflow. */}
-      <div style={{position: 'absolute', right: 48, top: 42, transformOrigin: '100% 0%', transform: `scale(${ZC_PREVIEW * creep})`}}>
+      {/* corner-anchored macro crop: the window's top-right corner sits INSIDE the frame
+          with a REAL stage margin (96x84 — ruled up from 48x42: the anchor needs air);
+          the left and bottom edges run off-frame — the overflow. */}
+      <div style={{position: 'absolute', right: 96, top: 84, transformOrigin: '100% 0%', transform: `scale(${ZC_PREVIEW})`}}>
         <BrowserWindow>
           <EditorPage mode="md" flipped={flipped} press={press ? 1 : 0} />
         </BrowserWindow>
       </div>
-      {f >= 8 && <MacCursor land={{x: 1100, y: 358}} t={curT} from={{x: -560, y: 340}} press={press} size={44} />}
+      {f >= 8 && <MacCursor land={{x: 1052, y: 400}} t={curT} from={{x: -560, y: 340}} press={press} size={44} />}
     </AbsoluteFill>
   );
 };
@@ -466,11 +456,9 @@ export const BlogPreviewResultSurface: React.FC = () => {
   const proseIn = lerp(f, [0, 9], [0.4, 1], EASE.uiEnter);
   return (
     <div style={{width: SURFACE_W, height: SURFACE_H, position: 'relative', display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
-      <Breathe f={f}>
-        <BrowserWindow>
-          <EditorPage mode="preview" flipped proseIn={proseIn} />
-        </BrowserWindow>
-      </Breathe>
+      <BrowserWindow>
+        <EditorPage mode="preview" flipped proseIn={proseIn} />
+      </BrowserWindow>
     </div>
   );
 };
@@ -536,7 +524,7 @@ export const BlogTeamSurface: React.FC = () => {
         : lerp(f, [100, 126], [addTopY + 18, 52 + ROW_H + 20], EASE.inOut);
   return (
     <div style={{width: SURFACE_W, height: SURFACE_H, position: 'relative', display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
-      <div style={{position: 'relative', width: CARD_W, transform: `scale(${1.45 * (1 + f * 0.00035)})`}}>
+      <div style={{position: 'relative', width: CARD_W, transform: 'scale(1.45)'}}>
         <div style={{borderRadius: 14, background: '#fff', border: `1px solid ${T.border}`, boxShadow: ELEV.card, padding: 20, fontFamily: SANS}}>
           <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10}}>
             <span style={{fontSize: 15.2, fontWeight: 600, color: INK}}>Coauthors</span>
@@ -572,8 +560,7 @@ export const BlogTeamSurface: React.FC = () => {
             + Add coauthor
           </div>
         </div>
-        {/* a parked hand still drifts: sub-3px wander keeps the cursor alive between beats */}
-        {f >= 14 && f < 190 && <Cursor x={cx + Math.sin(f * 0.11) * 2.2} y={cy + Math.cos(f * 0.085) * 1.8} press={press1 || press2 || grab} scale={0.8} />}
+        {f >= 14 && f < 190 && <Cursor x={cx} y={cy} press={press1 || press2 || grab} scale={0.8} />}
       </div>
     </div>
   );
@@ -657,15 +644,12 @@ const PublishPage: React.FC<{press?: number}> = ({press = 0}) => (
 /* a) the whole editor at rest */
 export const PUBA_FRAMES = 64;
 export const BlogPublishFullSurface: React.FC = () => {
-  const f = useCurrentFrame();
   useCharter();
   return (
     <div style={{width: SURFACE_W, height: SURFACE_H, position: 'relative', display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
-      <Breathe f={f}>
-        <BrowserWindow>
-          <PublishPage />
-        </BrowserWindow>
-      </Breathe>
+      <BrowserWindow>
+        <PublishPage />
+      </BrowserWindow>
     </div>
   );
 };
@@ -679,17 +663,16 @@ export const BlogPublishZoomedSurface: React.FC = () => {
   useCharter();
   const press = f >= 71 && f < 77;
   const curT = lerp(f, [10, 64], [0, 1], EASE.inOut);
-  const creep = 1 + f * 0.00028;
   return (
     <AbsoluteFill style={{overflow: 'hidden', background: '#fdfdfd', fontFamily: SANS}}>
-      {/* corner-anchored macro crop, ~75% occupancy — bottom-right anchored, overflowing
-          left + top. */}
-      <div style={{position: 'absolute', right: 48, bottom: 42, transformOrigin: '100% 100%', transform: `scale(${ZC_PUBLISH * creep})`}}>
+      {/* corner-anchored macro crop — bottom-right anchored with the ruled 96x84 stage
+          margin, overflowing left + top. */}
+      <div style={{position: 'absolute', right: 96, bottom: 84, transformOrigin: '100% 100%', transform: `scale(${ZC_PUBLISH})`}}>
         <BrowserWindow>
           <PublishPage press={press ? 1 : 0} />
         </BrowserWindow>
       </div>
-      {f >= 8 && <MacCursor land={{x: 1097, y: 616}} t={curT} from={{x: -560, y: -380}} press={press} size={44} />}
+      {f >= 8 && <MacCursor land={{x: 1049, y: 574}} t={curT} from={{x: -560, y: -380}} press={press} size={44} />}
     </AbsoluteFill>
   );
 };
@@ -711,7 +694,6 @@ export const BlogPublishModalSurface: React.FC = () => {
   const curT = lerp(f, [10, 40], [0, 1], EASE.inOut);
   return (
     <div style={{width: SURFACE_W, height: SURFACE_H, position: 'relative', display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
-      <Breathe f={f}>
       <div style={{position: 'relative', width: 480, borderRadius: 12, background: '#fff', boxShadow: ELEV.card, overflow: 'hidden', fontFamily: SANS}}>
         <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${T.borderSoft}`, padding: '16px 24px'}}>
           <span style={{display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 18, fontWeight: 600, color: '#000'}}>
@@ -739,7 +721,6 @@ export const BlogPublishModalSurface: React.FC = () => {
           </div>
         </div>
       </div>
-      </Breathe>
     </div>
   );
 };

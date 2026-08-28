@@ -271,7 +271,8 @@ The ruled framing for a STATIC zoom-in on a control (named by the user: "75% scr
 while zoomed in on the requested area"). Distinct from the full-bleed macro crop below:
 
 - The scaled window's ANCHORED CORNER sits INSIDE the frame with a stage margin
-  (~48px × ~42px at 720p) on those two sides — the stage shows, the rounded corner and
+  (~96px × ~84px at 720p — ruled up from 48×42: the anchor corner needs REAL air)
+  on those two sides — the stage shows, the rounded corner and
   elevation show, so it still reads as the floating window, now huge.
 - The two OPPOSITE edges run off-frame — those are the only overflow directions
   (interaction top-right → anchor top-right, overflow left+bottom; interaction
@@ -1031,11 +1032,18 @@ reads as motion rather than a cut.
 4. Enter slower than exit; blur assists exits. [A]
 5. The frame never freezes; near-still during reads. [both] **Hard cap, ruled on the
    hf-blog-editor burst scene: no stretch of TRUE stillness longer than ~0.5s (30f).**
-   Surface end-holds trim to fit; if a read needs longer, something must still carry
-   micro-motion (breathe, creep, a cursor drift) — viewers must never stare at a freeze.
+   Surface end-holds trim to fit; longer reads stay alive through THE MOMENTUM TAIL
+   below — viewers must never stare at a freeze.
+   **THE MOMENTUM TAIL (ruled — supersedes per-surface breathe/drift/wander/swell): never
+   fight idle by ADDING transforms; that "adds complexity and weirdness". Instead the
+   scene's OWN easing extends until the next scene takes it: the enter decelerates into a
+   residual creep along the EXIT axis (x for push-off-left, scale for scale-up-cut), and
+   the outro accelerates that same motion away — decelerate → creep → accelerate, the
+   conveyor grammar at scene scale. Implemented ONCE in the transition layer (T.CREEP_PX /
+   TZ.CREEP); surfaces themselves stay still and add no idle-fighting motion.**
    **MOMENTUM THROUGH THE INTERACTION (ruled twice on click beats): a button click never
-   freezes the frame.** Before the press the cursor is in flight and the framing carries
-   its breathe/creep; the press itself lands 3–10 frames before the scene's outro so THE
+   freezes the frame.** Before the press the cursor is in flight and the momentum tail
+   carries the framing; the press itself lands 3–10 frames before the scene's outro so THE
    TRANSITION IS THE CLICK'S CONSEQUENCE (exit-on-click — the modal ruled it first, the
    crop scenes inherit it); post-click idle is forbidden. If the click's result must be
    seen in-scene, its animation starts on the release frame, never after a hold.
