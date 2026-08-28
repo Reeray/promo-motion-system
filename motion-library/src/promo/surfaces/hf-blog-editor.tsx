@@ -478,12 +478,15 @@ export const BlogPreviewZoomSurface: React.FC = () => {
   const curT = lerp(f, [10, 54], [0, 1], EASE.inOut);
   return (
     <AbsoluteFill style={{overflow: 'hidden', background: '#fdfdfd', fontFamily: SANS}}>
-      <div style={{position: 'absolute', right: 0, top: 0, transformOrigin: '100% 0%', transform: `scale(${ZC_PREVIEW})`}}>
-        <BrowserWindow elevation={false}>
+      {/* corner-anchored macro crop, ~75% occupancy: the window's top-right corner sits
+          INSIDE the frame with a stage margin (you can see it is still the floating
+          window, now huge); the left and bottom edges run off-frame — the overflow. */}
+      <div style={{position: 'absolute', right: 48, top: 42, transformOrigin: '100% 0%', transform: `scale(${ZC_PREVIEW})`}}>
+        <BrowserWindow>
           <EditorPage mode="md" flipped={flipped} press={press ? 1 : 0} />
         </BrowserWindow>
       </div>
-      {f >= 10 && <MacCursor land={{x: 1148, y: 316}} t={curT} from={{x: -560, y: 340}} press={press} size={44} />}
+      {f >= 10 && <MacCursor land={{x: 1100, y: 358}} t={curT} from={{x: -560, y: 340}} press={press} size={44} />}
     </AbsoluteFill>
   );
 };
@@ -709,12 +712,14 @@ export const BlogPublishZoomedSurface: React.FC = () => {
   const curT = lerp(f, [10, 54], [0, 1], EASE.inOut);
   return (
     <AbsoluteFill style={{overflow: 'hidden', background: '#fdfdfd', fontFamily: SANS}}>
-      <div style={{position: 'absolute', right: 0, bottom: 0, transformOrigin: '100% 100%', transform: `scale(${ZC_PUBLISH})`}}>
-        <BrowserWindow elevation={false}>
+      {/* corner-anchored macro crop, ~75% occupancy — bottom-right anchored, overflowing
+          left + top. */}
+      <div style={{position: 'absolute', right: 48, bottom: 42, transformOrigin: '100% 100%', transform: `scale(${ZC_PUBLISH})`}}>
+        <BrowserWindow>
           <PublishPage press={press ? 1 : 0} />
         </BrowserWindow>
       </div>
-      {f >= 10 && <MacCursor land={{x: 1145, y: 658}} t={curT} from={{x: -560, y: -380}} press={press} size={44} />}
+      {f >= 10 && <MacCursor land={{x: 1097, y: 616}} t={curT} from={{x: -560, y: -380}} press={press} size={44} />}
     </AbsoluteFill>
   );
 };

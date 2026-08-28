@@ -265,6 +265,22 @@ full-screened while other projects used browser chrome, and the difference showe
 - The chrome is part of the surface (it scales/crops with it), drawn from real proportions
   (~44px bar at 720p), not a decorative frame around the scene.
 
+### ⚑ LAW — CORNER-ANCHORED CROP (~75% occupancy)
+
+The ruled framing for a STATIC zoom-in on a control (named by the user: "75% screen occupy
+while zoomed in on the requested area"). Distinct from the full-bleed macro crop below:
+
+- The scaled window's ANCHORED CORNER sits INSIDE the frame with a stage margin
+  (~48px × ~42px at 720p) on those two sides — the stage shows, the rounded corner and
+  elevation show, so it still reads as the floating window, now huge.
+- The two OPPOSITE edges run off-frame — those are the only overflow directions
+  (interaction top-right → anchor top-right, overflow left+bottom; interaction
+  bottom-right → anchor bottom-right, overflow left+top).
+- Visible surface ≈ 75–80% of the screen. All four edges overflowing = wrong; zero
+  margin at the anchor = wrong.
+- No zoom animation — the crop is a framing reached BY a transition (axis-handoff),
+  per the log-theater-zoomed grammar: camera dead still, content carries the motion.
+
 ### ⚑ LAW — MACRO CROP (the "zoomed manner")
 
 The default instinct is to scale a captured surface until it *fits* the frame. That is the wrong
