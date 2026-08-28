@@ -84,10 +84,10 @@
       "id": "cta",
       "kind": "text",
       "effect": "spring-scale-in",
-      "copy": "Come post your AI articles on Hugging Face blog",
+      "copy": "Post your AI blogs on HF blog",
       "sub": "Exclusive to Team & Enterprise",
       "size": "md",
-      "hold": "long",
+      "hold": "normal",
       "enter": "glide-in",
       "exit": "scale-up-cut"
     },

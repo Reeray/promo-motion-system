@@ -56,7 +56,7 @@ const TextBody: React.FC<{scene: TextScene; pal: Pal; font: string}> = ({scene, 
     <div style={{textAlign: 'center'}}>
       <SpecText spec={spec} sample={scene.copy} fontSize={SIZE[scene.size]} loop={false} bare color={pal.fg} fontFamily={font} />
       {scene.sub && (
-        <div style={{marginTop: 20, fontSize: 18, fontFamily: font, color: pal.muted, opacity: lerp(f, [24, 40], [0, 1], EASE.out)}}>
+        <div style={{marginTop: 22, fontSize: 26, fontFamily: font, color: pal.muted, opacity: lerp(f, [24, 40], [0, 1], EASE.out)}}>
           {scene.sub}
         </div>
       )}
