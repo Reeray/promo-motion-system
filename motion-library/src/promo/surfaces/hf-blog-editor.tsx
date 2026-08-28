@@ -704,7 +704,7 @@ const ROW_H = 33 + 6; // compact redesign row + gap
  *  article in this order. Drag to reorder."). */
 export const BlogTeamSurface: React.FC = () => {
   const f = useCurrentFrame();
-  const CARD_W = 380;
+  const CARD_W = 430;
   // typing: "julien" before the first pick, "merve" before the second
   const type1 = Math.max(0, Math.min(6, Math.floor((f - 30) / 2.6)));
   const type2 = Math.max(0, Math.min(5, Math.floor((f - 66) / 2.6)));
@@ -746,7 +746,7 @@ export const BlogTeamSurface: React.FC = () => {
               : lerp(f, [100, 126], [inputY + 17, 26 + ROW_H + 16], EASE.inOut);
   return (
     <div style={{width: SURFACE_W, height: SURFACE_H, position: 'relative', display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
-      <div style={{position: 'relative', width: CARD_W, transform: 'scale(1.45)'}}>
+      <div style={{position: 'relative', width: CARD_W, transform: 'scale(1.58)'}}>
         <div style={{borderRadius: 14, background: '#fff', border: `1px solid ${T.border}`, boxShadow: ELEV.card, padding: '16px 18px', fontFamily: SANS}}>
           <div style={{display: 'flex', alignItems: 'center', marginBottom: 8}}>
             <span style={{fontSize: 14.5, fontWeight: 600, color: INK}}>
@@ -815,9 +815,9 @@ export const THUMB_CUES: {at: number; kind: CueKind}[] = [
 
 export const BlogThumbSurface: React.FC = () => {
   const f = useCurrentFrame();
-  const CARD_W = 380;
+  const CARD_W = 440;
   const ZONE_Y = 54; // card-local y of the dropzone
-  const ZONE_H = 120;
+  const ZONE_H = 152;
   // the drag is IN PROGRESS as the scene opens (no idle): ghost + cursor glide to the zone
   const t = lerp(f, [0, 56], [0, 1], EASE.inOut);
   const gx = lerp(t, [0, 1], [CARD_W + 210, CARD_W / 2 - 75]);
@@ -834,7 +834,7 @@ export const BlogThumbSurface: React.FC = () => {
   const gposy = dropped ? lerp(setP, [0, 1], [gy, 0]) : gy;
   return (
     <div style={{width: SURFACE_W, height: SURFACE_H, position: 'relative', display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
-      <div style={{position: 'relative', width: CARD_W, transform: 'scale(1.45)'}}>
+      <div style={{position: 'relative', width: CARD_W, transform: 'scale(1.56)'}}>
         <div style={{borderRadius: 14, background: '#fff', border: `1px solid ${T.border}`, boxShadow: ELEV.card, padding: '16px 18px', fontFamily: SANS}}>
           <div style={{display: 'flex', alignItems: 'baseline', marginBottom: 8}}>
             <span style={{fontSize: 14.5, fontWeight: 600, color: INK}}>Blog thumbnail</span>
@@ -996,7 +996,12 @@ export const BlogPublishModalSurface: React.FC = () => {
           <div style={{fontSize: 15, color: T.body, lineHeight: 1.5}}>
             Are you sure you want to publish this Article on <span style={{textDecoration: 'underline'}}>https://huggingface.co/blog</span>?
           </div>
-          {/* the redesign's AI-guidelines callout (replaces the in-modal thumbnail) */}
+          {/* the SET thumbnail rides into the confirm (user-directed extension of the
+              captured empty-state modal: the design owner's call) */}
+          <div style={{marginTop: 14, borderRadius: 8, border: `1px solid ${T.border}`, overflow: 'hidden', aspectRatio: '1200/648'}}>
+            <Img src={staticFile('hf-blog/thumb-huggy.svg')} style={{width: '100%', height: '100%', objectFit: 'cover', display: 'block'}} />
+          </div>
+          {/* the redesign's AI-guidelines callout (replaces the in-modal thumbnail UPLOAD) */}
           <div style={{marginTop: 14, display: 'flex', gap: 8, borderRadius: 8, background: '#f3f4f6', padding: '10px 12px', fontSize: 12.5, lineHeight: 1.55, color: T.body}}>
             <svg width={13} height={13} viewBox="0 0 32 32" fill={T.mut} style={{flex: 'none', marginTop: 2}}>
               <path d="M17 22v-8h-4v2h2v6h-3v2h8v-2h-3z" />
