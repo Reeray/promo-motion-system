@@ -3,7 +3,7 @@ import {AbsoluteFill, Img, continueRender, delayRender, staticFile, useCurrentFr
 import {EASE, lerp} from '../../lib/ease';
 import {FONT} from '../../lib/fonts';
 import {ELEV} from '../../lib/palette';
-import {Burst3D, BURST_ITEMS, burstTextFrames, burstTextTiming} from '../../blocks/burst3d';
+import {Burst3D, BURST_ITEMS, burstProgress, burstTextFrames, burstTextTiming} from '../../blocks/burst3d';
 import {MacCursor} from '../../blocks/pose3d';
 import {JumpZoomType, jzFrames, JZLine} from '../../blocks/jump-zoom-type';
 import type {CueKind} from '../sound-kinds';
@@ -317,21 +317,46 @@ export const BURST_CUES: {at: number; kind: CueKind}[] = [
   {at: CLAIM_TIMING.lead + CLAIM_TIMING.shoot + CLAIM_TIMING.dwell + Math.floor(CLAIM_TIMING.back * (CLAIM_TIMING.cut ?? CLAIM_TIMING.jump)), kind: 'ui-swap'}, // the throw-out cut
 ];
 
+/** The claim with "Publish" as a real BUTTON (this project): black pill, white text —
+ *  the word is the product's own control. */
+const ClaimLine: React.FC = () => (
+  <div style={{display: 'flex', alignItems: 'center', gap: 13, fontFamily: SANS, fontSize: 42, fontWeight: 700, color: '#14161c', letterSpacing: -0.6, whiteSpace: 'nowrap'}}>
+    <span>Write together.</span>
+    <span style={{background: '#000', color: '#fff', borderRadius: 9999, padding: '6px 26px', fontWeight: 650, display: 'inline-block', transform: 'translateY(-1px)'}}>Publish</span>
+    <span>as your team.</span>
+  </div>
+);
+
 export const BlogBurstSurface: React.FC = () => {
+  const f = useCurrentFrame();
   useCharter();
-  // Non-bleed surfaces mount inside a shrink-to-fit transform wrapper — an AbsoluteFill root
-  // collapses there (absolute children size nothing). Root must be the measured surface box.
+  const CT = CLAIM_TIMING;
+  const returnStart = CT.lead + CT.shoot + CT.dwell;
+  const g = burstProgress(f, 0, CT);
+  // line-level soft-blur reveal (this surface owns its centre; the block's per-char
+  // reveal is traded for the pill-in-line composition)
+  const rv = lerp(f, [4, CT.lead - 6], [0, 1], EASE.out);
+  const inner = (
+    <div style={{opacity: rv, filter: `blur(${(1 - rv) * 12}px)`, transform: `translateY(${(1 - rv) * 16}px)`}}>
+      <ClaimLine />
+    </div>
+  );
   return (
     <div style={{width: SURFACE_W, height: SURFACE_H, position: 'relative'}}>
-      <Burst3D
-        items={BURST_ITEMS}
-        timing={CLAIM_TIMING}
-        renderItem={(i, item) => BURST_FRAG[i % BURST_FRAG.length](item.size[0], item.size[1])}
-        centerText={CLAIM}
-        centerFontSize={42}
-        centerColor="#14161c"
-        centerFontFamily={SANS}
-      />
+      <Burst3D items={BURST_ITEMS} timing={CT} renderItem={(i, item) => BURST_FRAG[i % BURST_FRAG.length](item.size[0], item.size[1])}>
+        {/* the 3D copy lives here until the returns begin (graze occlusion works) */}
+        {f < returnStart ? inner : null}
+      </Burst3D>
+      {/* Z-ORDER LAW (this project): from the first returning frame, the claim — and above
+          all its Publish button — sits on the 2D stage overlay, painted over the whole 3D
+          scene: returning thumbnails pass BEHIND the button, never over it. The overlay
+          mirrors the 3D copy's geometry (centre scale breathe × the z=60 perspective
+          magnification 1.058) so the handoff is seamless. */}
+      {f >= returnStart && (
+        <div style={{position: 'absolute', inset: 0, zIndex: 10, display: 'flex', justifyContent: 'center', alignItems: 'center', transform: `scale(${1.058 * (1 + 0.04 * g)})`}}>
+          <ClaimLine />
+        </div>
+      )}
     </div>
   );
 };
