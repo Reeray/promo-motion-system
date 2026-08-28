@@ -393,6 +393,46 @@ const SFX = {
     decay(m, 24 * 0.82);
     return panTo(fadeOut(m, 24), 0);
   },
+
+  /* ================================================================
+   * THE PLINK VOICE - tuned element-pops (the "Unsigned" reference language).
+   * Measured from the reference promo (2026-08-28 study): element pop-ups are
+   * PITCHED notes in the music's key - celesta / music-box family: ~12-20ms
+   * attack, 40-90ms core ring, bright partials (centroid 2.4-3.8kHz) over a
+   * clear fundamental on C-major white keys, a breath of mallet noise in the
+   * attack. PITCH ENCODES EVENT SIZE: in-scene micro-pops sit low (C4-A4),
+   * arrivals mid (C5-E5), scene-scale reveals sparkle high (C6-E6). Cues
+   * follow the VISUAL instant (the reference's plinks are not beat-quantised);
+   * the music flows underneath. Files are cut to their cue kind's slot length.
+   * ================================================================ */
+
+  'plink-tick-c4': () => plinkVoice(261.6, 60),
+  'plink-tick-e4': () => plinkVoice(329.6, 60),
+  'plink-rise-c5': () => plinkVoice(523.3, 90),
+  'plink-rise-e5': () => plinkVoice(659.3, 90),
+  'plink-swap-g5': () => plinkVoice(784.0, 180),
+  'plink-swap-e6': () => plinkVoice(1318.5, 180),
+  'plink-pop-c6': () => plinkVoice(1046.5, 430),
+  // the arpeggio set for custom cue chains (elements arriving in series)
+  'plink-arp-c4': () => plinkVoice(261.6, 420),
+  'plink-arp-e4': () => plinkVoice(329.6, 420),
+  'plink-arp-g4': () => plinkVoice(392.0, 420),
+  'plink-arp-a4': () => plinkVoice(440.0, 420),
+};
+
+/** The plink instrument: fundamental + celesta partials (2.756x / 5.404x,
+ *  the inharmonic pair that reads as music-box), ring scaled to the slot,
+ *  a 10ms bandpassed mallet breath on the attack. Deterministic. */
+const plinkVoice = (freq, ms) => {
+  const rnd = mulberry32(9000 + Math.round(freq));
+  const m = buf(ms);
+  const rate = 2600 / ms; // exp decay sized so the ring fills (not outlives) the slot
+  mix(m, decay(sweep(buf(ms), freq, freq, 0.62), rate));
+  mix(m, decay(sweep(buf(ms), freq * 2.756, freq * 2.756, 0.2), rate * 1.7));
+  mix(m, decay(sweep(buf(ms), freq * 5.404, freq * 5.404, 0.06), rate * 2.4));
+  mix(m, decay(bandpass(noise(buf(10), rnd, 0.5), 3000, 1.1), 500));
+  attack(m, 3);
+  return panTo(fadeOut(m, Math.max(10, ms * 0.25)), 0);
 };
 
 /* ============================================================================

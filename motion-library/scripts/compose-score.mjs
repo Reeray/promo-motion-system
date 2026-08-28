@@ -27,6 +27,12 @@
  *   --pitched=harmonic   the harmony IS the melody: each scene gets its own chord colour,
  *                        changing exactly at the cuts, sustained under the groove.
  *   --beats-only         no pitch at all except the kick (the control condition).
+ *   --pitched=unsigned   the reference-informed shape (the "Unsigned" promo study,
+ *                        2026-08-28): the ostinato ROLE - pitch as moving texture -
+ *                        with the reference's ARRANGEMENT ARC: sparse keys-only intro
+ *                        (no kick/bass, half-level ticks), groove + sub enter with the
+ *                        first content scene, high sparkle (B5/C6/D6) joins late, and
+ *                        the close stays the hit-scored logo + resolve.
  *
  * Deterministic: same doc + mode in, same bytes out (hash printed). Self-verifies: exact
  * sample count, peak at the bed ceiling, no DC. Play with fade:"none" (a score authors its
@@ -98,7 +104,7 @@ const PATTERNS = {
   default: {kick: [0, 2], rim: [1], clap: [], snap: [3]},
 };
 
-const MODES = ['ostinato', 'bassline', 'breath', 'harmonic', 'beats'];
+const MODES = ['ostinato', 'bassline', 'breath', 'harmonic', 'beats', 'unsigned'];
 
 const main = async () => {
   const docPath = process.argv[2];
@@ -176,6 +182,8 @@ const main = async () => {
 
   for (const p of bodyRanges) {
     const isCta = p.scene.id === 'cta' || p === prep.scenes[prep.scenes.length - 2];
+    const sceneIdx = prep.scenes.indexOf(p);
+    const intro = mode === 'unsigned' && sceneIdx < 2; // the arc's sparse opening
     const isFraming = p.scene.kind !== 'ui'; // title/payoff/cta frame the content scene
     const startBeat = p.start / prep.beat;
     const beats = p.frames / prep.beat;
@@ -183,9 +191,10 @@ const main = async () => {
     // the constant layer: the beat tick on EVERY beat, shaker 8ths under it
     for (let b = 0; b < beats; b++) {
       const t = fMs(p.start + b * prep.beat);
-      put(panTo(hat(grooveRnd, 0.115), 0.3), t);
-      put(panTo(shaker(shakerRnd, 0.05), 0.2), t);
-      put(panTo(shaker(shakerRnd, 0.034), -0.25), t + beatMs / 2);
+      const tg = intro ? 0.55 : 1; // the intro breathes: ticks at half level
+      put(panTo(hat(grooveRnd, 0.115 * tg), 0.3), t);
+      put(panTo(shaker(shakerRnd, 0.05 * tg), 0.2), t);
+      put(panTo(shaker(shakerRnd, 0.034 * tg), -0.25), t + beatMs / 2);
     }
 
     if (mode === 'beats') {
@@ -208,8 +217,8 @@ const main = async () => {
     for (let b = 0; b < beats; b++) {
       const g = startBeat + b;
       const t = fMs(p.start + b * prep.beat);
-      if (g % 2 === 1) put(panTo(rim(rimRnd, 0.17), 0.12), t);
-      if (!isCta && g % 2 === 0) put(panTo(kick(0.48), 0), t);
+      if (!intro && g % 2 === 1) put(panTo(rim(rimRnd, 0.17), 0.12), t);
+      if (!intro && !isCta && g % 2 === 0) put(panTo(kick(0.48), 0), t);
     }
 
     const bar = (b) => Math.floor((startBeat + b) / 4);
@@ -232,6 +241,32 @@ const main = async () => {
       for (let b = 0; b < beats; b += 4) {
         const [rn, ro] = SUB_ROOTS[bar(b) % 4];
         put(panTo(subNote(NOTE(rn, ro), beatMs * 4, 0.4), 0), fMs(p.start + b * prep.beat));
+      }
+    } else if (mode === 'unsigned') {
+      /* the reference arc over the ostinato role: same broken-chord texture, but the
+       * intro scenes carry keys ALONE (no sub), and from team-title on a high sparkle
+       * note lands on the and-of-2 every second bar (scientific B5 / C6 / D6). */
+      for (let b = 0; b < beats; b++) {
+        const t = fMs(p.start + b * prep.beat);
+        const chord = bar(b) % 4 < 2 ? OST.C6 : OST.F;
+        const step = isFraming ? 1 : 0.5;
+        for (let st = 0; st < 1; st += step) {
+          const idx = Math.round(((b + st) * 2) % 8);
+          const [note, oct] = chord[idx];
+          put(panTo(keysBright(NOTE(note, oct), beatMs * step * 0.9, intro ? 0.07 : 0.085), st === 0 ? 0.18 : -0.18), t + st * beatMs);
+        }
+      }
+      if (!intro)
+        for (let b = 0; b < beats; b += 4) {
+          const [rn, ro] = SUB_ROOTS[bar(b) % 4];
+          put(panTo(subNote(NOTE(rn, ro), beatMs * 4, 0.4), 0), fMs(p.start + b * prep.beat));
+        }
+      if (sceneIdx >= 5) {
+        const SPARK = [['B', 5], ['C', 5], ['D', 5]]; // scientific B5, C6, D6
+        for (let b = 0; b < beats; b += 8) {
+          const [sn, so] = SPARK[Math.floor(bar(b) / 2) % 3];
+          put(panTo(keysBright(NOTE(sn, so), beatMs * 1.6, 0.07), 0.25), fMs(p.start + b * prep.beat) + beatMs * 1.5);
+        }
       }
     } else if (mode === 'bassline') {
       /* the movement lives in the BASS; pads stay static and warm above it. */

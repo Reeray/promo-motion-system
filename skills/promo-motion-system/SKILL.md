@@ -871,6 +871,25 @@ interval overlap, not frame collision. Known open item: the encoder adds a const
 priming delay (measured, PLAN.md open question 0) — not silently compensated, because a hidden
 global shift would be a second source of truth for timing.
 
+### ⚑ LAW — THE PLINK LANGUAGE (reference-derived sound design)
+
+Measured from the "Unsigned" promo study (element-pop sound + music, 2026-08-28):
+
+- **Element pops are TUNED PLINKS in the music's key** — celesta/music-box voice
+  (12–20ms attack, 40–90ms ring, bright partials 2.4–3.8kHz over a clear fundamental),
+  never mechanical clicks, never whooshes. The kit's `plink-*` family implements it
+  (scripts/craft-audio.mjs) on C-major white keys.
+- **PITCH ENCODES EVENT SIZE**: in-scene micro-events (presses, ticks) sit low
+  (C4–A4); arrivals mid (C5–E5); scene-scale reveals sparkle high (C6–E6). A series
+  of arrivals ASCENDS (C4→E4→G4→A4; second coauthor lands a third above the first).
+- **Cues follow the VISUAL instant, not the beat** — the reference's plinks are not
+  beat-quantised; the music flows underneath while sound scores the picture.
+- **The music is a MOVING TEXTURE with an ARRANGEMENT ARC** (compose-score
+  `--pitched=unsigned`): broken-chord keys ostinato · sparse keys-only intro (no
+  kick/bass, half-level ticks) · groove + sub enter with the first content scene ·
+  high sparkle (B5/C6/D6) joins late · the close is the hit-scored logo + resolve.
+  Exits stay silent — the transition itself is the sound of leaving.
+
 ### Swap-duration table (measured, at 60fps)
 
 | slot | id | axis | frames | swapping changes the scene by |
