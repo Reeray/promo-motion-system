@@ -299,89 +299,15 @@ const Frag: React.FC<{w: number; h: number; pad?: number; children: React.ReactN
   </div>
 );
 
-const BURST_FRAG: ((w: number, h: number) => React.ReactNode)[] = [
-  // 0 · thumbnail card
-  (w, h) => (
-    <Frag w={w} h={h} pad={8}>
-      <Img src={staticFile('hf-blog/thumb-huggy.svg')} style={{width: '100%', height: h - 34, objectFit: 'cover', borderRadius: 6, border: `1px solid ${T.border}`}} />
-      <div style={{fontSize: 10, color: T.faint, marginTop: 5}}>recommended 1200×648</div>
-    </Frag>
-  ),
-  // 1 · the editor chips
-  (w, h) => (
-    <Frag w={w} h={h}>
-      <div style={{display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-start', transform: 'scale(0.92)', transformOrigin: '0 0'}}>
-        <TagChip icon="info" label="Syntax guide" />
-        <TagChip icon="eye" label="Preview" />
-      </div>
-    </Frag>
-  ),
-  // 2 · the rendered article header (Charter)
-  (w, h) => (
-    <Frag w={w} h={h} pad={14}>
-      <div style={{fontFamily: CHARTER, fontWeight: 700, color: INK, fontSize: 17, lineHeight: 1.2}}>Designing Huggy: Behind Hugging Face’s Brand Assets</div>
-      <div style={{fontFamily: CHARTER, color: T.body, fontSize: 11.5, lineHeight: 1.55, marginTop: 8}}>A look at how we craft Huggy — the face of Hugging Face — and the design system behind HFBA.</div>
-    </Frag>
-  ),
-  // 3 · the Blog URL field
-  (w, h) => (
-    <Frag w={w} h={h} pad={12}>
-      <div style={{fontSize: 12, fontWeight: 600, color: INK, marginBottom: 8}}>Blog URL</div>
-      <div style={{display: 'flex', alignItems: 'center', gap: 3, borderRadius: 8, border: `1px solid ${T.border}`, padding: '7px 9px', fontSize: 11.5}}>
-        <span style={{color: T.faint}}>hf.co/blog/</span>
-        <span style={{fontWeight: 500, color: INK}}>huggingface</span>
-        <svg width={7} height={5} viewBox="0 0 12 7" fill="none" style={{marginLeft: 1}}>
-          <path d="M1 1L6 6L11 1" stroke={T.faint} strokeWidth="1.5" />
-        </svg>
-        <span style={{color: T.faint}}>/</span>
-        <span style={{color: INK, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}>designing-huggy</span>
-      </div>
-    </Frag>
-  ),
-  // 4 · coauthor rows
-  (w, h) => (
-    <Frag w={w} h={h} pad={10}>
-      <div style={{display: 'flex', flexDirection: 'column', gap: 6, transform: 'scale(0.86)', transformOrigin: '0 0', width: (w - 20) / 0.86}}>
-        <AuthorRow who="chunte" you />
-        <AuthorRow who="julien" />
-      </div>
-    </Frag>
-  ),
-  // 5 · the code block
-  (w, h) => (
-    <Frag w={w} h={h} pad={12}>
-      <div style={{fontFamily: MONO, fontSize: 10.5, lineHeight: 1.7, background: T.codeBg, border: `1px solid ${T.codeBorder}`, borderRadius: 6, padding: '8px 10px', color: '#334155', height: h - 24, overflow: 'hidden'}}>
-        <span style={{color: T.kw}}>from</span> diffusers <span style={{color: T.kw}}>import</span> DiffusionPipeline{'\n'}
-        {'\n'}pipe = DiffusionPipeline.from_pretrained({'\n'}
-        {'  '}
-        <span style={{color: T.str}}>"black-forest-labs/FLUX.1-dev"</span>){'\n'}pipe.load_lora_weights(<span style={{color: T.str}}>"Chunte/huggy-style-v6-lora"</span>)
-      </div>
-    </Frag>
-  ),
-  // 6 · the action pills
-  (w, h) => (
-    <Frag w={w} h={h}>
-      <div style={{display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-start', transform: 'scale(0.8)', transformOrigin: '0 0'}}>
-        <Pill kind="secondary" label="Save as draft" />
-        <Pill kind="primary" label="Publish" />
-      </div>
-    </Frag>
-  ),
-  // 7 · the draft chip + save state
-  (w, h) => (
-    <Frag w={w} h={h} pad={12}>
-      <div style={{display: 'flex', alignItems: 'center', gap: 7, borderRadius: 8, border: `1px solid ${T.border}`, padding: '5px 9px', width: 'fit-content', maxWidth: w - 24}}>
-        <Img src={staticFile('hf-blog/chunte.png')} style={{width: 16, height: 16, borderRadius: '50%'}} />
-        <span style={{fontSize: 11.5, fontWeight: 500, color: '#1f2937', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 96}}>Designing Huggy: Beh…</span>
-        <span style={{borderRadius: 4, background: T.borderSoft, padding: '1px 6px', fontSize: 10, fontWeight: 500, color: T.mut}}>unsaved</span>
-      </div>
-      <div style={{display: 'flex', alignItems: 'center', gap: 6, marginTop: 9, fontSize: 11.5, color: T.mut}}>
-        <span style={{width: 6, height: 6, borderRadius: '50%', background: T.amber}} />
-        Unsaved changes
-      </div>
-    </Frag>
-  ),
-];
+/** The orbiting frames are REAL huggingface.co/blog thumbnails (captured from the live
+ *  index, sources in public/hf-blog/thumbs/SOURCES.txt, git-ignored like every capture).
+ *  Each card is a thumbnail cover in the captured card chrome. */
+const THUMBS = ['t0.png', 't1.png', 't2.png', 't3.png', 't4.png', 't5.png', 't6.png', 't7.jpeg'];
+const BURST_FRAG: ((w: number, h: number) => React.ReactNode)[] = THUMBS.map((file) => (w: number, h: number) => (
+  <div style={{width: w, height: h, borderRadius: 10, overflow: 'hidden', background: '#fff', border: `1px solid ${T.border}`, boxShadow: ELEV.card}}>
+    <Img src={staticFile(`hf-blog/thumbs/${file}`)} style={{width: '100%', height: '100%', objectFit: 'cover'}} />
+  </div>
+));
 
 const CLAIM = 'Write together. Publish as your team.';
 const CLAIM_TIMING = burstTextTiming(CLAIM); // lead derives from the soft-blur-in reveal of this exact copy
