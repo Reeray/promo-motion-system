@@ -68,37 +68,37 @@ export type BurstTiming = {
   orbit: number; // deg per frame, one sign, constant — the rotation that never stops
 };
 
-/** Radial progress of one item, 0 (docked at centre) → 1 (fully out on its orbit). */
-export const burstProgress = (f: number, delay: number, t: BurstTiming): number => {
+/** Radial progress of one item, 0 (docked at centre) → 1 (fully out on its orbit).
+ *  EXPERIMENT (cut disabled): returns are STAGGERED — each item leaves `retOffset`
+ *  frames after the dwell ends and completes its journey home (accelerating throw
+ *  ease all the way in); the formation drains as a cascade instead of leaving at once. */
+export const burstProgress = (f: number, delay: number, t: BurstTiming, retOffset = 0): number => {
   const local = f - t.lead - delay;
   if (local <= 0) return 0;
   if (local < t.shoot) return t.jump + (1 - t.jump) * EASE.outStrong(local / t.shoot);
-  if (local < t.shoot + t.dwell) return 1;
-  const back = local - t.shoot - t.dwell;
-  // the return is a THROW: accelerating ease-in, built to be cut ([B]'s law: the exit
-  // accelerates into a hard cut at peak velocity). Travel is back-loaded, so a time cut
-  // at 40/60% of the leg still finds the frames far out (~82%/~62% of radius).
+  const back = local - t.shoot - t.dwell - retOffset;
+  if (back <= 0) return 1; // still dwelling until its own departure slot
   if (back < t.back) return 1 - EASE.in(back / t.back);
   return 0;
 };
+
+/** The experiment's return stagger: birth order echoes into departure order. */
+export const returnOffsetOf = (item: BurstItem): number => item.delay * 5;
 
 const FACING_TILT = 22; // deg — rotateY amplitude of the derived facing rule
 const HERO_RX = 6; // deg — every frame tipped slightly upward, constant
 
 const Frame3D: React.FC<{item: BurstItem; timing: BurstTiming; children: React.ReactNode}> = ({item, timing, children}) => {
   const f = useCurrentFrame();
-  const p = burstProgress(f, item.delay, timing);
+  const retOffset = returnOffsetOf(item);
+  const p = burstProgress(f, item.delay, timing, retOffset);
   const local = f - timing.lead - item.delay;
-  // THROW-OUT CUT: the return plays `cut` of its own duration, then the frame vanishes on
-  // a hard cut. Paired with the accelerating throw ease this is meaningful in both time
-  // AND space — cut 0.4 fires ~10f in with frames at ~0.82R, cut 0.6 ~16f in at ~0.62R —
-  // and velocity at the cut is at its highest (never decelerate into a cut).
-  // one GLOBAL cut frame for the whole formation (delays stagger the births, never the
-  // cut) — a lone delayed straggler outliving the others reads as a bug, not a ripple
-  const globalBack = f - timing.lead - timing.shoot - timing.dwell;
-  if (globalBack >= timing.back * (timing.cut ?? timing.jump)) return null;
+  // staggered full return (cut disabled for this experiment): the item vanishes as ITS
+  // OWN journey completes; the last 12% of radius fades so nothing parks behind the text
+  const backT = local - timing.shoot - timing.dwell - retOffset;
+  if (backT > 0 && p <= 0.001) return null;
   if (local <= 0) return null;
-  const opacity = Math.min(1, local / 3); // 3-frame materialize at the jump-in only
+  const opacity = Math.min(1, local / 3) * (backT > 0 && p < 0.12 ? Math.max(0, p / 0.12) : 1);
   // the orbit clock is anchored to FLIGHT-START (lead minus the preset's original 8f
   // pre-roll), not the global frame: a longer lead (e.g. a text reveal) must not rotate
   // the formation past its choreographed front passes — the graze vanished exactly this
@@ -144,10 +144,10 @@ export const burstTextLead = (text: string): number =>
 /** The admitted timing with the lead grown to fit the centre text's reveal. */
 export const burstTextTiming = (text: string): BurstTiming => ({...BURST_TIMING, lead: burstTextLead(text)});
 
-/** Total frames of a text-mode burst (reveal-lead + flight + settle breath). */
+/** Total frames of a text-mode burst (reveal-lead + flight + staggered full returns + breath). */
 export const burstTextFrames = (text: string): number => {
   const t = burstTextTiming(text);
-  return t.lead + t.shoot + t.dwell + Math.ceil(t.back * (t.cut ?? t.jump)) + 14;
+  return t.lead + t.shoot + t.dwell + t.back + 20 + 10; // + max return offset, + breath
 };
 
 export const Burst3D: React.FC<{
