@@ -50,10 +50,10 @@ const backOut = (t: number, s: number) => {
 };
 
 /* ── timing (60fps; spec's DEFAULT 2s-uniform `standard` table ×2) ───────── */
-const HITS = [8, 18, 26, 36, 44, 54, 62, 72, 80, 90];
+const HITS = [6, 14, 20, 27, 33, 41, 47, 54, 60, 68]; // 1.5s build: the 2s table x0.75, rounded to frames
 const WEIGHTS = [1.0, 0.2, 0.65, 0.2, 1.0, 0.2, 0.2, 1.0, 0.2, 1.15]; // opening, 2+2+3+3
 const GATHER = 4;
-export const ANIM_FRAMES = 120; // 2.0s at 60fps — the handoff's stated deliverable
+export const ANIM_FRAMES = 90; // 1.5s at 60fps — fastened from the handoff's 2.0s by review (hits x0.75, structure intact)
 const LOGO_HIT = HITS[9];
 const RELAYOUT = 14; // rowRelayout ease window (7 spec frames)
 
