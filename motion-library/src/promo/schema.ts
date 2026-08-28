@@ -233,7 +233,7 @@ export const validate = (doc: PromoDoc): string[] => {
   const errs: string[] = [];
   const n = doc.scenes.length;
   if (doc.font !== 'inter' && doc.font !== 'hf') errs.push(`unknown font token "${doc.font}"`);
-  if (n < 1 || n > 12) errs.push(`a promo needs 1–12 scenes, got ${n}`);
+  if (n < 1 || n > 14) errs.push(`a promo needs 1–14 scenes, got ${n}`); // 12 -> 14: the hf-blog-editor promo grew a thumbnail beat
 
   const seen = new Set<string>();
   for (const s of doc.scenes) {

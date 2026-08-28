@@ -74,6 +74,9 @@ import {
   PUBMODAL_CUES,
   JZTITLE_FRAMES,
   JZTITLE_CUES,
+  THUMB_FRAMES,
+  THUMB_CUES,
+  BlogThumbSurface,
 } from './hf-blog-editor';
 
 export const SURFACES: Record<string, Surface> = {
@@ -110,6 +113,13 @@ export const SURFACES: Record<string, Surface> = {
     frames: TEAM_FRAMES,
     cues: TEAM_CUES,
     Comp: BlogTeamSurface,
+  },
+  'hf-blog-thumb': {
+    id: 'hf-blog-thumb',
+    label: 'HF · Blog editor — thumbnail drag-and-drop',
+    frames: THUMB_FRAMES,
+    cues: THUMB_CUES,
+    Comp: BlogThumbSurface,
   },
   'hf-blog-publish-full': {
     id: 'hf-blog-publish-full',

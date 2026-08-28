@@ -264,7 +264,8 @@ const SettingsPanel: React.FC<{
   inputFocus?: number;
   inputText?: string;
   dropdown?: React.ReactNode;
-}> = ({w, coauthors, coCount, inputFocus = 0, inputText, dropdown}) => (
+  thumb?: boolean;
+}> = ({w, coauthors, coCount, inputFocus = 0, inputText, dropdown, thumb}) => (
   <div style={{width: w, flex: 'none', borderLeft: `1px solid ${T.borderSoft}`, padding: '14px 16px', fontFamily: SANS, position: 'relative', background: '#fdfdfd'}}>
     <div style={{display: 'flex', gap: 8}}>
       <div style={{width: '42%'}}>
@@ -300,19 +301,27 @@ const SettingsPanel: React.FC<{
       <span style={{flex: 1}} />
       <span style={{fontSize: 11, color: T.mut}}>recommended 1200&times;648</span>
     </div>
-    <div style={{marginTop: 7, display: 'flex', alignItems: 'center', gap: 10, borderRadius: 8, border: `1px dashed #d1d5db`, padding: 8}}>
-      <span style={{width: 62, height: 44, borderRadius: 6, background: '#f3f4f6', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flex: 'none'}}>
-        <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={T.mut} strokeWidth={1.6}>
-          <rect x={3} y={5} width={18} height={14} rx={2} />
-          <circle cx={8.5} cy={10} r={1.5} />
-          <path d="M21 15l-5-5-9 9" />
-        </svg>
-      </span>
-      <span>
-        <span style={{display: 'block', fontSize: 12.5, fontWeight: 600, color: T.body}}>Add a thumbnail</span>
-        <span style={{display: 'block', fontSize: 11.5, color: T.mut}}>Click to browse</span>
-      </span>
-    </div>
+    {thumb ? (
+      /* set state (extrapolated from the dropzone pattern; the empty state is the
+         captured one — noted per the blocker discipline): the zone holds the image */
+      <div style={{marginTop: 7, borderRadius: 8, border: `1px solid ${T.border}`, overflow: 'hidden', aspectRatio: '1200/648'}}>
+        <Img src={staticFile('hf-blog/thumb-huggy.svg')} style={{width: '100%', height: '100%', objectFit: 'cover', display: 'block'}} />
+      </div>
+    ) : (
+      <div style={{marginTop: 7, display: 'flex', alignItems: 'center', gap: 10, borderRadius: 8, border: `1px dashed #d1d5db`, padding: 8}}>
+        <span style={{width: 62, height: 44, borderRadius: 6, background: '#f3f4f6', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flex: 'none'}}>
+          <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={T.mut} strokeWidth={1.6}>
+            <rect x={3} y={5} width={18} height={14} rx={2} />
+            <circle cx={8.5} cy={10} r={1.5} />
+            <path d="M21 15l-5-5-9 9" />
+          </svg>
+        </span>
+        <span>
+          <span style={{display: 'block', fontSize: 12.5, fontWeight: 600, color: T.body}}>Add a thumbnail</span>
+          <span style={{display: 'block', fontSize: 11.5, color: T.mut}}>Click to browse</span>
+        </span>
+      </div>
+    )}
     <div style={{fontSize: 11, color: T.mut, marginTop: 6}}>Used as the cover image on hf.co/blog and in link previews.</div>
 
     <div style={{display: 'flex', alignItems: 'center', marginTop: 16, marginBottom: 7}}>
@@ -523,11 +532,18 @@ export const BlogBurstSurface: React.FC = () => {
   // line-level soft-blur reveal (this surface owns its centre; the block's per-char
   // reveal is traded for the pill-in-line composition)
   const rv = lerp(f, [4, CT.lead - 6], [0, 1], EASE.out);
-  const inner = (
-    <div style={{opacity: rv, filter: `blur(${(1 - rv) * 12}px)`, transform: `translateY(${(1 - rv) * 16}px)`}}>
+  // THE COMPOSITOR LESSON, applied to this surface's own reveal: a subtree carrying a
+  // filter (even blur(0)) or opacity group inside preserve-3d gets dropped/flickers once
+  // the orbit's depth sorting starts. The wrapper exists ONLY while the reveal runs;
+  // from rv=1 the claim is a clean, unwrapped subtree — nothing for the compositor to cull.
+  const inner =
+    rv >= 1 ? (
       <ClaimLine />
-    </div>
-  );
+    ) : (
+      <div style={{opacity: rv, filter: `blur(${(1 - rv) * 12}px)`, transform: `translateY(${(1 - rv) * 16}px)`}}>
+        <ClaimLine />
+      </div>
+    );
   return (
     <div style={{width: SURFACE_W, height: SURFACE_H, position: 'relative'}}>
       <Burst3D items={BURST_ITEMS} timing={CT} renderItem={(i, item) => BURST_FRAG[i % BURST_FRAG.length](item.size[0], item.size[1])}>
@@ -785,6 +801,107 @@ export const BlogTeamSurface: React.FC = () => {
   );
 };
 
+/* ══════════════════════════════════════════════════════════════════════
+ * SURFACE 3b — hf-blog-thumb: the cursor DRAGS the article's thumbnail into the
+ * panel's dashed dropzone and drops it — the zone highlights on hover, receives
+ * the image, and becomes the set state the publish scenes then carry.
+ * ══════════════════════════════════════════════════════════════════════ */
+
+export const THUMB_FRAMES = 72; // body 72 -> scene 90 (3 beats); drop at 62, outro at 81
+export const THUMB_CUES: {at: number; kind: CueKind}[] = [
+  {at: 62, kind: 'ui-tick'}, // the release
+  {at: 64, kind: 'ui-rise'}, // the zone receives the image (150ms settle)
+];
+
+export const BlogThumbSurface: React.FC = () => {
+  const f = useCurrentFrame();
+  const CARD_W = 380;
+  const ZONE_Y = 54; // card-local y of the dropzone
+  const ZONE_H = 120;
+  // the drag is IN PROGRESS as the scene opens (no idle): ghost + cursor glide to the zone
+  const t = lerp(f, [0, 56], [0, 1], EASE.inOut);
+  const gx = lerp(t, [0, 1], [CARD_W + 210, CARD_W / 2 - 75]);
+  const gy = lerp(t, [0, 1], [330, ZONE_Y + ZONE_H / 2 - 40]);
+  const hover = f >= 44 && f < 62; // ghost over the zone
+  const dropped = f >= 62;
+  const setP = lerp(f, [62, 71], [0, 1], EASE.uiEnter); // ghost snaps into the zone
+  const tilt = lerp(t, [0, 1], [-7, -3]) * (dropped ? 1 - setP : 1);
+  // ghost rect: from the drag size to the zone rect
+  const gw = 150 + setP * (CARD_W - 36 - 150);
+  const gh = 81 + setP * (ZONE_H - 81); // settles to the zone's exact height (cover absorbs the ratio)
+  // the snap target is the ZONE CONTAINER's own origin (the ghost renders inside it)
+  const gposx = dropped ? lerp(setP, [0, 1], [gx, 0]) : gx;
+  const gposy = dropped ? lerp(setP, [0, 1], [gy, 0]) : gy;
+  return (
+    <div style={{width: SURFACE_W, height: SURFACE_H, position: 'relative', display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
+      <div style={{position: 'relative', width: CARD_W, transform: 'scale(1.45)'}}>
+        <div style={{borderRadius: 14, background: '#fff', border: `1px solid ${T.border}`, boxShadow: ELEV.card, padding: '16px 18px', fontFamily: SANS}}>
+          <div style={{display: 'flex', alignItems: 'baseline', marginBottom: 8}}>
+            <span style={{fontSize: 14.5, fontWeight: 600, color: INK}}>Blog thumbnail</span>
+            <span style={{flex: 1}} />
+            <span style={{fontSize: 11.5, color: T.mut}}>recommended 1200&times;648</span>
+          </div>
+          <div style={{position: 'relative', height: ZONE_H}}>
+            {/* the dropzone: dashed at rest, blue while the ghost hovers, the image once set */}
+            <div
+              style={{
+                position: 'absolute',
+                inset: 0,
+                borderRadius: 8,
+                border: setP >= 1 ? `1px solid ${T.border}` : `1px dashed ${hover ? '#2563eb' : '#d1d5db'}`,
+                background: hover ? 'rgba(37,99,235,0.06)' : 'transparent',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 10,
+                overflow: 'hidden',
+              }}
+            >
+              {setP < 0.6 && (
+                <>
+                  <span style={{width: 62, height: 44, borderRadius: 6, background: '#f3f4f6', display: 'inline-flex', alignItems: 'center', justifyContent: 'center'}}>
+                    <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={hover ? '#2563eb' : T.mut} strokeWidth={1.6}>
+                      <rect x={3} y={5} width={18} height={14} rx={2} />
+                      <circle cx={8.5} cy={10} r={1.5} />
+                      <path d="M21 15l-5-5-9 9" />
+                    </svg>
+                  </span>
+                  <span>
+                    <span style={{display: 'block', fontSize: 12.5, fontWeight: 600, color: hover ? '#2563eb' : T.body}}>{hover ? 'Drop to upload' : 'Add a thumbnail'}</span>
+                    <span style={{display: 'block', fontSize: 11.5, color: T.mut}}>Click to browse</span>
+                  </span>
+                </>
+              )}
+            </div>
+            {/* the dragged thumbnail: a ghost card under the cursor that snaps into the zone */}
+            <div
+              style={{
+                position: 'absolute',
+                left: gposx,
+                top: gposy,
+                width: gw,
+                height: gh,
+                borderRadius: 8,
+                overflow: 'hidden',
+                border: `1px solid ${T.border}`,
+                boxShadow: dropped && setP > 0.5 ? 'none' : '0 14px 30px rgba(16,22,38,0.22)',
+                opacity: dropped ? 1 : 0.94,
+                transform: `rotate(${tilt}deg)`,
+                zIndex: 5,
+              }}
+            >
+              <Img src={staticFile('hf-blog/thumb-huggy.svg')} style={{width: '100%', height: '100%', objectFit: 'cover', display: 'block'}} />
+            </div>
+          </div>
+          <div style={{fontSize: 11.5, color: T.mut, marginTop: 8}}>Used as the cover image on hf.co/blog and in link previews.</div>
+        </div>
+        {/* the hand: pressed for the whole drag, releases on the drop */}
+        {f < 190 && <Cursor x={gx + 118} y={dropped ? gy + 30 : gy + 42} press={!dropped} scale={0.8} />}
+      </div>
+    </div>
+  );
+};
+
 /* ══════════════════════════════════════════════════════════════════════════
  * SURFACE 4a — the PUBLISH flow, two scenes before the modal:
  *   a) hf-blog-publish-full    the whole editor (rail, footer) at rest
@@ -803,6 +920,7 @@ const PublishPage: React.FC<{press?: number}> = ({press = 0}) => (
       <SettingsPanel
         w={PANEL_W}
         coCount={3}
+        thumb
         coauthors={
           <div>
             <CoRow who="julien" handleOpacity={0.9} style={{marginBottom: 6}} />

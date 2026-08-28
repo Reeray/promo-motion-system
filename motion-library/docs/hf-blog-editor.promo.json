@@ -60,10 +60,17 @@
       "exit": "scale-up-cut"
     },
     {
+      "id": "thumbnail",
+      "kind": "ui",
+      "surface": "hf-blog-thumb",
+      "enter": "scale-pop-in",
+      "exit": "push-off-left"
+    },
+    {
       "id": "publish-full",
       "kind": "ui",
       "surface": "hf-blog-publish-full",
-      "enter": "scale-pop-in",
+      "enter": "glide-in",
       "exit": "push-off-left"
     },
     {
