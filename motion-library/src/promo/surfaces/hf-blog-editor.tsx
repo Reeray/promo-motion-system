@@ -453,29 +453,38 @@ const EditorPage: React.FC<{mode: 'md' | 'preview'; flipped?: boolean; press?: n
   </div>
 );
 
+/** The ambient breathe (camera token ~2%/s): an at-rest scene is never frozen —
+ *  idle means boring; the frame always carries this much life. */
+const Breathe: React.FC<{f: number; children: React.ReactNode}> = ({f, children}) => (
+  <div style={{transform: `scale(${1 + f * 0.00035})`}}>{children}</div>
+);
+
 /* a) the editor at rest */
-export const WRITEA_FRAMES = 104;
+export const WRITEA_FRAMES = 64;
 export const BlogEditorBrowserSurface: React.FC = () => {
+  const f = useCurrentFrame();
   useCharter();
   return (
     <div style={{width: SURFACE_W, height: SURFACE_H, position: 'relative', display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
-      <BrowserWindow>
-        <EditorPage mode="md" />
-      </BrowserWindow>
+      <Breathe f={f}>
+        <BrowserWindow>
+          <EditorPage mode="md" />
+        </BrowserWindow>
+      </Breathe>
     </div>
   );
 };
 
 /* b) the STATIC macro crop at the chip — pinned top-right, overflowing left + bottom */
 const ZC_PREVIEW = 2.35;
-export const WRITEB_FRAMES = 118;
-export const WRITEB_CUES: {at: number; kind: CueKind}[] = [{at: 62, kind: 'ui-tick'}];
+export const WRITEB_FRAMES = 84;
+export const WRITEB_CUES: {at: number; kind: CueKind}[] = [{at: 48, kind: 'ui-tick'}];
 export const BlogPreviewZoomSurface: React.FC = () => {
   const f = useCurrentFrame();
   useCharter();
-  const press = f >= 62 && f < 68;
-  const flipped = f >= 64;
-  const curT = lerp(f, [10, 54], [0, 1], EASE.inOut);
+  const press = f >= 48 && f < 54;
+  const flipped = f >= 50;
+  const curT = lerp(f, [8, 42], [0, 1], EASE.inOut);
   return (
     <AbsoluteFill style={{overflow: 'hidden', background: '#fdfdfd', fontFamily: SANS}}>
       {/* corner-anchored macro crop, ~75% occupancy: the window's top-right corner sits
@@ -486,22 +495,24 @@ export const BlogPreviewZoomSurface: React.FC = () => {
           <EditorPage mode="md" flipped={flipped} press={press ? 1 : 0} />
         </BrowserWindow>
       </div>
-      {f >= 10 && <MacCursor land={{x: 1100, y: 358}} t={curT} from={{x: -560, y: 340}} press={press} size={44} />}
+      {f >= 8 && <MacCursor land={{x: 1100, y: 358}} t={curT} from={{x: -560, y: 340}} press={press} size={44} />}
     </AbsoluteFill>
   );
 };
 
 /* c) back at rest — the article rendered */
-export const WRITEC_FRAMES = 128;
+export const WRITEC_FRAMES = 84;
 export const BlogPreviewResultSurface: React.FC = () => {
   const f = useCurrentFrame();
   useCharter();
-  const proseIn = lerp(f, [0, 14], [0.4, 1], EASE.uiEnter);
+  const proseIn = lerp(f, [0, 9], [0.4, 1], EASE.uiEnter);
   return (
     <div style={{width: SURFACE_W, height: SURFACE_H, position: 'relative', display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
-      <BrowserWindow>
-        <EditorPage mode="preview" flipped proseIn={proseIn} />
-      </BrowserWindow>
+      <Breathe f={f}>
+        <BrowserWindow>
+          <EditorPage mode="preview" flipped proseIn={proseIn} />
+        </BrowserWindow>
+      </Breathe>
     </div>
   );
 };
@@ -509,23 +520,23 @@ export const BlogPreviewResultSurface: React.FC = () => {
 
 /* ══════════════════════════════════════════════════════════════════════════
  * SURFACE 3 — hf-blog-team: the Coauthors card. EXERCISE THE OPTION (a
- * feature is a verb): + Add coauthor is clicked TWICE — julien-c lands,
- * then merve — and the drag-handle reorders. All growth EASED: the list
- * height, the add button, and the waiting cursor move as one motion —
- * nothing steps.
+ * feature is a verb): + Add coauthor clicked TWICE, then the drag reorder.
+ * MICRO-ANIMATION LAW: every micro interaction (row landing, list growth)
+ * runs 150ms (9f) — snappy, never sluggish. Idle removed: the schedule is
+ * continuous — click, land, travel, click, land, grab, drag, done.
  * NOTE: the demo page's add button is inert and names no candidates; the
  * second author (merve, "M" monogram) extends the captured row pattern at
  * the user's direction — same structure, different letter.
  * ════════════════════════════════════════════════════════════════════════ */
 
-export const TEAM_FRAMES = 330;
+export const TEAM_FRAMES = 204;
 export const TEAM_CUES: {at: number; kind: CueKind}[] = [
-  {at: 60, kind: 'ui-tick'}, // add #1
-  {at: 64, kind: 'ui-rise'}, // julien lands
-  {at: 112, kind: 'ui-tick'}, // add #2
-  {at: 116, kind: 'ui-rise'}, // merve lands
-  {at: 190, kind: 'ui-tick'}, // grab
-  {at: 256, kind: 'ui-swap'}, // reorder committed
+  {at: 48, kind: 'ui-tick'}, // add #1
+  {at: 50, kind: 'ui-rise'}, // julien lands (150ms)
+  {at: 84, kind: 'ui-tick'}, // add #2
+  {at: 86, kind: 'ui-rise'}, // merve lands (150ms)
+  {at: 130, kind: 'ui-tick'}, // grab
+  {at: 172, kind: 'ui-swap'}, // reorder committed
 ];
 
 const ROW_H = 42 + 6; // row height + gap, card-local px
@@ -542,32 +553,29 @@ const MerveRow: React.FC<{style?: React.CSSProperties}> = ({style}) => (
 export const BlogTeamSurface: React.FC = () => {
   const f = useCurrentFrame();
   const CARD_W = 420;
-  const press1 = f >= 60 && f < 65;
-  const press2 = f >= 112 && f < 117;
-  // EASED growth: each landed row eases the list height, the add button, and the resting
-  // cursor together — one continuous expansion, never a step
-  const row1P = lerp(f, [64, 86], [0, 1], EASE.uiEnter);
-  const row2P = lerp(f, [116, 138], [0, 1], EASE.uiEnter);
+  const press1 = f >= 48 && f < 53;
+  const press2 = f >= 84 && f < 89;
+  // 150ms micro eases: rows and list growth land in 9 frames
+  const row1P = lerp(f, [50, 59], [0, 1], EASE.uiEnter);
+  const row2P = lerp(f, [86, 95], [0, 1], EASE.uiEnter);
   const listH = ROW_H + (row1P + row2P) * ROW_H - 6;
-  const addTopY = 52 + listH + 6; // the button's live top edge
-  // drag: julien travels to slot 0; chunte yields down; merve holds slot 2
-  const grab = f >= 190 && f < 256;
-  const drag = lerp(f, [196, 248], [0, 1], EASE.inOut);
+  const addTopY = 52 + listH + 6;
+  const grab = f >= 130 && f < 172;
+  const drag = lerp(f, [134, 168], [0, 1], EASE.inOut);
   const julienY = ROW_H * (1 - drag);
   const chunteY = ROW_H * drag;
-  // cursor: → add, click; REST ON the moving button; click again; → julien handle; drag
   const cx =
-    f < 100
-      ? lerp(f, [18, 54], [CARD_W + 150, CARD_W - 96], EASE.inOut)
-      : f < 150
+    f < 64
+      ? lerp(f, [14, 44], [CARD_W + 150, CARD_W - 96], EASE.inOut)
+      : f < 100
         ? CARD_W - 96
-        : lerp(f, [150, 186], [CARD_W - 96, CARD_W - 46], EASE.inOut);
+        : lerp(f, [100, 126], [CARD_W - 96, CARD_W - 46], EASE.inOut);
   const cy =
-    f < 150
-      ? lerp(f, [18, 54], [430, addTopY + 18], EASE.inOut) // approach AND ride the easing button
-      : grab || f >= 256
-        ? lerp(f, [196, 248], [52 + ROW_H + 20, 52 + 20], EASE.inOut)
-        : lerp(f, [150, 186], [addTopY + 18, 52 + ROW_H + 20], EASE.inOut);
+    f < 100
+      ? lerp(f, [14, 44], [430, addTopY + 18], EASE.inOut)
+      : grab || f >= 172
+        ? lerp(f, [134, 168], [52 + ROW_H + 20, 52 + 20], EASE.inOut)
+        : lerp(f, [100, 126], [addTopY + 18, 52 + ROW_H + 20], EASE.inOut);
   return (
     <div style={{width: SURFACE_W, height: SURFACE_H, position: 'relative', display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
       <div style={{position: 'relative', width: CARD_W, transform: 'scale(1.45)'}}>
@@ -586,7 +594,7 @@ export const BlogTeamSurface: React.FC = () => {
               <AuthorRow
                 who="julien"
                 grabbed={grab}
-                handleOpacity={f >= 160 && f < 270 ? 0.9 : 0}
+                handleOpacity={f >= 104 && f < 186 ? 0.9 : 0}
                 style={{position: 'absolute', left: 0, right: 0, top: julienY + (1 - row1P) * 14, opacity: row1P, zIndex: 2, transform: grab ? 'scale(1.02)' : 'none'}}
               />
             )}
@@ -606,12 +614,11 @@ export const BlogTeamSurface: React.FC = () => {
             + Add coauthor
           </div>
         </div>
-        {f >= 18 && f < 290 && <Cursor x={cx} y={cy} press={press1 || press2 || (f >= 190 && f < 256)} scale={0.8} />}
+        {f >= 14 && f < 190 && <Cursor x={cx} y={cy} press={press1 || press2 || grab} scale={0.8} />}
       </div>
     </div>
   );
 };
-
 
 /* ══════════════════════════════════════════════════════════════════════════
  * SURFACE 4a — the PUBLISH flow, two scenes before the modal:
@@ -689,27 +696,30 @@ const PublishPage: React.FC<{press?: number}> = ({press = 0}) => (
 );
 
 /* a) the whole editor at rest */
-export const PUBA_FRAMES = 104;
+export const PUBA_FRAMES = 64;
 export const BlogPublishFullSurface: React.FC = () => {
+  const f = useCurrentFrame();
   useCharter();
   return (
     <div style={{width: SURFACE_W, height: SURFACE_H, position: 'relative', display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
-      <BrowserWindow>
-        <PublishPage />
-      </BrowserWindow>
+      <Breathe f={f}>
+        <BrowserWindow>
+          <PublishPage />
+        </BrowserWindow>
+      </Breathe>
     </div>
   );
 };
 
 /* b) the STATIC macro crop at Publish — pinned bottom-right, overflowing left + top */
 const ZC_PUBLISH = 2.2;
-export const PUBB_FRAMES = 118;
-export const PUBB_CUES: {at: number; kind: CueKind}[] = [{at: 62, kind: 'ui-tick'}];
+export const PUBB_FRAMES = 84;
+export const PUBB_CUES: {at: number; kind: CueKind}[] = [{at: 48, kind: 'ui-tick'}];
 export const BlogPublishZoomedSurface: React.FC = () => {
   const f = useCurrentFrame();
   useCharter();
-  const press = f >= 62 && f < 68;
-  const curT = lerp(f, [10, 54], [0, 1], EASE.inOut);
+  const press = f >= 48 && f < 54;
+  const curT = lerp(f, [8, 42], [0, 1], EASE.inOut);
   return (
     <AbsoluteFill style={{overflow: 'hidden', background: '#fdfdfd', fontFamily: SANS}}>
       {/* corner-anchored macro crop, ~75% occupancy — bottom-right anchored, overflowing
@@ -719,7 +729,7 @@ export const BlogPublishZoomedSurface: React.FC = () => {
           <PublishPage press={press ? 1 : 0} />
         </BrowserWindow>
       </div>
-      {f >= 10 && <MacCursor land={{x: 1097, y: 616}} t={curT} from={{x: -560, y: -380}} press={press} size={44} />}
+      {f >= 8 && <MacCursor land={{x: 1097, y: 616}} t={curT} from={{x: -560, y: -380}} press={press} size={44} />}
     </AbsoluteFill>
   );
 };
@@ -730,15 +740,15 @@ export const BlogPublishZoomedSurface: React.FC = () => {
  * entered via depth-handoff. The cursor confirms; the beat lands; done.
  * ════════════════════════════════════════════════════════════════════════ */
 
-export const PUBMODAL_FRAMES = 150;
+export const PUBMODAL_FRAMES = 96;
 export const PUBMODAL_CUES: {at: number; kind: CueKind}[] = [
-  {at: 76, kind: 'ui-tick'}, // the confirm
+  {at: 48, kind: 'ui-tick'}, // the confirm
 ];
 
 export const BlogPublishModalSurface: React.FC = () => {
   const f = useCurrentFrame();
-  const press = f >= 76 && f < 82;
-  const curT = lerp(f, [16, 66], [0, 1], EASE.inOut);
+  const press = f >= 48 && f < 54;
+  const curT = lerp(f, [10, 40], [0, 1], EASE.inOut);
   return (
     <div style={{width: SURFACE_W, height: SURFACE_H, position: 'relative', display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
       <div style={{position: 'relative', width: 480, borderRadius: 12, background: '#fff', boxShadow: ELEV.card, overflow: 'hidden', fontFamily: SANS}}>
