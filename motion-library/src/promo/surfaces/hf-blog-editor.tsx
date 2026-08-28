@@ -359,7 +359,7 @@ export const BlogBurstSurface: React.FC = () => {
           mirrors the 3D copy's geometry (centre scale breathe × the z=60 perspective
           magnification 1.058) so the handoff is seamless. */}
       {f >= returnStart && (
-        <div style={{position: 'absolute', inset: 0, zIndex: 10, display: 'flex', justifyContent: 'center', alignItems: 'center', transform: `scale(${1.058 * (1 + 0.04 * g)})`}}>
+        <div style={{position: 'absolute', inset: 0, zIndex: 10, display: 'flex', justifyContent: 'center', alignItems: 'center', transform: `scale(${1.058 * (1 + 0.04 * g) * (1 + Math.max(0, f - (returnStart + CT.back)) * 0.0004)})`}}>
           <ClaimLine pulse={Math.min(0.2, pulse)} />
         </div>
       )}
@@ -434,20 +434,21 @@ export const BlogEditorBrowserSurface: React.FC = () => {
 
 /* b) the STATIC macro crop at the chip — pinned top-right, overflowing left + bottom */
 const ZC_PREVIEW = 2.35;
-export const WRITEB_FRAMES = 84;
-export const WRITEB_CUES: {at: number; kind: CueKind}[] = [{at: 48, kind: 'ui-tick'}];
+export const WRITEB_FRAMES = 72; // body 72 -> scene 90 (3 beats), outro at 81 = press+10: the click IS the exit
+export const WRITEB_CUES: {at: number; kind: CueKind}[] = [{at: 71, kind: 'ui-tick'}];
 export const BlogPreviewZoomSurface: React.FC = () => {
   const f = useCurrentFrame();
   useCharter();
-  const press = f >= 48 && f < 54;
-  const flipped = f >= 50;
-  const curT = lerp(f, [8, 42], [0, 1], EASE.inOut);
+  const press = f >= 71 && f < 77;
+  const flipped = f >= 73;
+  const curT = lerp(f, [10, 64], [0, 1], EASE.inOut);
+  const creep = 1 + f * 0.00028; // momentum through the beat: the crop keeps pressing deeper
   return (
     <AbsoluteFill style={{overflow: 'hidden', background: '#fdfdfd', fontFamily: SANS}}>
       {/* corner-anchored macro crop, ~75% occupancy: the window's top-right corner sits
           INSIDE the frame with a stage margin (you can see it is still the floating
           window, now huge); the left and bottom edges run off-frame — the overflow. */}
-      <div style={{position: 'absolute', right: 48, top: 42, transformOrigin: '100% 0%', transform: `scale(${ZC_PREVIEW})`}}>
+      <div style={{position: 'absolute', right: 48, top: 42, transformOrigin: '100% 0%', transform: `scale(${ZC_PREVIEW * creep})`}}>
         <BrowserWindow>
           <EditorPage mode="md" flipped={flipped} press={press ? 1 : 0} />
         </BrowserWindow>
@@ -535,7 +536,7 @@ export const BlogTeamSurface: React.FC = () => {
         : lerp(f, [100, 126], [addTopY + 18, 52 + ROW_H + 20], EASE.inOut);
   return (
     <div style={{width: SURFACE_W, height: SURFACE_H, position: 'relative', display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
-      <div style={{position: 'relative', width: CARD_W, transform: 'scale(1.45)'}}>
+      <div style={{position: 'relative', width: CARD_W, transform: `scale(${1.45 * (1 + f * 0.00035)})`}}>
         <div style={{borderRadius: 14, background: '#fff', border: `1px solid ${T.border}`, boxShadow: ELEV.card, padding: 20, fontFamily: SANS}}>
           <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10}}>
             <span style={{fontSize: 15.2, fontWeight: 600, color: INK}}>Coauthors</span>
@@ -571,7 +572,8 @@ export const BlogTeamSurface: React.FC = () => {
             + Add coauthor
           </div>
         </div>
-        {f >= 14 && f < 190 && <Cursor x={cx} y={cy} press={press1 || press2 || grab} scale={0.8} />}
+        {/* a parked hand still drifts: sub-3px wander keeps the cursor alive between beats */}
+        {f >= 14 && f < 190 && <Cursor x={cx + Math.sin(f * 0.11) * 2.2} y={cy + Math.cos(f * 0.085) * 1.8} press={press1 || press2 || grab} scale={0.8} />}
       </div>
     </div>
   );
@@ -670,18 +672,19 @@ export const BlogPublishFullSurface: React.FC = () => {
 
 /* b) the STATIC macro crop at Publish — pinned bottom-right, overflowing left + top */
 const ZC_PUBLISH = 2.2;
-export const PUBB_FRAMES = 84;
-export const PUBB_CUES: {at: number; kind: CueKind}[] = [{at: 48, kind: 'ui-tick'}];
+export const PUBB_FRAMES = 72; // exit-on-click pacing, same beat math as the preview crop
+export const PUBB_CUES: {at: number; kind: CueKind}[] = [{at: 71, kind: 'ui-tick'}];
 export const BlogPublishZoomedSurface: React.FC = () => {
   const f = useCurrentFrame();
   useCharter();
-  const press = f >= 48 && f < 54;
-  const curT = lerp(f, [8, 42], [0, 1], EASE.inOut);
+  const press = f >= 71 && f < 77;
+  const curT = lerp(f, [10, 64], [0, 1], EASE.inOut);
+  const creep = 1 + f * 0.00028;
   return (
     <AbsoluteFill style={{overflow: 'hidden', background: '#fdfdfd', fontFamily: SANS}}>
       {/* corner-anchored macro crop, ~75% occupancy — bottom-right anchored, overflowing
           left + top. */}
-      <div style={{position: 'absolute', right: 48, bottom: 42, transformOrigin: '100% 100%', transform: `scale(${ZC_PUBLISH})`}}>
+      <div style={{position: 'absolute', right: 48, bottom: 42, transformOrigin: '100% 100%', transform: `scale(${ZC_PUBLISH * creep})`}}>
         <BrowserWindow>
           <PublishPage press={press ? 1 : 0} />
         </BrowserWindow>
@@ -708,6 +711,7 @@ export const BlogPublishModalSurface: React.FC = () => {
   const curT = lerp(f, [10, 40], [0, 1], EASE.inOut);
   return (
     <div style={{width: SURFACE_W, height: SURFACE_H, position: 'relative', display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
+      <Breathe f={f}>
       <div style={{position: 'relative', width: 480, borderRadius: 12, background: '#fff', boxShadow: ELEV.card, overflow: 'hidden', fontFamily: SANS}}>
         <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${T.borderSoft}`, padding: '16px 24px'}}>
           <span style={{display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 18, fontWeight: 600, color: '#000'}}>
@@ -735,6 +739,7 @@ export const BlogPublishModalSurface: React.FC = () => {
           </div>
         </div>
       </div>
+      </Breathe>
     </div>
   );
 };

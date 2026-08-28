@@ -1033,6 +1033,17 @@ reads as motion rather than a cut.
    hf-blog-editor burst scene: no stretch of TRUE stillness longer than ~0.5s (30f).**
    Surface end-holds trim to fit; if a read needs longer, something must still carry
    micro-motion (breathe, creep, a cursor drift) — viewers must never stare at a freeze.
+   **MOMENTUM THROUGH THE INTERACTION (ruled twice on click beats): a button click never
+   freezes the frame.** Before the press the cursor is in flight and the framing carries
+   its breathe/creep; the press itself lands 3–10 frames before the scene's outro so THE
+   TRANSITION IS THE CLICK'S CONSEQUENCE (exit-on-click — the modal ruled it first, the
+   crop scenes inherit it); post-click idle is forbidden. If the click's result must be
+   seen in-scene, its animation starts on the release frame, never after a hold.
+   *Measurement recipe (how the cap is verified, not eyeballed): per-frame gray diff at
+   320x180, mean < 0.18 marks a frame-still stretch — allowed only when the OBJECT carries
+   drift/breathe. Judge TRUE freeze over the WINDOW, never per frame pair: at native res,
+   p99 of |last - first| across the stretch < 2 = frozen (30f cap applies). Per-pair diffs
+   false-alarm on slow pushes — the codec quantizer eats sub-quarter-pixel steps.*
 6. **Scale rhythm** (B): alternate macro/context every beat.
 7. Density arc: [A] tapers frantic→calm; [B] spends fast cuts ONLY in the world-tour
    montage, glides everywhere else; [C] has no fast passage at all — 4 cuts in 55s.

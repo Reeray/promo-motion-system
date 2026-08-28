@@ -163,7 +163,10 @@ export const LogoAnimationSurface: React.FC = () => {
   const s0 = 1.03 + 0.17 * w;
   const enterDur = (6 + 3 * w) * 2;
   const enterScale = 1 + (s0 - 1) * (1 - easeOutCubic(since / enterDur));
-  const zoom = 1 + 0.03 * (f / ANIM_FRAMES);
+  // the ending push: after the mark lands the camera keeps closing in — the whole-anim
+  // 0.03 drift is imperceptible on a small centred object (0.07px/f at the mark's edge),
+  // so the final read carries a REAL rate; the promo's settle padding rides it (momentum law)
+  const zoom = 1 + 0.03 * (f / ANIM_FRAMES) + Math.max(0, f - LOGO_HIT) * 0.0012;
   const pulse = accentPulse(f);
   const gatherT = k === 8 ? easeInCubic((f - (LOGO_HIT - GATHER)) / GATHER) : 0;
 

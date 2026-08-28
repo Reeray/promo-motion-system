@@ -53,7 +53,8 @@ const TextBody: React.FC<{scene: TextScene; pal: Pal; font: string}> = ({scene, 
   const spec = SPEC.get(scene.effect);
   if (!spec) return null;
   return (
-    <div style={{textAlign: 'center'}}>
+    // the object drifts through its whole read (momentum law: a held card is never frozen)
+    <div style={{textAlign: 'center', transform: `scale(${1 + f * 0.00035})`}}>
       <SpecText spec={spec} sample={scene.copy} fontSize={SIZE[scene.size]} loop={false} bare color={pal.fg} fontFamily={font} />
       {scene.sub && (
         <div style={{marginTop: 22, fontSize: 26, fontFamily: font, color: pal.muted, opacity: lerp(f, [24, 40], [0, 1], EASE.out)}}>
