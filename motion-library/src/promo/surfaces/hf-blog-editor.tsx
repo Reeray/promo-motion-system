@@ -740,7 +740,7 @@ export const BlogPublishZoomedSurface: React.FC = () => {
  * entered via depth-handoff. The cursor confirms; the beat lands; done.
  * ════════════════════════════════════════════════════════════════════════ */
 
-export const PUBMODAL_FRAMES = 96;
+export const PUBMODAL_FRAMES = 51; // body 51 + 9f exit = exactly 2 beats: the push-off begins 3f after press-down — the transition IS the click's consequence
 export const PUBMODAL_CUES: {at: number; kind: CueKind}[] = [
   {at: 48, kind: 'ui-tick'}, // the confirm
 ];
