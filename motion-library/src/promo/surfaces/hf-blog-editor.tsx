@@ -818,17 +818,20 @@ export const BlogThumbSurface: React.FC = () => {
   const CARD_W = 440;
   const ZONE_Y = 54; // card-local y of the dropzone
   const ZONE_H = 152;
-  // the drag is IN PROGRESS as the scene opens (no idle): ghost + cursor glide to the zone
-  const t = lerp(f, [0, 56], [0, 1], EASE.inOut);
+  // the drag is IN PROGRESS as the scene opens (no idle): ghost + cursor glide to the
+  // zone, DECELERATING only (an inOut read as lag — the hand is already moving)
+  const t = lerp(f, [0, 56], [0, 1], EASE.out);
   const gx = lerp(t, [0, 1], [CARD_W + 210, CARD_W / 2 - 75]);
   const gy = lerp(t, [0, 1], [330, ZONE_Y + ZONE_H / 2 - 40]);
-  const hover = f >= 44 && f < 62; // ghost over the zone
   const dropped = f >= 62;
   const setP = lerp(f, [62, 71], [0, 1], EASE.uiEnter); // ghost snaps into the zone
   const tilt = lerp(t, [0, 1], [-7, -3]) * (dropped ? 1 - setP : 1);
   // ghost rect: from the drag size to the zone rect
   const gw = 150 + setP * (CARD_W - 36 - 150);
   const gh = 81 + setP * (ZONE_H - 81); // settles to the zone's exact height (cover absorbs the ratio)
+  // the zone activates GEOMETRICALLY — the instant the dragged ghost overlaps it
+  // (a fixed activation frame read as input delay), exactly like a real dragover
+  const hover = !dropped && gx < CARD_W - 36 && gx + gw > 0 && gy < ZONE_H && gy + gh > 0;
   // the snap target is the ZONE CONTAINER's own origin (the ghost renders inside it)
   const gposx = dropped ? lerp(setP, [0, 1], [gx, 0]) : gx;
   const gposy = dropped ? lerp(setP, [0, 1], [gy, 0]) : gy;
