@@ -28,13 +28,12 @@ import SOFT_BLUR from './animate-text/specs/soft-blur-in.json';
  *                      slightly up (the hero-angle echo), rz banks a touch —
  *                      so facings distribute smoothly around the ring like
  *                      cards on a carousel. Nothing is per-item arbitrary.
- *   MINIMIZE SUCK      the return is the macOS-minimize gesture (ruled, replacing
- *                      the throw-out cut): frames are SUCKED into the centre —
- *                      accelerating travel, ELONGATED along the travel direction
- *                      while the perpendicular axis collapses (the pulled-through-
- *                      a-funnel squash-stretch), vanishing AT the point, behind
- *                      the text. Per-item delays stagger the slurp; the orbit
- *                      keeps running, so the suck spirals.
+ *   THROW-OUT CUT      the return is a THROW built to be cut: accelerating ease-in
+ *                      (travel back-loaded), hard-cut at `cut` of the leg's time
+ *                      (default = jump). The ruled default cut 0.7 plays about
+ *                      half the visible return and cuts at ~50% radius, at peak
+ *                      velocity ([B]'s measured short-throw law: never
+ *                      animate all the way home, never decelerate into a cut).
  *   TEXT BRUSH         one small frame's front pass sweeps across the headline and
  *                      covers it slightly — a moving occlusion that proves the depth
  *                      order. Brush, never park.
@@ -76,9 +75,10 @@ export const burstProgress = (f: number, delay: number, t: BurstTiming): number 
   if (local < t.shoot) return t.jump + (1 - t.jump) * EASE.outStrong(local / t.shoot);
   if (local < t.shoot + t.dwell) return 1;
   const back = local - t.shoot - t.dwell;
-  // MINIMIZE SUCK: the radius collapses with accelerating pull (q^2.4) all the way to
-  // the centre — the frame vanishes AT the point, never cut mid-air.
-  if (back < t.back) return 1 - Math.pow(back / t.back, 2.4);
+  // the return is a THROW: accelerating ease-in, built to be cut ([B]'s law: the exit
+  // accelerates into a hard cut at peak velocity). Travel is back-loaded, so a time cut
+  // at 40/60% of the leg still finds the frames far out (~82%/~62% of radius).
+  if (back < t.back) return 1 - EASE.in(back / t.back);
   return 0;
 };
 
@@ -89,14 +89,16 @@ const Frame3D: React.FC<{item: BurstItem; timing: BurstTiming; children: React.R
   const f = useCurrentFrame();
   const p = burstProgress(f, item.delay, timing);
   const local = f - timing.lead - item.delay;
-  // MINIMIZE SUCK: per-item return progress (delays stagger the slurp — with everything
-  // ending AT the centre behind the text, a late finisher is a cascade, not a straggler)
-  const backT = local - timing.shoot - timing.dwell;
-  const q = backT > 0 ? Math.min(1, backT / timing.back) : 0;
-  if (q >= 1) return null;
+  // THROW-OUT CUT: the return plays `cut` of its own duration, then the frame vanishes on
+  // a hard cut. Paired with the accelerating throw ease this is meaningful in both time
+  // AND space — cut 0.4 fires ~10f in with frames at ~0.82R, cut 0.6 ~16f in at ~0.62R —
+  // and velocity at the cut is at its highest (never decelerate into a cut).
+  // one GLOBAL cut frame for the whole formation (delays stagger the births, never the
+  // cut) — a lone delayed straggler outliving the others reads as a bug, not a ripple
+  const globalBack = f - timing.lead - timing.shoot - timing.dwell;
+  if (globalBack >= timing.back * (timing.cut ?? timing.jump)) return null;
   if (local <= 0) return null;
-  // stays solid until the very end of the pull, then a fast fade as it slips behind the text
-  const opacity = Math.min(1, local / 3) * (q > 0.86 ? Math.max(0, 1 - (q - 0.86) / 0.14) : 1);
+  const opacity = Math.min(1, local / 3); // 3-frame materialize at the jump-in only
   // the orbit clock is anchored to FLIGHT-START (lead minus the preset's original 8f
   // pre-roll), not the global frame: a longer lead (e.g. a text reveal) must not rotate
   // the formation past its choreographed front passes — the graze vanished exactly this
@@ -107,18 +109,6 @@ const Frame3D: React.FC<{item: BurstItem; timing: BurstTiming; children: React.R
   const z = Math.sin(phi) * item.zAmp * p;
   const y = item.height * p;
   const scale = 0.55 + 0.45 * p;
-  // the funnel: during the suck, elongate along the travel direction (toward centre)
-  // while the perpendicular axis collapses — the macOS-minimize squash-stretch. The
-  // travel direction in the screen plane is the position angle itself.
-  const ang = (Math.atan2(y, x) * 180) / Math.PI;
-  // deformation is a function of TRAVELED DISTANCE, never the clock: the stretch is
-  // CAUSED by the pull (undeformed at full radius, elongating as it accelerates in,
-  // everything collapsing together at the point) — time-driven stretch read as
-  // "bent first, then sucked", which is not how a genie works
-  const d = q > 0 ? 1 - p : 0; // distance traveled toward the centre, 0..1
-  const sRad = q > 0 ? Math.pow(p, 0.35) * (1 + 1.1 * d) : 1;
-  const sPerp = q > 0 ? Math.pow(p, 1.35) : 1;
-  const funnel = q > 0 ? `rotate(${ang}deg) scale(${sRad}, ${sPerp}) rotate(${-ang}deg) ` : '';
   return (
     <div
       style={{
@@ -130,7 +120,6 @@ const Frame3D: React.FC<{item: BurstItem; timing: BurstTiming; children: React.R
         opacity,
         transform:
           `translate(-50%, -50%) translate3d(${x}px, ${y}px, ${z}px) ` +
-          funnel +
           `rotateY(${-Math.cos(phi) * FACING_TILT * p}deg) rotateX(${HERO_RX * p}deg) ` +
           `rotateZ(${-Math.cos(phi) * 3 * p}deg) scale(${scale})`,
       }}
@@ -155,10 +144,10 @@ export const burstTextLead = (text: string): number =>
 /** The admitted timing with the lead grown to fit the centre text's reveal. */
 export const burstTextTiming = (text: string): BurstTiming => ({...BURST_TIMING, lead: burstTextLead(text)});
 
-/** Total frames of a text-mode burst (reveal-lead + flight + full suck + breath). */
+/** Total frames of a text-mode burst (reveal-lead + flight + settle breath). */
 export const burstTextFrames = (text: string): number => {
   const t = burstTextTiming(text);
-  return t.lead + t.shoot + t.dwell + t.back + 4 + 8; // +max delay, +breath
+  return t.lead + t.shoot + t.dwell + Math.ceil(t.back * (t.cut ?? t.jump)) + 14;
 };
 
 export const Burst3D: React.FC<{
