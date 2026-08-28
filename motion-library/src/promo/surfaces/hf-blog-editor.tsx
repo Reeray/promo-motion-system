@@ -809,8 +809,8 @@ export const BlogTeamSurface: React.FC = () => {
 
 export const THUMB_FRAMES = 72; // body 72 -> scene 90 (3 beats); drop at 62, outro at 81
 export const THUMB_CUES: {at: number; kind: CueKind}[] = [
-  {at: 62, kind: 'ui-tick'}, // the release
-  {at: 64, kind: 'ui-rise'}, // the zone receives the image (150ms settle)
+  {at: 54, kind: 'ui-tick'}, // the release
+  {at: 56, kind: 'ui-rise'}, // the zone receives the image (150ms settle)
 ];
 
 export const BlogThumbSurface: React.FC = () => {
@@ -818,13 +818,16 @@ export const BlogThumbSurface: React.FC = () => {
   const CARD_W = 440;
   const ZONE_Y = 54; // card-local y of the dropzone
   const ZONE_H = 152;
-  // the drag is IN PROGRESS as the scene opens (no idle): ghost + cursor glide to the
-  // zone, DECELERATING only (an inOut read as lag — the hand is already moving)
-  const t = lerp(f, [0, 56], [0, 1], EASE.out);
+  // the drag is IN PROGRESS as the scene opens (no idle): a steady glide (70% of the
+  // travel at constant hand-speed) that DECELERATES into the zone — smooth, not frantic
+  // (a plain ease-out front-loaded ~25px/f; a fixed late drop then left a dead hover)
+  // velocity-continuous: the quad decel's initial slope EQUALS the glide speed
+  // (0.684/26 = 2*0.316/24 per frame) — no jerk at the handoff, rest at f50
+  const t = f < 26 ? (f / 26) * 0.684 : 0.684 + 0.316 * (1 - Math.pow(1 - Math.min(1, (f - 26) / 24), 2));
   const gx = lerp(t, [0, 1], [CARD_W + 210, CARD_W / 2 - 75]);
   const gy = lerp(t, [0, 1], [330, ZONE_Y + ZONE_H / 2 - 40]);
-  const dropped = f >= 62;
-  const setP = lerp(f, [62, 71], [0, 1], EASE.uiEnter); // ghost snaps into the zone
+  const dropped = f >= 54; // 4f after arrival — the release follows the settle, no dead hover
+  const setP = lerp(f, [54, 63], [0, 1], EASE.uiEnter); // ghost snaps into the zone
   const tilt = lerp(t, [0, 1], [-7, -3]) * (dropped ? 1 - setP : 1);
   // ghost rect: from the drag size to the zone rect
   const gw = 150 + setP * (CARD_W - 36 - 150);
