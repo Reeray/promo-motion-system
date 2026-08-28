@@ -111,8 +111,13 @@ const Frame3D: React.FC<{item: BurstItem; timing: BurstTiming; children: React.R
   // while the perpendicular axis collapses — the macOS-minimize squash-stretch. The
   // travel direction in the screen plane is the position angle itself.
   const ang = (Math.atan2(y, x) * 180) / Math.PI;
-  const sRad = q > 0 ? Math.pow(1 - q, 0.45) * (1 + 0.85 * Math.sin(Math.PI * q)) : 1;
-  const sPerp = q > 0 ? Math.pow(1 - q, 1.35) : 1;
+  // deformation is a function of TRAVELED DISTANCE, never the clock: the stretch is
+  // CAUSED by the pull (undeformed at full radius, elongating as it accelerates in,
+  // everything collapsing together at the point) — time-driven stretch read as
+  // "bent first, then sucked", which is not how a genie works
+  const d = q > 0 ? 1 - p : 0; // distance traveled toward the centre, 0..1
+  const sRad = q > 0 ? Math.pow(p, 0.35) * (1 + 1.1 * d) : 1;
+  const sPerp = q > 0 ? Math.pow(p, 1.35) : 1;
   const funnel = q > 0 ? `rotate(${ang}deg) scale(${sRad}, ${sPerp}) rotate(${-ang}deg) ` : '';
   return (
     <div
