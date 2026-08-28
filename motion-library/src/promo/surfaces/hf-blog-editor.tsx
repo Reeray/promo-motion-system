@@ -319,10 +319,10 @@ export const BURST_CUES: {at: number; kind: CueKind}[] = [
 
 /** The claim with "Publish" as a real BUTTON (this project): black pill, white text —
  *  the word is the product's own control. */
-const ClaimLine: React.FC = () => (
+const ClaimLine: React.FC<{pulse?: number}> = ({pulse = 0}) => (
   <div style={{display: 'flex', alignItems: 'center', gap: 13, fontFamily: SANS, fontSize: 42, fontWeight: 700, color: '#14161c', letterSpacing: -0.6, whiteSpace: 'nowrap'}}>
     <span>Write together.</span>
-    <span style={{background: '#000', color: '#fff', borderRadius: 9999, padding: '3px 17px', fontSize: 33, fontWeight: 650, display: 'inline-block'}}>Publish</span>
+    <span style={{background: '#000', color: '#fff', borderRadius: 9999, padding: '3px 17px', fontSize: 33, fontWeight: 650, display: 'inline-block', transform: `scale(${1 + pulse})`}}>Publish</span>
     <span>as your team.</span>
   </div>
 );
@@ -333,6 +333,12 @@ export const BlogBurstSurface: React.FC = () => {
   const CT = CLAIM_TIMING;
   const returnStart = CT.lead + CT.shoot + CT.dwell;
   const g = burstProgress(f, 0, CT);
+  // the button REACTS as each thumbnail is absorbed: arrivals land in delay groups
+  // (returnStart + back + delay*6); each gives the pill a soft receive-pop that decays
+  const pulse = [0, 6, 12, 18]
+    .map((o) => (f - (CT.lead + CT.shoot + CT.dwell + CT.back + o)) / 12)
+    .filter((q) => q >= 0 && q < 1)
+    .reduce((acc, q) => acc + 0.13 * Math.pow(1 - q, 1.6), 0);
   // line-level soft-blur reveal (this surface owns its centre; the block's per-char
   // reveal is traded for the pill-in-line composition)
   const rv = lerp(f, [4, CT.lead - 6], [0, 1], EASE.out);
@@ -354,7 +360,7 @@ export const BlogBurstSurface: React.FC = () => {
           magnification 1.058) so the handoff is seamless. */}
       {f >= returnStart && (
         <div style={{position: 'absolute', inset: 0, zIndex: 10, display: 'flex', justifyContent: 'center', alignItems: 'center', transform: `scale(${1.058 * (1 + 0.04 * g)})`}}>
-          <ClaimLine />
+          <ClaimLine pulse={Math.min(0.2, pulse)} />
         </div>
       )}
     </div>
