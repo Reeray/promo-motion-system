@@ -22,9 +22,23 @@
       "exit": "push-off-left"
     },
     {
-      "id": "write",
+      "id": "editor",
       "kind": "ui",
-      "surface": "hf-blog-write",
+      "surface": "hf-blog-editor-browser",
+      "enter": "glide-in",
+      "exit": "push-off-left"
+    },
+    {
+      "id": "preview-zoom",
+      "kind": "ui",
+      "surface": "hf-blog-preview-zoom",
+      "enter": "glide-in",
+      "exit": "push-off-left"
+    },
+    {
+      "id": "preview",
+      "kind": "ui",
+      "surface": "hf-blog-preview-result",
       "enter": "glide-in",
       "exit": "scale-up-cut"
     },
@@ -46,10 +60,17 @@
       "exit": "scale-up-cut"
     },
     {
-      "id": "publish",
+      "id": "publish-full",
       "kind": "ui",
-      "surface": "hf-blog-publish-zoom",
+      "surface": "hf-blog-publish-full",
       "enter": "scale-pop-in",
+      "exit": "push-off-left"
+    },
+    {
+      "id": "publish-zoom",
+      "kind": "ui",
+      "surface": "hf-blog-publish-zoomed",
+      "enter": "glide-in",
       "exit": "scale-up-cut"
     },
     {

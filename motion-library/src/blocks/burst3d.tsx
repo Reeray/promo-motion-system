@@ -136,7 +136,10 @@ const Frame3D: React.FC<{item: BurstItem; timing: BurstTiming; children: React.R
  * lead DERIVES from the spec's enter total for that exact copy (never hand-typed). */
 
 export const burstTextLead = (text: string): number =>
-  Math.ceil((timeline(SOFT_BLUR as unknown as Spec, countUnits(text, 'per-character')).enterTotal / 1000) * 60) + 6;
+  // flights activate at ~72% of the reveal — BEFORE the last word resolves (ruled: zero
+  // idle between the text landing and the burst; the tail characters finish while the
+  // first frames are already flying)
+  Math.ceil(((timeline(SOFT_BLUR as unknown as Spec, countUnits(text, 'per-character')).enterTotal * 0.72) / 1000) * 60);
 
 /** The admitted timing with the lead grown to fit the centre text's reveal. */
 export const burstTextTiming = (text: string): BurstTiming => ({...BURST_TIMING, lead: burstTextLead(text)});

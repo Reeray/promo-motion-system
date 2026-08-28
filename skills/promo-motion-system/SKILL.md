@@ -1482,6 +1482,8 @@ Categories: **Formula** (storyboard blueprint strip) · **Typography** · **UI m
   - **Throw-out cut** — the return is an accelerating throw hard-cut at `cut` of its leg
     (ruled default 0.7 ≈ half the visible return, ~50% radius) on ONE global frame; the
     birth snaps in at `jump` (default 0.6). Never animate all the way home.
+  - **Early activation** — with a centre-text reveal, flights begin at ~72% of the
+    reveal (before the last word resolves): zero idle between text landing and burst.
   - **Uneven by design + graze** — clumped phases, hard size/depth contrast; one small
     frame’s front pass grazes the headline (covers only the cap-tops briefly) — the moving
     occlusion that proves depth order. Brush, never park.
