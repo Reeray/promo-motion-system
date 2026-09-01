@@ -7,25 +7,27 @@ import {EASE, lerp} from '../lib/ease';
  * selection of cards steps through the gap; a cursor picks one and it grows.
  *
  * STATUS: ADMITTED (ui family, regular cell). Measured frame-by-frame from the
- * template-picker reference (2.2–4.4s, ink-column tracking at 30fps; the
- * reference's word-morph and edge fades deliberately not carried — the SPLIT,
- * the POP and the SLIDE are the block):
+ * template-picker reference (2.2–4.4s, ink-column tracking at 30fps), then
+ * corrected against it in review rounds. The rulings:
  *
- *   THE SPLIT   24f: a 4f CRACK (~3% of travel — the phrase visibly gives)
- *               then a THROW with a hard ease-out (measured 63% at half-time,
- *               87% at two-thirds, settled by 24). Left word −172px, right
- *               +156 (1280 scale, asymmetric per the reference) → the gap
- *               opens to ~34% of frame width.
- *   THE POP     the first card rises INSIDE the opening gap — starting 6f into
- *               the split, 26f: scale 0.55→1, tilt −4°→−1.5°, 22px rise, all
- *               ease-out; it lands just after the words settle.
- *   THE SLIDE   a STEPPED conveyor on ONE slot clock: each 42f step advances
- *               one 300px slot — an 18f eased slide then a slow centre creep
- *               (the conveyor is never still, the momentum law). Cards ride
- *               the clock, entering from the right as it advances.
- *   THE PICK    the cursor lands on the centre card, presses, and the card
- *               GROWS past the gap over the words (ease still running at the
- *               block's cut — the growth hands into the next transition).
+ *   THE SPLIT     24f: a 4f CRACK (~3% of travel) then a THROW on a STRONG
+ *                 ease-out (63% at half-time, 87% at two-thirds) — and the
+ *                 words never stop: a slow outward creep carries the split's
+ *                 momentum until the cut (continuous momentum, ruled).
+ *   THE WORD GAP  the phrase carries a real inter-word space BEFORE the split
+ *                 (ruled: the halves must never touch); the split widens it.
+ *   THE ENTRY     every incoming card POPS UP AT AN ANGLE (−6°, small, slightly
+ *                 low) and straightens WHILE its slide accelerates — then the
+ *                 slide decelerates into centre on a smootherstep (accelerate →
+ *                 decelerate, never a flat eased glide). Ruled from the
+ *                 reference's card entries.
+ *   THE FADE      cards FADE at the word zones (ruled: elements never overlap
+ *                 the text) — fully clear inside the gap, gone by the word ink.
+ *   ONE AT A TIME at rest exactly one card holds the gap; the next appears only
+ *                 when its own step begins; the previous fades out leftward.
+ *   THE PICK      the cursor hovers the incoming card, presses, and the card
+ *                 grows decisively (24f to 2.3×) with a slow tail still running
+ *                 at the cut; past the pick the conveyor decays to a 6% creep.
  *
  * TEMPLATE CONTRACT: the timing table is locked; the phrase halves, the cards
  * and the pick index are content, free via props.
@@ -34,37 +36,50 @@ import {EASE, lerp} from '../lib/ease';
 export const SPLIT = {
   hold: 10, // the whole phrase reads before it gives
   crack: 4, // the split's first give (~3% of travel)
-  throwF: 20, // …then the throw, hard ease-out
+  throwF: 20, // …then the throw, strong ease-out
   leftPush: 172, // px, word displacement (asymmetric, per the measurement)
   rightPush: 156,
+  wordGap: 18, // the phrase's own inter-word space at rest (~0.31em at 58px)
+  postCreep: 0.055, // px/f outward per side after the throw — the split never stops
   popDelay: 6, // the first card starts rising this far into the split
   popF: 26,
-  rest: 18, // the popped card RESTS centred before the first step (the reference holds ~0.3s)
+  rest: 18, // the popped card rests centred before the first step
   step: 42, // the conveyor advances one slot per…
-  stepIn: 18, // …with the travel eased over this many frames
+  travel: 26, // …with the travel on a smootherstep over this many frames
   stepDist: 300, // px between card centres
-  creepShare: 0.18, // fraction of each slot delivered by the centre creep (never still)
-  centreEmph: 0.22, // coverflow: side cards read this much smaller than the centre
+  creepShare: 0.14, // fraction of each slot delivered by the centre creep (never still)
+  entryF: 12, // an incoming card's angled pop: straightening while the slide accelerates
+  entryTilt: -6,
+  centreEmph: 0.22, // coverflow: side cards read smaller than the centre
+  fadeIn: 1.0, // opacity ramps 0→1 as a card crosses [fadeIn..fadeClear]×stepDist
+  fadeClear: 0.55,
   pickAt: 118, // cursor press frame
-  growTo: 2.3, // the picked card's target scale (fast 24f phase + a slow tail to the cut)
+  growTo: 2.3, // decisive 24f growth, then a slow tail still running at the cut
 } as const;
 
 export const SPLIT_FRAMES = 168;
 
-/** Split displacement 0..1 — the measured crack-then-throw. */
-const splitP = (f: number) => {
+const strongOut = (t: number) => 1 - Math.pow(1 - t, 3.4);
+const smoother = (t: number) => t * t * t * (t * (6 * t - 15) + 10);
+
+/** Split displacement in PX for one side: the crack, the throw, then the
+ *  never-ending outward creep — momentum carried to the cut. */
+const splitPx = (f: number, push: number) => {
   const t0 = SPLIT.hold;
+  const end = t0 + SPLIT.crack + SPLIT.throwF;
   if (f <= t0) return 0;
-  if (f <= t0 + SPLIT.crack) return lerp(f, [t0, t0 + SPLIT.crack], [0, 0.03], EASE.in);
-  return 0.03 + 0.97 * lerp(f, [t0 + SPLIT.crack, t0 + SPLIT.crack + SPLIT.throwF], [0, 1], EASE.out);
+  if (f <= t0 + SPLIT.crack) return lerp(f, [t0, t0 + SPLIT.crack], [0, 0.03], EASE.in) * push;
+  const p = Math.min(1, 0.03 + 0.97 * strongOut(Math.min(1, (f - t0 - SPLIT.crack) / SPLIT.throwF)));
+  return p * push + Math.max(0, f - end) * SPLIT.postCreep;
 };
 
-/** The conveyor's slot clock: eased advance + creep inside every step. */
+/** The conveyor's slot clock: smootherstep advance (accelerate → decelerate)
+ *  + creep inside every step — motion never reaches zero. */
 const slotClock = (fs: number) => {
   if (fs <= 0) return 0;
   const k = Math.floor(fs / SPLIT.step);
   const r = fs - k * SPLIT.step;
-  const eased = (1 - SPLIT.creepShare) * lerp(r, [0, SPLIT.stepIn], [0, 1], EASE.out);
+  const eased = (1 - SPLIT.creepShare) * smoother(Math.min(1, r / SPLIT.travel));
   const creep = SPLIT.creepShare * (r / SPLIT.step);
   return k + eased + creep;
 };
@@ -81,54 +96,48 @@ export const SplitShowcase: React.FC<{
   height?: number;
 }> = ({left, right, renderCard, cardCount = 4, pick = 1, cursor, width = 1280, height = 720}) => {
   const f = useCurrentFrame();
-  const p = splitP(f);
+  const xL = splitPx(f, SPLIT.leftPush);
+  const xR = splitPx(f, SPLIT.rightPush);
+  const gapP = Math.min(1, (xL + xR) / (SPLIT.leftPush + SPLIT.rightPush));
   const popStart = SPLIT.hold + SPLIT.popDelay;
-  const clockStart = popStart + SPLIT.popF; // the conveyor starts once the first card sits
-  const rawSlots = slotClock(f - clockStart - SPLIT.rest);
-  // past the pick slot the conveyor DECAYS to a 6% overrun creep — the showcase
-  // slows onto the picked card but is never frozen (the momentum law)
+  const clockStart = popStart + SPLIT.popF + SPLIT.rest;
+  const rawSlots = slotClock(f - clockStart);
+  // past the pick slot the conveyor decays to a 6% overrun creep — never frozen
   const slots = pick >= 0 && rawSlots > pick ? pick + (rawSlots - pick) * 0.06 : rawSlots;
   const pressing = pick >= 0 && f >= SPLIT.pickAt && f < SPLIT.pickAt + 6;
-  // the growth: a decisive 24f rise (the reference doubles in ~0.4s), then a slow
-  // continuing swell so the pick is still growing at the cut (momentum law)
   const growFast = pick >= 0 ? lerp(f, [SPLIT.pickAt + 2, SPLIT.pickAt + 26], [0, 1], EASE.out) : 0;
   const growTail = pick >= 0 ? Math.max(0, f - (SPLIT.pickAt + 26)) * 0.0022 : 0;
-  const growP = growFast;
   const grow = 1 + growFast * (SPLIT.growTo - 1) + growTail;
 
   return (
     <div style={{position: 'relative', width, height, overflow: 'hidden'}}>
-      {/* the phrase halves: crack, then thrown apart — the gap is real layout.
-          z sits BETWEEN the rails: side cards peek from BEHIND the words (the
-          reference's layering); the centred card and the pick ride in front. */}
+      {/* the phrase halves: a real word gap at rest, then cracked apart */}
       <div style={{position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', whiteSpace: 'nowrap', zIndex: 15}}>
-        <div style={{transform: `translateX(${-p * SPLIT.leftPush}px)`}}>{left}</div>
-        <div style={{width: p * (SPLIT.leftPush + SPLIT.rightPush) * 0.32}} />
-        <div style={{transform: `translateX(${p * SPLIT.rightPush}px)`}}>{right}</div>
+        <div style={{transform: `translateX(${-xL}px)`}}>{left}</div>
+        <div style={{width: SPLIT.wordGap + gapP * (SPLIT.leftPush + SPLIT.rightPush) * 0.32}} />
+        <div style={{transform: `translateX(${xR}px)`}}>{right}</div>
       </div>
 
-      {/* the showcase: every card rides the one slot clock — and appears ONLY when
-          its own approach step has begun (the reference reveals one card at a time:
-          at rest exactly one card holds the gap, the next emerges from behind the
-          right word when the step starts, the previous tucks behind the left word) */}
+      {/* the showcase: one slot clock; a card exists only once its step began */}
       {Array.from({length: cardCount}, (_, i) => {
-        // the growth pulls the picked card back onto exact centre as it rises
+        const born = i === 0 ? popStart : clockStart + (i - 1) * SPLIT.step;
+        if (f < born) return null;
+        const fe = f - born; // card-local clock, for the entry effects
         const xRaw = (i - slots) * SPLIT.stepDist;
-        const x = i === pick && pick >= 0 ? xRaw * (1 - growP * 0.9) : xRaw;
-        if (f < popStart || (i > 0 && rawSlots <= i - 1)) return null;
-        const pop = i === 0 ? lerp(f, [popStart, popStart + SPLIT.popF], [0, 1], EASE.out) : 1;
+        const x = i === pick && pick >= 0 ? xRaw * (1 - growFast * 0.9) : xRaw;
         const picked = i === pick && pick >= 0 && f >= SPLIT.pickAt + 2;
         const centredness = Math.max(0, 1 - Math.abs(x) / SPLIT.stepDist);
-        // side cards sit slightly small (coverflow); the centre card reads dominant
         const emph = 1 - SPLIT.centreEmph * (1 - centredness);
-        // tilt belongs to the pop and the tuck — a centred card sits straight
-        const tilt = lerp(pop, [0, 1], [-4, 0]) - 2.5 * (1 - centredness);
-        const rise = (1 - pop) * 22;
-        const s = (0.55 + 0.45 * pop) * emph * (picked ? grow : 1);
-        // an entering card fades up across its approach travel
-        const opacity = i === 0 ? Math.min(1, pop * 1.6) : Math.max(0.001, Math.min(1, (SPLIT.stepDist * 1.15 - x) / (SPLIT.stepDist * 0.55)));
-        // the front/behind flip happens at 0.37 slots — the exact point where a
-        // passing card no longer overlaps the word ink, so the z-swap is invisible
+        // THE ENTRY: pop at an angle, straighten while the slide accelerates
+        const entry = i === 0 ? lerp(fe, [0, SPLIT.popF], [0, 1], EASE.out) : lerp(fe, [0, SPLIT.entryF], [0, 1], EASE.out);
+        const tilt = SPLIT.entryTilt * (1 - entry);
+        const rise = (1 - entry) * (i === 0 ? 22 : 14);
+        const popScale = i === 0 ? 0.55 + 0.45 * entry : 0.82 + 0.18 * entry;
+        // THE FADE: fully clear inside the gap, gone by the word ink (both sides)
+        const zoneFade = Math.max(0, Math.min(1, (SPLIT.fadeIn * SPLIT.stepDist - Math.abs(x)) / ((SPLIT.fadeIn - SPLIT.fadeClear) * SPLIT.stepDist)));
+        const opacity = (i === 0 ? Math.min(1, entry * 1.6) : Math.min(1, entry)) * (picked ? 1 : zoneFade);
+        if (opacity <= 0.003) return null;
+        const s = popScale * emph * (picked ? grow : 1);
         const centred = Math.abs(x) < SPLIT.stepDist * 0.37;
         return (
           <div
@@ -147,9 +156,7 @@ export const SplitShowcase: React.FC<{
         );
       })}
 
-      {/* the hand, stage layer: flies in during the showcase, presses the pick */}
-      {/* arrive early, HOVER on the card, then press — the reference's hand already
-          rides the incoming card a beat before the pick */}
+      {/* the hand, stage layer: arrives early, hovers the card, presses */}
       {cursor && pick >= 0 && f >= SPLIT.pickAt - 46 && cursor(lerp(f, [SPLIT.pickAt - 46, SPLIT.pickAt - 14], [0, 1], EASE.inOut), pressing)}
     </div>
   );
