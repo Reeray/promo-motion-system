@@ -61,7 +61,7 @@ export const RING = {
   radiusX: 430, // horizontal semi
   radiusZ: 370, // depth semi (drives z, y and the front/back ratio)
   persp: 660, // perspective distance: positional front/back scale ratio ~3.1
-  omega: 1.5, // deg/frame floor — the cruise the momentum decays TOWARD
+  omega: 0.5, // deg/frame floor — the crawl the momentum decays TOWARD (ruled: lower)
   jump: 0.6, // the radius snaps this fraction instantly (birth law)
   lead: 6, // flat beat before the first clump launches
   // THE MOMENTUM DECAY (ruled twice): the burst is pure spent momentum — the
@@ -71,10 +71,11 @@ export const RING = {
   // block just shows its first 2s). NOTHING re-accelerates and NOTHING
   // reverses — the earlier radial overshoot's return leg made screen speed
   // dip then RISE, which read as backing up, and was ruled out.
-  kick: 280, // deg of burst rotation, spent exponentially
-  tau: 42, // rotational momentum time-constant, frames — sized so the DECAY SPANS THE
-  // WHOLE 2s block: at the final frame the ring still runs ~25% above the cruise
-  // (ruled: the story must not end before the video does — the animation IS the decay)
+  kick: 230, // deg of burst rotation, spent exponentially
+  tau: 28, // rotational momentum time-constant, frames — STRONGER slow-down (ruled):
+  // launch ~8.7 deg/f drops hard early, passes ~1.5 by mid-block and keeps sinking
+  // to ~0.6 at the cut — still above the 0.5 crawl, so the decay never finishes
+  // on screen (the story must not end before the video does)
   tauR: 8, // radial momentum time-constant — same physics, one energy story
 } as const;
 
