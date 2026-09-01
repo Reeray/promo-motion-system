@@ -48,10 +48,14 @@ export type RingItem = {
 
 /* ── the measured table (60fps frames · deg · px) ────────────────────────── */
 export const RING = {
-  tilt: 32, // ring plane, degrees from edge-on (projected squash ~0.53)
+  // THE SIZE HIERARCHY (re-measured against the reference, blob-detected: back
+  // tiles 3.9-5.3% of frame width, front 15.3% -> front/back RATIO 3.31,
+  // position-locked). tilt+persp re-solved against the measured 0.53 squash so
+  // the ratio lands at ~3.1 while the front arc still fits the frame.
+  tilt: 24, // ring plane, degrees from edge-on
   roll: -6, // screen-space roll of the whole formation
-  radius: 430,
-  persp: 1150, // perspective distance: front/back scale ratio lands ~2.6x
+  radius: 370,
+  persp: 660, // perspective distance: positional front/back scale ratio ~3.1
   omega: 1.5, // deg/frame floor — the cruise the momentum decays TOWARD
   jump: 0.6, // the radius snaps this fraction instantly (birth law)
   lead: 6, // flat beat before the first clump launches
@@ -70,23 +74,25 @@ export const RING = {
 } as const;
 
 /** The reference formation: 13 tiles, clumped phases, uneven sizes. */
-/** Base sizes stay within ~1.6x of each other so PERSPECTIVE always dominates
- *  (a wider spread let a big back tile match a small front tile and the angle
- *  stopped reading — measured against the reference's ever-legible depth). */
+/** Base sizes stay within 1.43x of each other so POSITION always owns the
+ *  hierarchy: worst case (smallest base at front vs biggest at back) still
+ *  reads 3.1/1.43 = 2.2x — the depth ordering can never invert (ruled: the
+ *  reference's hierarchy is position-locked; a wider spread collapsed ours
+ *  to ~1.6x at bad phases). */
 export const RING_ITEMS: RingItem[] = [
-  {phase: 8, delay: 0, size: 150},
-  {phase: 38, delay: 4, size: 125},
-  {phase: 66, delay: 0, size: 170},
-  {phase: 98, delay: 7, size: 180},
-  {phase: 124, delay: 3, size: 160},
-  {phase: 168, delay: 9, size: 145},
-  {phase: 196, delay: 5, size: 120},
-  {phase: 218, delay: 0, size: 115},
-  {phase: 242, delay: 7, size: 125},
-  {phase: 262, delay: 3, size: 110},
-  {phase: 288, delay: 9, size: 120},
-  {phase: 316, delay: 5, size: 130},
-  {phase: 344, delay: 7, size: 140},
+  {phase: 8, delay: 0, size: 135},
+  {phase: 38, delay: 4, size: 115},
+  {phase: 66, delay: 0, size: 145},
+  {phase: 98, delay: 7, size: 150},
+  {phase: 124, delay: 3, size: 140},
+  {phase: 168, delay: 9, size: 130},
+  {phase: 196, delay: 5, size: 112},
+  {phase: 218, delay: 0, size: 108},
+  {phase: 242, delay: 7, size: 118},
+  {phase: 262, delay: 3, size: 105},
+  {phase: 288, delay: 9, size: 112},
+  {phase: 316, delay: 5, size: 122},
+  {phase: 344, delay: 7, size: 128},
 ] as const as RingItem[];
 
 const rad = (d: number) => (d * Math.PI) / 180;
