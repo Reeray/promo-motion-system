@@ -5,6 +5,7 @@ import {DollyFlybyDemo} from '../demo/pose3d-demo';
 import {DOLLY_FLYBY_FRAMES} from './pose3d';
 import {BurstOrbitDemo, BURST_DEMO_FRAMES} from '../demo/burst3d-demo';
 import {CornerAnchorZoomDemo} from '../demo/corner-anchor-demo';
+import {Ring3DDemo, RING_DEMO_FRAMES} from '../demo/ring3d-demo';
 import {CAZ_FRAMES} from './corner-anchor-zoom';
 
 /* UI-motion blocks (GPT-5.5 house standard) — same Block shape as the typography and
@@ -56,6 +57,16 @@ export const UI_BLOCKS: Block[] = [
     wide: true,
     desc: 'The complete brand animation, ten keyframes on a ten-hit rhythm: the “Hugging Face” wordmark degrades letter-by-letter into real photo objects (waving hand, stone, oil barrel, rubber duck), the objects are refined into HF product icons, then the row squeezes inward and hard-cuts into the logo landing its own downbeat with one ~3% overshoot. Raw material → product → brand. Transparent, so it plays over the video’s own theme. The handoff’s default build: 2s-uniform table fastened x0.75 by review — 90 frames, exactly 1.5s.',
     Comp: LogoAnimationSurface,
+  },
+  {
+    name: 'burst3d-ring',
+    category: 'ui',
+    source: 'storyboard/results reference · measured',
+    poster: 120, // formation complete, mid-lap: the angle reads
+    durationInFrames: RING_DEMO_FRAMES,
+    fps: 60,
+    desc: 'The ANGLED ORBIT RING: frames burst from the centre onto a ring tilted ~32° from edge-on (projected squash ~0.53, slight -6° roll) around a headline, and carousel there at one shared angular velocity — 1.5°/frame counter-clockwise (a lap every ~4s), front tiles travelling left and dipping below the text line, back tiles receding small behind it (front/back scale ~2.6× via perspective; z-order derived from ring depth). Uneven by design: clumped phases, varied base sizes. Birth follows the family law — radius snaps 60% then eases, staggered clumps, the orbit clock running from frame 0 so arrival hands into rotation seamlessly. Pure 2D projection (no preserve-3d): the headline can never be compositor-culled. Items and centre content free via props.',
+    Comp: Ring3DDemo,
   },
   {
     name: 'corner-anchor-zoom',
