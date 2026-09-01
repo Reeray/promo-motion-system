@@ -10,8 +10,8 @@ import {FONT} from '../lib/palette';
 const BlankCard: React.FC = () => (
   <div
     style={{
-      width: 150,
-      height: 94,
+      width: 185,
+      height: 116,
       borderRadius: 10,
       background: '#e8eaef',
       border: '1px solid rgba(16,22,38,0.08)',

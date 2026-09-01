@@ -21,11 +21,14 @@ import {EASE, lerp} from '../lib/ease';
  *                 slide decelerates into centre on a smootherstep (accelerate →
  *                 decelerate, never a flat eased glide). Ruled from the
  *                 reference's card entries.
- *   THE FADE      cards FADE at the word zones (ruled: elements never overlap
- *                 the text) — fully clear inside the gap, gone by the word ink.
- *   THE RAIL      cards ride TOGETHER, ~10px apart (ruled from the reference's
- *                 slide moments): the centre card plus both neighbours at full
- *                 opacity inside the gap, third cards already faded.
+
+ *   THE RAIL      cards ride TOGETHER, nearly touching (measured spacing 195px
+ *                 at 1280); the slide is ONE chain on a smooth accel-decel BELL
+ *                 (measured velocity -5 → -40 → -2.5 px/f), travel ~30f in a
+ *                 42f cadence, settled creep -2.5px/f.
+ *   THE MASK      an AREA MASK clips the rail at fixed boundaries (±215 solid,
+ *                 ±255 gone; ink at ±286): cards WIPE at the edges — measured,
+ *                 not per-card opacity — and can never reach the text.
  *   THE CAROUSEL  three-to-four cards slide through on aggressive power-4
  *                 travel; the LAST card holds the centre on a decaying creep.
  *                 (The click-expand pick was ruled OUT of the default flow.)
@@ -46,24 +49,29 @@ export const SPLIT = {
   popDelay: 6, // the first card starts rising this far into the split
   popF: 26, // the pop, hard-out…
   slideAt: 0.8, // …and the carousel KICKS IN at 80% of the pop (ruled: no pause)
-  step: 42, // the carousel advances one slot per…
-  travel: 20, // …with AGGRESSIVE power-4 out travel (fast launch, decelerating arrival)
-  stepDist: 160, // px between card centres — neighbours ride TOGETHER, 10px apart
-  creepShare: 0.14, // fraction of each slot delivered by the centre creep (never still)
-  entryF: 12, // an incoming card's angled pop: straightening while the slide accelerates
-  entryTilt: -6,
-  centreEmph: 0.22, // coverflow: side cards read smaller than the centre
-  // THE FADE, derived from geometry (MUST clear the text): word inner ink sits at
-  // ~±286 (push 210), card half-width 75 → an edge touches ink at |x|=211. Fade is
-  // FULLY GONE by 1.30 slots (208px) and fully clear inside 1.05 (168px) — so the
-  // ±1-slot neighbours (160px) ride at FULL opacity, and nothing ever reaches ink.
-  fadeGone: 1.3,
-  fadeClear: 1.05,
+  // THE SLIDE, measured frame-by-frame from the reference (card-centre tracking
+  // at 30fps): the rail moves as ONE chain per step on a smooth accel-decel BELL
+  // — velocity -5 → -40 → -2.5 px/f(60) — travel ~30f inside a 42f cadence,
+  // then the settled creep (-2.5px/f, = creepShare 0.15 here). Slot spacing 195px
+  // at 1280 (measured 293 at 1920); resting cards sit nearly touching.
+  step: 42,
+  travel: 30, // smoothstep bell: accelerate, peak mid-step, decelerate into the rest
+  stepDist: 195,
+  creepShare: 0.15,
+  entryTilt: -6, // an incoming card pops angled at the mask edge and straightens
+  centreEmph: 0.38, // SIZE DYNAMIC (ruled bigger): sides read 62% of the centre
+  // THE AREA MASK (measured: card widths shrink as edges wipe under a fixed
+  // boundary — it is a MASK, not per-card opacity): the rail is masked solid
+  // within ±215 and fully clipped beyond ±255; word ink sits at ~±286, so no
+  // card pixel can ever reach the text — guaranteed by the mask itself.
+  maskSolid: 215,
+  maskEdge: 255,
 } as const;
 
 export const SPLIT_FRAMES = 168;
 
-const hardOut = (t: number) => 1 - Math.pow(1 - t, 4); // pops + carousel travel
+const hardOut = (t: number) => 1 - Math.pow(1 - t, 4); // the centre pop
+const bell = (t: number) => t * t * (3 - 2 * t); // the measured slide: accel-decel
 
 /** Split displacement in PX for one side: the crack, the throw, then the
  *  never-ending outward creep — momentum carried to the cut. */
@@ -83,7 +91,7 @@ const slotClock = (fs: number) => {
   if (fs <= 0) return 0;
   const k = Math.floor(fs / SPLIT.step);
   const r = fs - k * SPLIT.step;
-  const eased = (1 - SPLIT.creepShare) * hardOut(Math.min(1, r / SPLIT.travel));
+  const eased = (1 - SPLIT.creepShare) * bell(Math.min(1, r / SPLIT.travel));
   const creep = SPLIT.creepShare * (r / SPLIT.step);
   return k + eased + creep;
 };
@@ -106,10 +114,10 @@ export const SplitShowcase: React.FC<{
   const last = cardCount - 1;
   const slots = rawSlots > last ? last + (rawSlots - last) * 0.06 : rawSlots;
 
+  const maskCss = `linear-gradient(90deg, transparent ${width / 2 - SPLIT.maskEdge}px, #000 ${width / 2 - SPLIT.maskSolid}px, #000 ${width / 2 + SPLIT.maskSolid}px, transparent ${width / 2 + SPLIT.maskEdge}px)`;
+
   return (
     <div style={{position: 'relative', width, height, overflow: 'hidden'}}>
-      {/* the phrase halves: a real word gap at rest, then cracked apart — BALANCED
-          on the centre; the fade law keeps every card clear of the ink */}
       {/* equal flex halves pin the SPACER — and so the gap — to frame centre,
           whatever the word widths (ruled: the opening is balanced on the centre) */}
       <div style={{position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', whiteSpace: 'nowrap', zIndex: 15}}>
@@ -118,45 +126,45 @@ export const SplitShowcase: React.FC<{
         <div style={{flex: 1, textAlign: 'left', transform: `translateX(${xS}px)`}}>{right}</div>
       </div>
 
-      {/* the rail: every card lives at its slot; THE FADE alone reveals it (no birth
-          clocks) — entry effects key on the fade-in crossing, so a card pops angled
-          exactly as it materialises at the rail's right edge */}
-      {Array.from({length: cardCount}, (_, i) => {
-        if (f < popStart) return null;
-        const fe = f - popStart;
-        const x = (i - slots) * SPLIT.stepDist;
-        const centredness = Math.max(0, 1 - Math.abs(x) / SPLIT.stepDist);
-        const emph = 1 - SPLIT.centreEmph * (1 - centredness);
-        // THE ENTRY: card 0 pops in place; later cards pop angled as they cross the
-        // fade-in edge (x-keyed, geometric — same law that reveals them)
-        const entry =
-          i === 0
-            ? lerp(fe, [0, SPLIT.popF], [0, 1], hardOut)
-            : Math.max(0, Math.min(1, (SPLIT.fadeGone * SPLIT.stepDist - x) / (0.5 * SPLIT.stepDist)));
-        const tilt = SPLIT.entryTilt * (1 - entry);
-        const rise = (1 - entry) * (i === 0 ? 22 : 14);
-        const popScale = i === 0 ? 0.55 + 0.45 * entry : 0.86 + 0.14 * entry;
-        // THE FADE (geometry-derived): gone before any card edge reaches the ink
-        const zoneFade = Math.max(0, Math.min(1, (SPLIT.fadeGone * SPLIT.stepDist - Math.abs(x)) / ((SPLIT.fadeGone - SPLIT.fadeClear) * SPLIT.stepDist)));
-        const opacity = (i === 0 ? Math.min(1, entry * 1.6) : 1) * zoneFade;
-        if (opacity <= 0.003) return null;
-        const scale = popScale * emph;
-        return (
-          <div
-            key={i}
-            style={{
-              position: 'absolute',
-              left: width / 2,
-              top: height / 2,
-              zIndex: 10 + Math.round(centredness * 10),
-              opacity,
-              transform: `translate(-50%, -50%) translate(${x}px, ${rise}px) rotate(${tilt}deg) scale(${scale})`,
-            }}
-          >
-            {renderCard(i)}
-          </div>
-        );
-      })}
+      {/* THE AREA MASK: one fixed boundary clips the whole rail — cards WIPE at
+          the edges as the chain slides under it (the measured treatment) */}
+      <div style={{position: 'absolute', inset: 0, WebkitMaskImage: maskCss, maskImage: maskCss}}>
+        {Array.from({length: cardCount}, (_, i) => {
+          if (f < popStart) return null;
+          const fe = f - popStart;
+          const x = (i - slots) * SPLIT.stepDist;
+          if (Math.abs(x) > SPLIT.maskEdge + SPLIT.stepDist) return null;
+          const centredness = Math.max(0, 1 - Math.abs(x) / SPLIT.stepDist);
+          // SIZE DYNAMIC: sides read well smaller; the approach GROWS the card
+          const emph = 1 - SPLIT.centreEmph * (1 - centredness);
+          // THE ENTRY: card 0 pops in place; later cards pop angled as they cross
+          // the mask edge (x-keyed — the same boundary that reveals them)
+          const entry =
+            i === 0
+              ? lerp(fe, [0, SPLIT.popF], [0, 1], hardOut)
+              : Math.max(0, Math.min(1, (SPLIT.maskEdge + 40 - x) / (0.6 * SPLIT.stepDist)));
+          const tilt = SPLIT.entryTilt * (1 - entry);
+          const rise = (1 - entry) * (i === 0 ? 22 : 12);
+          const popScale = i === 0 ? 0.55 + 0.45 * entry : 0.9 + 0.1 * entry;
+          const opacity = i === 0 ? Math.min(1, entry * 1.6) : 1;
+          const scale = popScale * emph;
+          return (
+            <div
+              key={i}
+              style={{
+                position: 'absolute',
+                left: width / 2,
+                top: height / 2,
+                zIndex: 10 + Math.round(centredness * 10),
+                opacity,
+                transform: `translate(-50%, -50%) translate(${x}px, ${rise}px) rotate(${tilt}deg) scale(${scale})`,
+              }}
+            >
+              {renderCard(i)}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 };
