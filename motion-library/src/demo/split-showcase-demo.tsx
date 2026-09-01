@@ -1,12 +1,10 @@
 import React from 'react';
 import {SplitShowcase} from '../blocks/split-showcase';
-import {MacCursor} from '../blocks/pose3d';
 import {FONT} from '../lib/palette';
 
 /* ============================================================================
- * PHRASE-SPLIT SHOWCASE DEMO — placeholder manner throughout (ruled): the
- * phrase is placeholder copy and the elements are BLANK DEFAULT CARDS, so the
- * gallery reads the MOTION, not invented content. Fresh-clone safe.
+ * PHRASE-SPLIT SHOWCASE DEMO — placeholder manner (ruled): placeholder copy,
+ * GRAY-TONE blank default cards, no pick — the gallery reads the motion.
  * ========================================================================== */
 
 const BlankCard: React.FC = () => (
@@ -15,9 +13,9 @@ const BlankCard: React.FC = () => (
       width: 240,
       height: 150,
       borderRadius: 10,
-      background: '#ffffff',
-      border: '1px solid rgba(16,22,38,0.1)',
-      boxShadow: '0 20px 44px rgba(16,22,38,0.18)',
+      background: '#e8eaef',
+      border: '1px solid rgba(16,22,38,0.08)',
+      boxShadow: '0 20px 44px rgba(16,22,38,0.16)',
     }}
   />
 );
@@ -30,8 +28,6 @@ export const SplitShowcaseDemo: React.FC = () => (
       left={<span style={{fontFamily: FONT.sans, fontSize: 58, fontWeight: 700, color: '#14161c', letterSpacing: -1}}>Your text</span>}
       right={<span style={{fontFamily: FONT.sans, fontSize: 58, fontWeight: 700, color: '#14161c', letterSpacing: -1}}>here.</span>}
       renderCard={() => <BlankCard />}
-      pick={1}
-      cursor={(t, pressing) => <MacCursor land={{x: 668, y: 388}} t={t} from={{x: 1150, y: 640}} press={pressing} size={44} />}
     />
   </div>
 );
