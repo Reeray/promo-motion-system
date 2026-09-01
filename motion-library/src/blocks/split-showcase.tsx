@@ -24,8 +24,11 @@ import {EASE, lerp} from '../lib/ease';
 
  *   THE SWEEP     the rail stops ONLY at the selected card (ruled): one
  *                 continuous slide — quadratic accel to a ~31px/f peak, then
- *                 an exponential calm (tau 20f) onto the last card, floor
+ *                 an exponential calm (tau 20f) onto the selection, floor
  *                 creep after — cards whoosh through and it breathes out.
+ *                 The rail is ENDLESS (slot-wrapped designs) and the target is
+ *                 creep-compensated so the selection crosses dead centre at
+ *                 settleAt.
  *   THE MASK      an AREA MASK clips the rail at fixed boundaries (±215 solid,
  *                 ±255 gone; ink at ±286): cards WIPE at the edges — measured,
  *                 not per-card opacity — and can never reach the text.
@@ -72,6 +75,12 @@ export const SPLIT = {
   // whatever the sweep does, the scale rides it.
   heroScale: 2.0,
   heroTau: 0.4, // in SLOTS — back to ~1× by one slot of travel
+  // THE ENDLESS RAIL (ruled): card instances are generated per SLOT and content
+  // wraps modulo the design count — the carousel can run forever. The sweep's
+  // target is solved so the SELECTED card crosses dead centre at settleAt
+  // (the floor creep is compensated analytically, not tuned).
+  sweepCards: 4, // how many cards pass before the selection
+  settleAt: 160, // frame where the selection crosses exact centre
   // THE AREA MASK (measured: card widths shrink as edges wipe under a fixed
   // boundary — it is a MASK, not per-card opacity): the rail is masked solid
   // within ±215 and fully clipped beyond ±255; word ink sits at ~±286, so no
@@ -122,9 +131,14 @@ export const SplitShowcase: React.FC<{
   const gapP = Math.min(1, xS / SPLIT.push);
   const popStart = SPLIT.hold + SPLIT.popDelay;
   const clockStart = popStart + Math.round(SPLIT.popF * SPLIT.slideAt); // no pause: the sweep starts inside the pop
-  // ONE sweep across every slot (plus the solo-pop gap), calming onto the selection
-  const slots = sweepSlots(f - clockStart, cardCount - 1 + SPLIT.firstGap);
-  const slotOf = (i: number) => (i === 0 ? 0 : i + SPLIT.firstGap);
+  // the sweep target: the selection's slot, minus the creep it will accumulate by
+  // settleAt — so the selected card crosses exact centre right at the end
+  const creepComp = (SPLIT.floorCreep * Math.max(0, SPLIT.settleAt - clockStart - SPLIT.accelF)) / SPLIT.stepDist;
+  const slots = sweepSlots(f - clockStart, SPLIT.sweepCards + SPLIT.firstGap - creepComp);
+  const slotOf = (j: number) => (j === 0 ? 0 : j + SPLIT.firstGap);
+  // THE ENDLESS RAIL: instances for whichever slots are near the window
+  const jMin = Math.max(0, Math.floor(slots) - 2);
+  const jMax = Math.floor(slots) + 3;
 
   const maskCss = `linear-gradient(90deg, transparent ${width / 2 - SPLIT.maskEdge}px, #000 ${width / 2 - SPLIT.maskSolid}px, #000 ${width / 2 + SPLIT.maskSolid}px, transparent ${width / 2 + SPLIT.maskEdge}px)`;
 
@@ -141,7 +155,8 @@ export const SplitShowcase: React.FC<{
       {/* THE AREA MASK: one fixed boundary clips the whole rail — cards WIPE at
           the edges as the chain slides under it (the measured treatment) */}
       <div style={{position: 'absolute', inset: 0, WebkitMaskImage: maskCss, maskImage: maskCss}}>
-        {Array.from({length: cardCount}, (_, i) => {
+        {Array.from({length: jMax - jMin + 1}, (_, n) => {
+          const i = jMin + n; // the slot index; content wraps modulo the designs
           if (f < popStart) return null;
           const fe = f - popStart;
           const x = (slotOf(i) - slots) * SPLIT.stepDist;
@@ -174,7 +189,7 @@ export const SplitShowcase: React.FC<{
                 transform: `translate(-50%, -50%) translate(${x}px, ${rise}px) rotate(${tilt}deg) scale(${scale})`,
               }}
             >
-              {renderCard(i)}
+              {renderCard(i % cardCount)}
             </div>
           );
         })}
