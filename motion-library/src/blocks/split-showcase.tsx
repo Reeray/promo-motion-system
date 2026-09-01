@@ -66,6 +66,12 @@ export const SPLIT = {
   // THE SOLO POP (ruled): only ONE card pops — the waiting rail parks BEYOND the
   // mask edge (first gap 0.85 slots extra), revealed only when the sweep pulls it
   firstGap: 0.85,
+  // THE HERO POP (ruled): the popped card arrives at 2× and scales back to normal
+  // AS IT STARTS SLIDING — the shrink is DRIVEN BY THE SWEEP'S OWN PROGRESS
+  // (shrink = 0.5 + 0.5·exp(-slots/heroTau)), so it can never interrupt the flow:
+  // whatever the sweep does, the scale rides it.
+  heroScale: 2.0,
+  heroTau: 0.4, // in SLOTS — back to ~1× by one slot of travel
   // THE AREA MASK (measured: card widths shrink as edges wipe under a fixed
   // boundary — it is a MASK, not per-card opacity): the rail is masked solid
   // within ±215 and fully clipped beyond ±255; word ink sits at ~±286, so no
@@ -151,7 +157,9 @@ export const SplitShowcase: React.FC<{
               : Math.max(0, Math.min(1, (SPLIT.maskEdge + 40 - x) / (0.6 * SPLIT.stepDist)));
           const tilt = SPLIT.entryTilt * (1 - entry);
           const rise = (1 - entry) * (i === 0 ? 22 : 12);
-          const popScale = i === 0 ? 0.55 + 0.45 * entry : 0.9 + 0.1 * entry;
+          // card 0 pops toward heroScale; the sweep's progress halves it back to 1
+          const shrink = 0.5 + 0.5 * Math.exp(-slots / SPLIT.heroTau);
+          const popScale = i === 0 ? (0.55 + (SPLIT.heroScale - 0.55) * entry) * shrink : 0.9 + 0.1 * entry;
           const opacity = i === 0 ? Math.min(1, entry * 1.6) : 1;
           const scale = popScale * emph;
           return (
