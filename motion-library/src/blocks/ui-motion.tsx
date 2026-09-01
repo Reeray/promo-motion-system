@@ -6,6 +6,7 @@ import {DOLLY_FLYBY_FRAMES} from './pose3d';
 import {BurstOrbitDemo, BURST_DEMO_FRAMES} from '../demo/burst3d-demo';
 import {CornerAnchorZoomDemo} from '../demo/corner-anchor-demo';
 import {Ring3DDemo, RING_DEMO_FRAMES} from '../demo/ring3d-demo';
+import {SplitShowcaseDemo, SPLIT_DEMO_FRAMES} from '../demo/split-showcase-demo';
 import {CAZ_FRAMES} from './corner-anchor-zoom';
 
 /* UI-motion blocks (GPT-5.5 house standard) — same Block shape as the typography and
@@ -67,6 +68,16 @@ export const UI_BLOCKS: Block[] = [
     fps: 60,
     desc: 'The ANGLED ORBIT RING: frames burst from the centre onto a ring tilted ~32° from edge-on (projected squash ~0.53, slight -6° roll) around a headline, and carousel there at one shared angular velocity — 1.5°/frame counter-clockwise (a lap every ~4s), front tiles travelling left and dipping below the text line, back tiles receding small behind it (front/back scale ~2.6× via perspective; z-order derived from ring depth). Uneven by design: clumped phases, varied base sizes. Birth follows the family law — radius snaps 60% then eases, staggered clumps, the orbit clock running from frame 0 so arrival hands into rotation seamlessly. Pure 2D projection (no preserve-3d): the headline can never be compositor-culled. Items and centre content free via props.',
     Comp: Ring3DDemo,
+  },
+  {
+    name: 'phrase-split-showcase',
+    category: 'ui',
+    source: 'template-picker reference · measured',
+    poster: 96, // mid-showcase: gap open, a card centred, the next peeking in
+    durationInFrames: SPLIT_DEMO_FRAMES,
+    fps: 60,
+    desc: 'A phrase CRACKS OPEN between two words and a sliding selection steps through the gap. Measured grammar: a 4-frame crack (~3% of travel, the phrase visibly gives) then a hard ease-out THROW — 63% at half-time, 87% at two-thirds — opening the gap to ~34% of frame width with asymmetric word pushes; the first card POPS inside the opening (scale 0.55→1, −4°→−1.5° tilt, 22px rise) landing just after the words settle; then a STEPPED conveyor on one slot clock — 42f per 300px slot, 18f eased slide into a slow centre creep, never still — with cards entering from the right. The cursor lands on the centre card, presses, and the pick GROWS past the gap over the words, its ease still running at the cut so the growth hands into the next transition; past the pick the conveyor decays to a 6% overrun creep, never frozen. Phrase halves, cards and pick index free via props.',
+    Comp: SplitShowcaseDemo,
   },
   {
     name: 'corner-anchor-zoom',
