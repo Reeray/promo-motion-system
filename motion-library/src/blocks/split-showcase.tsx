@@ -22,10 +22,10 @@ import {EASE, lerp} from '../lib/ease';
  *                 decelerate, never a flat eased glide). Ruled from the
  *                 reference's card entries.
 
- *   THE RAIL      cards ride TOGETHER, nearly touching (measured spacing 195px
- *                 at 1280); the slide is ONE chain on a smooth accel-decel BELL
- *                 (measured velocity -5 → -40 → -2.5 px/f), travel ~30f in a
- *                 42f cadence, settled creep -2.5px/f.
+ *   THE SWEEP     the rail stops ONLY at the selected card (ruled): one
+ *                 continuous slide — quadratic accel to a ~31px/f peak, then
+ *                 an exponential calm (tau 20f) onto the last card, floor
+ *                 creep after — cards whoosh through and it breathes out.
  *   THE MASK      an AREA MASK clips the rail at fixed boundaries (±215 solid,
  *                 ±255 gone; ink at ±286): cards WIPE at the edges — measured,
  *                 not per-card opacity — and can never reach the text.
@@ -49,17 +49,18 @@ export const SPLIT = {
   popDelay: 6, // the first card starts rising this far into the split
   popF: 26, // the pop, hard-out…
   slideAt: 0.8, // …and the carousel KICKS IN at 80% of the pop (ruled: no pause)
-  // THE SLIDE, measured frame-by-frame from the reference (card-centre tracking
-  // at 30fps): the rail moves as ONE chain per step on a smooth accel-decel BELL
-  // — velocity -5 → -40 → -2.5 px/f(60) — travel ~30f inside a 42f cadence,
-  // then the settled creep (-2.5px/f, = creepShare 0.15 here). Slot spacing 195px
-  // at 1280 (measured 293 at 1920); resting cards sit nearly touching.
-  step: 42,
-  travel: 30, // smoothstep bell: accelerate, peak mid-step, decelerate into the rest
-  stepDist: 195,
-  creepShare: 0.15,
+  // THE SWEEP (ruled: the reference stops ONLY at the selected card, never per
+  // swipe): after the pop, the rail makes ONE continuous slide — quadratic
+  // acceleration over accelF frames to a peak (~31px/f at the default 5-card
+  // rail), then an EXPONENTIAL CALM (tau 20f) onto the last card, with a
+  // 0.5px/f floor creep so the settle never becomes a stop. Cards whoosh
+  // through the gap and the carousel breathes out onto the selection.
+  stepDist: 195, // slot spacing (measured 293 at 1920); resting cards nearly touch
+  accelF: 14,
+  calmTau: 20,
+  floorCreep: 0.5, // px/f after the accel — the settled card keeps drifting
   entryTilt: -6, // an incoming card pops angled at the mask edge and straightens
-  centreEmph: 0.38, // SIZE DYNAMIC (ruled bigger): sides read 62% of the centre
+  centreEmph: 0.5, // SIZE DYNAMIC (ruled bigger, twice): sides read HALF the centre
   // THE AREA MASK (measured: card widths shrink as edges wipe under a fixed
   // boundary — it is a MASK, not per-card opacity): the rail is masked solid
   // within ±215 and fully clipped beyond ±255; word ink sits at ~±286, so no
@@ -71,7 +72,6 @@ export const SPLIT = {
 export const SPLIT_FRAMES = 168;
 
 const hardOut = (t: number) => 1 - Math.pow(1 - t, 4); // the centre pop
-const bell = (t: number) => t * t * (3 - 2 * t); // the measured slide: accel-decel
 
 /** Split displacement in PX for one side: the crack, the throw, then the
  *  never-ending outward creep — momentum carried to the cut. */
@@ -85,15 +85,17 @@ const splitPx = (f: number) => {
   return 0.03 * SPLIT.push + 0.97 * SPLIT.push * (1 - Math.exp(-fs / SPLIT.tau)) + fs * SPLIT.postCreep;
 };
 
-/** The conveyor's slot clock: smootherstep advance (accelerate → decelerate)
- *  + creep inside every step — motion never reaches zero. */
-const slotClock = (fs: number) => {
+/** THE SWEEP's position (in slots): one continuous velocity arc — quadratic
+ *  accel over accelF, exponential calm (tau) onto the target, floor creep after.
+ *  Normalised so the arc lands on `totalSlots`; the creep then drifts past. */
+const sweepSlots = (fs: number, totalSlots: number) => {
   if (fs <= 0) return 0;
-  const k = Math.floor(fs / SPLIT.step);
-  const r = fs - k * SPLIT.step;
-  const eased = (1 - SPLIT.creepShare) * bell(Math.min(1, r / SPLIT.travel));
-  const creep = SPLIT.creepShare * (r / SPLIT.step);
-  return k + eased + creep;
+  const A = SPLIT.accelF;
+  const T = SPLIT.calmTau;
+  const full = A / 3 + T; // the arc's total area at unit peak velocity
+  const raw = fs <= A ? (fs * fs * fs) / (3 * A * A) : A / 3 + T * (1 - Math.exp(-(fs - A) / T));
+  const creep = (SPLIT.floorCreep * Math.max(0, fs - A)) / SPLIT.stepDist;
+  return (raw / full) * totalSlots + creep;
 };
 
 export const SplitShowcase: React.FC<{
@@ -103,16 +105,14 @@ export const SplitShowcase: React.FC<{
   cardCount?: number;
   width?: number;
   height?: number;
-}> = ({left, right, renderCard, cardCount = 6, width = 1280, height = 720}) => {
+}> = ({left, right, renderCard, cardCount = 5, width = 1280, height = 720}) => {
   const f = useCurrentFrame();
   const xS = splitPx(f);
   const gapP = Math.min(1, xS / SPLIT.push);
   const popStart = SPLIT.hold + SPLIT.popDelay;
-  const clockStart = popStart + Math.round(SPLIT.popF * SPLIT.slideAt); // no pause: the slide starts inside the pop
-  const rawSlots = slotClock(f - clockStart);
-  // the LAST card holds the centre: past it the clock decays to a 6% creep
-  const last = cardCount - 1;
-  const slots = rawSlots > last ? last + (rawSlots - last) * 0.06 : rawSlots;
+  const clockStart = popStart + Math.round(SPLIT.popF * SPLIT.slideAt); // no pause: the sweep starts inside the pop
+  // ONE sweep across every slot, calming onto the last card (the selection)
+  const slots = sweepSlots(f - clockStart, cardCount - 1);
 
   const maskCss = `linear-gradient(90deg, transparent ${width / 2 - SPLIT.maskEdge}px, #000 ${width / 2 - SPLIT.maskSolid}px, #000 ${width / 2 + SPLIT.maskSolid}px, transparent ${width / 2 + SPLIT.maskEdge}px)`;
 
