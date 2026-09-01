@@ -39,13 +39,14 @@ export const SPLIT = {
   rightPush: 156,
   popDelay: 6, // the first card starts rising this far into the split
   popF: 26,
+  rest: 18, // the popped card RESTS centred before the first step (the reference holds ~0.3s)
   step: 42, // the conveyor advances one slot per…
   stepIn: 18, // …with the travel eased over this many frames
   stepDist: 300, // px between card centres
   creepShare: 0.18, // fraction of each slot delivered by the centre creep (never still)
+  centreEmph: 0.22, // coverflow: side cards read this much smaller than the centre
   pickAt: 118, // cursor press frame
-  growTo: 2.15, // the picked card's target scale…
-  growEnd: 172, // …reached just PAST the block's end: still growing at the cut
+  growTo: 2.3, // the picked card's target scale (fast 24f phase + a slow tail to the cut)
 } as const;
 
 export const SPLIT_FRAMES = 168;
@@ -83,13 +84,17 @@ export const SplitShowcase: React.FC<{
   const p = splitP(f);
   const popStart = SPLIT.hold + SPLIT.popDelay;
   const clockStart = popStart + SPLIT.popF; // the conveyor starts once the first card sits
-  const rawSlots = slotClock(f - clockStart);
+  const rawSlots = slotClock(f - clockStart - SPLIT.rest);
   // past the pick slot the conveyor DECAYS to a 6% overrun creep — the showcase
   // slows onto the picked card but is never frozen (the momentum law)
   const slots = pick >= 0 && rawSlots > pick ? pick + (rawSlots - pick) * 0.06 : rawSlots;
   const pressing = pick >= 0 && f >= SPLIT.pickAt && f < SPLIT.pickAt + 6;
-  const growP = pick >= 0 ? lerp(f, [SPLIT.pickAt + 2, SPLIT.growEnd], [0, 1], EASE.camera) : 0;
-  const grow = 1 + growP * (SPLIT.growTo - 1);
+  // the growth: a decisive 24f rise (the reference doubles in ~0.4s), then a slow
+  // continuing swell so the pick is still growing at the cut (momentum law)
+  const growFast = pick >= 0 ? lerp(f, [SPLIT.pickAt + 2, SPLIT.pickAt + 26], [0, 1], EASE.out) : 0;
+  const growTail = pick >= 0 ? Math.max(0, f - (SPLIT.pickAt + 26)) * 0.0022 : 0;
+  const growP = growFast;
+  const grow = 1 + growFast * (SPLIT.growTo - 1) + growTail;
 
   return (
     <div style={{position: 'relative', width, height, overflow: 'hidden'}}>
@@ -102,20 +107,29 @@ export const SplitShowcase: React.FC<{
         <div style={{transform: `translateX(${p * SPLIT.rightPush}px)`}}>{right}</div>
       </div>
 
-      {/* the showcase: every card rides the one slot clock */}
+      {/* the showcase: every card rides the one slot clock — and appears ONLY when
+          its own approach step has begun (the reference reveals one card at a time:
+          at rest exactly one card holds the gap, the next emerges from behind the
+          right word when the step starts, the previous tucks behind the left word) */}
       {Array.from({length: cardCount}, (_, i) => {
         // the growth pulls the picked card back onto exact centre as it rises
         const xRaw = (i - slots) * SPLIT.stepDist;
         const x = i === pick && pick >= 0 ? xRaw * (1 - growP * 0.9) : xRaw;
-        if (f < popStart || x > SPLIT.stepDist * 1.6) return null;
+        if (f < popStart || (i > 0 && rawSlots <= i - 1)) return null;
         const pop = i === 0 ? lerp(f, [popStart, popStart + SPLIT.popF], [0, 1], EASE.out) : 1;
         const picked = i === pick && pick >= 0 && f >= SPLIT.pickAt + 2;
-        const tilt = lerp(pop, [0, 1], [-4, -1.5]);
+        const centredness = Math.max(0, 1 - Math.abs(x) / SPLIT.stepDist);
+        // side cards sit slightly small (coverflow); the centre card reads dominant
+        const emph = 1 - SPLIT.centreEmph * (1 - centredness);
+        // tilt belongs to the pop and the tuck — a centred card sits straight
+        const tilt = lerp(pop, [0, 1], [-4, 0]) - 2.5 * (1 - centredness);
         const rise = (1 - pop) * 22;
-        const s = (0.55 + 0.45 * pop) * (picked ? grow : 1);
-        // entering cards fade up over their last approach; the popping card fades with its rise
-        const opacity = i === 0 ? Math.min(1, pop * 1.6) : Math.max(0, Math.min(1, (SPLIT.stepDist * 1.3 - x) / (SPLIT.stepDist * 0.6)));
-        const centred = Math.abs(x) < SPLIT.stepDist / 2;
+        const s = (0.55 + 0.45 * pop) * emph * (picked ? grow : 1);
+        // an entering card fades up across its approach travel
+        const opacity = i === 0 ? Math.min(1, pop * 1.6) : Math.max(0.001, Math.min(1, (SPLIT.stepDist * 1.15 - x) / (SPLIT.stepDist * 0.55)));
+        // the front/behind flip happens at 0.37 slots — the exact point where a
+        // passing card no longer overlaps the word ink, so the z-swap is invisible
+        const centred = Math.abs(x) < SPLIT.stepDist * 0.37;
         return (
           <div
             key={i}
@@ -134,7 +148,9 @@ export const SplitShowcase: React.FC<{
       })}
 
       {/* the hand, stage layer: flies in during the showcase, presses the pick */}
-      {cursor && pick >= 0 && f >= SPLIT.pickAt - 34 && cursor(lerp(f, [SPLIT.pickAt - 34, SPLIT.pickAt - 4], [0, 1], EASE.inOut), pressing)}
+      {/* arrive early, HOVER on the card, then press — the reference's hand already
+          rides the incoming card a beat before the pick */}
+      {cursor && pick >= 0 && f >= SPLIT.pickAt - 46 && cursor(lerp(f, [SPLIT.pickAt - 46, SPLIT.pickAt - 14], [0, 1], EASE.inOut), pressing)}
     </div>
   );
 };
