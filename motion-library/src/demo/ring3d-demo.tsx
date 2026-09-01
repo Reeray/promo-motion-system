@@ -36,7 +36,7 @@ const Tile: React.FC<{i: number; item: RingItem}> = ({i, item}) => (
   />
 );
 
-export const RING_DEMO_FRAMES = 300; // burst + a full lap and a quarter
+export const RING_DEMO_FRAMES = 120; // 2s default: the burst + one momentum-decayed lap
 
 export const Ring3DDemo: React.FC = () => (
   <div style={{background: '#0b0f17'}}>

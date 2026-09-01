@@ -62,7 +62,7 @@ export const UI_BLOCKS: Block[] = [
     name: 'burst3d-ring',
     category: 'ui',
     source: 'storyboard/results reference · measured',
-    poster: 120, // formation complete, mid-lap: the angle reads
+    poster: 70, // formation complete, momentum still visibly decaying
     durationInFrames: RING_DEMO_FRAMES,
     fps: 60,
     desc: 'The ANGLED ORBIT RING: frames burst from the centre onto a ring tilted ~32° from edge-on (projected squash ~0.53, slight -6° roll) around a headline, and carousel there at one shared angular velocity — 1.5°/frame counter-clockwise (a lap every ~4s), front tiles travelling left and dipping below the text line, back tiles receding small behind it (front/back scale ~2.6× via perspective; z-order derived from ring depth). Uneven by design: clumped phases, varied base sizes. Birth follows the family law — radius snaps 60% then eases, staggered clumps, the orbit clock running from frame 0 so arrival hands into rotation seamlessly. Pure 2D projection (no preserve-3d): the headline can never be compositor-culled. Items and centre content free via props.',

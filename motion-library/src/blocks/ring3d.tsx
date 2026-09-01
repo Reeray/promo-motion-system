@@ -52,16 +52,19 @@ export const RING = {
   roll: -6, // screen-space roll of the whole formation
   radius: 430,
   persp: 1150, // perspective distance: front/back scale ratio lands ~2.6x
-  omega: 1.5, // deg/frame, counter-clockwise from the front — one lap ~4s
-  shoot: 26, // burst: frames to reach the ring slot…
-  jump: 0.6, // …snapping this fraction of the radius instantly (birth law)
+  omega: 1.5, // deg/frame floor — the cruise the momentum decays TOWARD
+  jump: 0.6, // the radius snaps this fraction instantly (birth law)
   lead: 6, // flat beat before the first clump launches
-  // THE KICK (ruled: the burst carries strong ROTATIONAL energy, then calms):
-  // an extra 150 deg of shared rotation, spent front-loaded over 55 frames —
-  // launch speed ~7 deg/frame decaying into the 1.5 deg/frame cruise
-  kick: 150,
-  kickDecay: 55,
-  overshoot: 1.15, // radial back-out: tiles fly ~5% past the ring and settle
+  // THE MOMENTUM DECAY (ruled twice): the burst is pure spent momentum — the
+  // shared rotation launches at omega + kick/tau (~8.8 deg/frame) and decays
+  // EXPONENTIALLY toward the cruise: speed strictly monotonic, asymptotic,
+  // still visibly decaying when the block ends (the momentum is endless; the
+  // block just shows its first 2s). NOTHING re-accelerates and NOTHING
+  // reverses — the earlier radial overshoot's return leg made screen speed
+  // dip then RISE, which read as backing up, and was ruled out.
+  kick: 190, // deg of burst rotation, spent exponentially
+  tau: 26, // rotational momentum time-constant, frames
+  tauR: 8, // radial momentum time-constant — same physics, one energy story
 } as const;
 
 /** The reference formation: 13 tiles, clumped phases, uneven sizes. */
@@ -98,12 +101,7 @@ const Y_BIAS = (() => {
   return (RING.radius * Math.sin(a) * (pf - pb)) / 2;
 })();
 
-/** Radial back-out: overshoot then settle (the kinetic half of the birth). */
-const backOut = (p: number) => {
-  const s = RING.overshoot;
-  const q = p - 1;
-  return 1 + (s + 1) * q * q * q + s * q * q;
-};
+
 
 /** Screen pose of one ring slot at angle phi (deg) and radial progress r01. */
 export const ringPose = (phi: number, r01: number) => {
@@ -135,17 +133,17 @@ export const Ring3D: React.FC<{
       <div style={{position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 500}}>{children}</div>
       {items.map((item, i) => {
         const t0 = RING.lead + item.delay;
-        // birth: snap most of the radius, then a back-out — the tile flies PAST its
-        // slot and settles (kinetic, per the reference)
-        const raw = lerp(f, [t0, t0 + RING.shoot], [0, 1], EASE.out);
-        const r01 = raw <= 0 ? 0 : RING.jump + (1 - RING.jump) * backOut(raw);
-        // the orbit clock runs from frame 0, PLUS the kick: the whole formation whips
-        // around fast at launch and gradually calms into the cruise rotation
-        const kp = Math.min(1, f / RING.kickDecay);
-        const phi = item.phase + RING.omega * f + RING.kick * (1 - Math.pow(1 - kp, 2.4));
+        const fr = f - t0;
+        // birth: snap 60% of the radius, then approach the slot EXPONENTIALLY —
+        // radial speed only ever decays, never overshoots, never returns
+        const rp = fr <= 0 ? 0 : 1 - Math.exp(-fr / RING.tauR);
+        const r01 = fr <= 0 ? 0 : RING.jump + (1 - RING.jump) * rp;
+        // the shared rotation: cruise + exponentially spent kick (one momentum story)
+        const phi = item.phase + RING.omega * f + RING.kick * (1 - Math.exp(-f / RING.tau));
         const pose = ringPose(phi, r01);
-        if (raw <= 0) return null;
+        if (fr <= 0) return null;
         const opacity = lerp(f, [t0, t0 + 6], [0, 1], EASE.out);
+        const grow = 0.6 + 0.4 * rp;
         return (
           <div
             key={i}
@@ -155,7 +153,7 @@ export const Ring3D: React.FC<{
               top: height / 2,
               zIndex: 500 + Math.round(pose.z),
               opacity,
-              transform: `translate(-50%, -50%) translate(${pose.x}px, ${pose.y}px) scale(${pose.scale * Math.min(1, 0.6 + 0.4 * raw)})`,
+              transform: `translate(-50%, -50%) translate(${pose.x}px, ${pose.y}px) scale(${pose.scale * grow})`,
             }}
           >
             {renderItem(i, item)}
