@@ -66,17 +66,18 @@ export const SPLIT = {
   calmTau: 20,
   floorCreep: 0.3, // px/f after the accel — the settled card keeps drifting (subtly)
   entryTilt: -6, // an incoming card pops angled at the mask edge and straightens
-  centreEmph: 0.1, // ruled: passing cards ease down only to 90% - the SIZE DYNAMIC
-  // lives in the 2x hero pop, not in crushing the rail's sides
+  centreEmph: 0.62, // SIZE DYNAMIC (ruled bigger, three times): sides read 38%
   // THE SOLO POP (ruled): only ONE card pops — the waiting rail parks BEYOND the
   // mask edge (first gap 0.85 slots extra), revealed only when the sweep pulls it
   firstGap: 0.85,
-  // THE HERO POP (ruled): the popped card arrives at 2× and scales back to normal
-  // AS IT STARTS SLIDING — the shrink is DRIVEN BY THE SWEEP'S OWN PROGRESS
-  // (shrink = 0.5 + 0.5·exp(-slots/heroTau)), so it can never interrupt the flow:
-  // whatever the sweep does, the scale rides it.
+  // THE HERO POP (ruled): the popped card arrives at 2× and eases down only to
+  // 90% OF ITS POPPED SIZE (~1.8×) as the sliding starts — the shrink is DRIVEN
+  // BY THE SWEEP'S OWN PROGRESS (shrink = heroFloor + (1-heroFloor)·exp(-slots/
+  // heroTau)), so it can never interrupt the flow; the side dynamic then takes
+  // it down as it wipes out.
   heroScale: 2.0,
-  heroTau: 0.4, // in SLOTS — back to ~1× by one slot of travel
+  heroFloor: 0.9, // the settle: 90% of the popped size
+  heroTau: 0.4, // in SLOTS
   // THE ENDLESS RAIL (ruled): card instances are generated per SLOT and content
   // wraps modulo the design count — the carousel can run forever. The sweep's
   // target is solved so the SELECTED card crosses dead centre at settleAt
@@ -175,7 +176,7 @@ export const SplitShowcase: React.FC<{
           const tilt = SPLIT.entryTilt * (1 - entry);
           const rise = (1 - entry) * (i === 0 ? 22 : 12);
           // card 0 pops toward heroScale; the sweep's progress halves it back to 1
-          const shrink = 0.5 + 0.5 * Math.exp(-slots / SPLIT.heroTau);
+          const shrink = SPLIT.heroFloor + (1 - SPLIT.heroFloor) * Math.exp(-slots / SPLIT.heroTau);
           const popScale = i === 0 ? (0.55 + (SPLIT.heroScale - 0.55) * entry) * shrink : 0.9 + 0.1 * entry;
           const opacity = i === 0 ? Math.min(1, entry * 1.6) : 1;
           const scale = popScale * emph;
