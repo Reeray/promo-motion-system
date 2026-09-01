@@ -75,8 +75,9 @@ export const RING = {
   // THE EXIT WIND-UP (momentum-tail grammar, ruled): after the decay bottoms
   // out, the ring re-accelerates SLIGHTLY over the last frames — the transition
   // block then accelerates the same motion away; the handoff carries energy.
-  endKick: 14, // deg delivered by the wind-up
-  endRamp: 16, // over the final this-many frames (ease-in: slope grows to the cut)
+  endKick: 38, // deg delivered by the wind-up
+  endRamp: 30, // over the final this-many frames. QUADRATIC (ruled smoother): the
+  // speed grows LINEARLY through the ramp - constant acceleration, no late lurch
   tau: 28, // rotational momentum time-constant, frames — STRONGER slow-down (ruled):
   // launch ~8.7 deg/f drops hard early, passes ~1.5 by mid-block and keeps sinking
   // to ~0.6 at the cut — still above the 0.5 crawl, so the decay never finishes
@@ -91,23 +92,25 @@ export const RING = {
  *  reference's hierarchy is position-locked; a wider spread collapsed ours
  *  to ~1.6x at bad phases).
  *  PHASES ARE DERIVED FROM THE END (ruled: the front went sparse at the cut):
- *  the final layout is the designed one — front-dense, the biggest tiles
- *  crossing the front — and each initial phase is final minus the block's
- *  total rotation (300.8 deg for the default table + duration). */
+ *  the final layout is the designed one — four big tiles crossing the front,
+ *  and the back a TIGHT nine-tile chain at ~22 deg spacing (ruled: a loose
+ *  back read wrong against the reference's near-touching chain) — and each
+ *  initial phase is final minus the block's total rotation (324.8 deg for
+ *  the default table + duration). */
 export const RING_ITEMS: RingItem[] = [
-  {phase: 104.2, delay: 0, size: 135},
-  {phase: 34.2, delay: 4, size: 115},
-  {phase: 129.2, delay: 0, size: 145},
-  {phase: 154.2, delay: 7, size: 150},
-  {phase: 179.2, delay: 3, size: 140},
-  {phase: 204.2, delay: 9, size: 130},
-  {phase: 289.2, delay: 5, size: 112},
-  {phase: 321.2, delay: 0, size: 108},
-  {phase: 259.2, delay: 7, size: 118},
-  {phase: 57.2, delay: 3, size: 105},
-  {phase: 359.2, delay: 9, size: 112},
-  {phase: 229.2, delay: 5, size: 122},
-  {phase: 79.2, delay: 7, size: 128},
+  {phase: 65.2, delay: 0, size: 135},
+  {phase: 263.2, delay: 4, size: 115},
+  {phase: 100.2, delay: 0, size: 145},
+  {phase: 133.2, delay: 7, size: 150},
+  {phase: 165.2, delay: 3, size: 140},
+  {phase: 197.2, delay: 9, size: 130},
+  {phase: 285.2, delay: 5, size: 112},
+  {phase: 330.2, delay: 0, size: 108},
+  {phase: 242.2, delay: 7, size: 118},
+  {phase: 355.2, delay: 3, size: 105},
+  {phase: 307.2, delay: 9, size: 112},
+  {phase: 220.2, delay: 5, size: 122},
+  {phase: 20.2, delay: 7, size: 128},
 ] as const as RingItem[];
 
 const rad = (d: number) => (d * Math.PI) / 180;
@@ -166,7 +169,7 @@ export const Ring3D: React.FC<{
         // the shared rotation: cruise + exponentially spent kick (one momentum story),
         // plus the exit wind-up easing IN over the final frames
         const wind = Math.max(0, Math.min(1, (f - (duration - RING.endRamp)) / RING.endRamp));
-        const phi = item.phase + RING.omega * f + RING.kick * (1 - Math.exp(-f / RING.tau)) + RING.endKick * wind * wind * wind;
+        const phi = item.phase + RING.omega * f + RING.kick * (1 - Math.exp(-f / RING.tau)) + RING.endKick * wind * wind;
         const pose = ringPose(phi, r01);
         if (fr <= 0) return null;
         const opacity = lerp(f, [t0, t0 + 6], [0, 1], EASE.out);
