@@ -62,8 +62,10 @@ export const RING = {
   // block just shows its first 2s). NOTHING re-accelerates and NOTHING
   // reverses — the earlier radial overshoot's return leg made screen speed
   // dip then RISE, which read as backing up, and was ruled out.
-  kick: 190, // deg of burst rotation, spent exponentially
-  tau: 26, // rotational momentum time-constant, frames
+  kick: 280, // deg of burst rotation, spent exponentially
+  tau: 42, // rotational momentum time-constant, frames — sized so the DECAY SPANS THE
+  // WHOLE 2s block: at the final frame the ring still runs ~25% above the cruise
+  // (ruled: the story must not end before the video does — the animation IS the decay)
   tauR: 8, // radial momentum time-constant — same physics, one energy story
 } as const;
 
