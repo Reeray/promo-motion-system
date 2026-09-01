@@ -61,7 +61,7 @@ export const SPLIT = {
   // rail), then an EXPONENTIAL CALM (tau 20f) onto the last card, with a
   // 0.5px/f floor creep so the settle never becomes a stop. Cards whoosh
   // through the gap and the carousel breathes out onto the selection.
-  stepDist: 195, // slot spacing (measured 293 at 1920); resting cards nearly touch
+  stepDist: 188, // slot spacing, ruled tighter: 185px cards ride ~3px apart
   accelF: 14,
   calmTau: 20,
   floorCreep: 0.3, // px/f after the accel — the settled card keeps drifting (subtly)
