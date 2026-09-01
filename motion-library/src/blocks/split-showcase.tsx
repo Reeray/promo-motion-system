@@ -66,7 +66,8 @@ export const SPLIT = {
   calmTau: 20,
   floorCreep: 0.3, // px/f after the accel — the settled card keeps drifting (subtly)
   entryTilt: -6, // an incoming card pops angled at the mask edge and straightens
-  centreEmph: 0.62, // SIZE DYNAMIC (ruled bigger, three times): sides read 38%
+  centreEmph: 0.1, // ruled: passing cards ease down only to 90% - the SIZE DYNAMIC
+  // lives in the 2x hero pop, not in crushing the rail's sides
   // THE SOLO POP (ruled): only ONE card pops — the waiting rail parks BEYOND the
   // mask edge (first gap 0.85 slots extra), revealed only when the sweep pulls it
   firstGap: 0.85,
