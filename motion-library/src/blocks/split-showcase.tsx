@@ -61,22 +61,22 @@ export const SPLIT = {
   // rail), then an EXPONENTIAL CALM (tau 20f) onto the last card, with a
   // 0.5px/f floor creep so the settle never becomes a stop. Cards whoosh
   // through the gap and the carousel breathes out onto the selection.
-  stepDist: 188, // slot spacing, ruled tighter: 185px cards ride ~3px apart
+  stepDist: 340, // slot spacing for the 330px cards — ~10px apart (ruled tight)
   accelF: 14,
   calmTau: 20,
   floorCreep: 0.3, // px/f after the accel — the settled card keeps drifting (subtly)
   entryTilt: -6, // an incoming card pops angled at the mask edge and straightens
-  centreEmph: 0.62, // SIZE DYNAMIC (ruled bigger, three times): sides read 38%
+  centreEmph: 0.05, // near-uniform rail (ruled: cards ride at the hero-settled size)
   // THE SOLO POP (ruled): only ONE card pops — the waiting rail parks BEYOND the
   // mask edge (first gap 0.85 slots extra), revealed only when the sweep pulls it
   firstGap: 0.85,
-  // THE HERO POP (ruled): the popped card arrives at 2× and eases down only to
-  // 90% OF ITS POPPED SIZE (~1.8×) as the sliding starts — the shrink is DRIVEN
-  // BY THE SWEEP'S OWN PROGRESS (shrink = heroFloor + (1-heroFloor)·exp(-slots/
-  // heroTau)), so it can never interrupt the flow; the side dynamic then takes
-  // it down as it wipes out.
-  heroScale: 2.0,
-  heroFloor: 0.9, // the settle: 90% of the popped size
+  // THE HERO POP (final ruling, via the tweak tool): the RAIL SIZE IS THE BASE.
+  // The hero pops ~11% OVER it and shrinks 10% back to exactly rail size
+  // (1.11 × 0.9 = 1.0) as the sliding starts — every card in the carousel then
+  // rides at the same, hero-settled size. The shrink is DRIVEN BY THE SWEEP'S
+  // OWN PROGRESS, so it can never interrupt the flow.
+  heroScale: 1.11,
+  heroFloor: 0.9, // the 10% shrink
   heroTau: 0.4, // in SLOTS
   // THE ENDLESS RAIL (ruled): card instances are generated per SLOT and content
   // wraps modulo the design count — the carousel can run forever. The sweep's
