@@ -48,7 +48,9 @@ export const SPLIT = {
   postCreep: 0.07, // px/f outward — the exponential decays INTO this, seamlessly
   popDelay: 6, // the first card starts rising this far into the split
   popF: 26, // the pop, hard-out…
-  slideAt: 0.8, // …and the carousel KICKS IN at 80% of the pop (ruled: no pause)
+  slideAt: 0.6, // …and the sweep KICKS IN at 60% of the pop (ruled: overlap the
+  // beats — the quadratic accel starts soft, so the clock must start early for
+  // the overlap to READ)
   // THE SWEEP (ruled: the reference stops ONLY at the selected card, never per
   // swipe): after the pop, the rail makes ONE continuous slide — quadratic
   // acceleration over accelF frames to a peak (~31px/f at the default 5-card
@@ -58,9 +60,12 @@ export const SPLIT = {
   stepDist: 195, // slot spacing (measured 293 at 1920); resting cards nearly touch
   accelF: 14,
   calmTau: 20,
-  floorCreep: 0.5, // px/f after the accel — the settled card keeps drifting
+  floorCreep: 0.3, // px/f after the accel — the settled card keeps drifting (subtly)
   entryTilt: -6, // an incoming card pops angled at the mask edge and straightens
-  centreEmph: 0.5, // SIZE DYNAMIC (ruled bigger, twice): sides read HALF the centre
+  centreEmph: 0.62, // SIZE DYNAMIC (ruled bigger, three times): sides read 38%
+  // THE SOLO POP (ruled): only ONE card pops — the waiting rail parks BEYOND the
+  // mask edge (first gap 0.85 slots extra), revealed only when the sweep pulls it
+  firstGap: 0.85,
   // THE AREA MASK (measured: card widths shrink as edges wipe under a fixed
   // boundary — it is a MASK, not per-card opacity): the rail is masked solid
   // within ±215 and fully clipped beyond ±255; word ink sits at ~±286, so no
@@ -111,8 +116,9 @@ export const SplitShowcase: React.FC<{
   const gapP = Math.min(1, xS / SPLIT.push);
   const popStart = SPLIT.hold + SPLIT.popDelay;
   const clockStart = popStart + Math.round(SPLIT.popF * SPLIT.slideAt); // no pause: the sweep starts inside the pop
-  // ONE sweep across every slot, calming onto the last card (the selection)
-  const slots = sweepSlots(f - clockStart, cardCount - 1);
+  // ONE sweep across every slot (plus the solo-pop gap), calming onto the selection
+  const slots = sweepSlots(f - clockStart, cardCount - 1 + SPLIT.firstGap);
+  const slotOf = (i: number) => (i === 0 ? 0 : i + SPLIT.firstGap);
 
   const maskCss = `linear-gradient(90deg, transparent ${width / 2 - SPLIT.maskEdge}px, #000 ${width / 2 - SPLIT.maskSolid}px, #000 ${width / 2 + SPLIT.maskSolid}px, transparent ${width / 2 + SPLIT.maskEdge}px)`;
 
@@ -132,7 +138,7 @@ export const SplitShowcase: React.FC<{
         {Array.from({length: cardCount}, (_, i) => {
           if (f < popStart) return null;
           const fe = f - popStart;
-          const x = (i - slots) * SPLIT.stepDist;
+          const x = (slotOf(i) - slots) * SPLIT.stepDist;
           if (Math.abs(x) > SPLIT.maskEdge + SPLIT.stepDist) return null;
           const centredness = Math.max(0, 1 - Math.abs(x) / SPLIT.stepDist);
           // SIZE DYNAMIC: sides read well smaller; the approach GROWS the card
