@@ -56,6 +56,12 @@ export const RING = {
   shoot: 26, // burst: frames to reach the ring slot…
   jump: 0.6, // …snapping this fraction of the radius instantly (birth law)
   lead: 6, // flat beat before the first clump launches
+  // THE KICK (ruled: the burst carries strong ROTATIONAL energy, then calms):
+  // an extra 150 deg of shared rotation, spent front-loaded over 55 frames —
+  // launch speed ~7 deg/frame decaying into the 1.5 deg/frame cruise
+  kick: 150,
+  kickDecay: 55,
+  overshoot: 1.15, // radial back-out: tiles fly ~5% past the ring and settle
 } as const;
 
 /** The reference formation: 13 tiles, clumped phases, uneven sizes. */
@@ -80,6 +86,25 @@ export const RING_ITEMS: RingItem[] = [
 
 const rad = (d: number) => (d * Math.PI) / 180;
 
+/** Perspective pushes the front arc further down than the back arc reaches up;
+ *  this bias would float the headline ABOVE the ring's visual centre (ruled:
+ *  the orbit axis must align with the text). Computed once, subtracted from
+ *  every pose. */
+const Y_BIAS = (() => {
+  const a = rad(RING.tilt);
+  const zf = RING.radius * Math.cos(a);
+  const pf = RING.persp / (RING.persp - zf);
+  const pb = RING.persp / (RING.persp + zf);
+  return (RING.radius * Math.sin(a) * (pf - pb)) / 2;
+})();
+
+/** Radial back-out: overshoot then settle (the kinetic half of the birth). */
+const backOut = (p: number) => {
+  const s = RING.overshoot;
+  const q = p - 1;
+  return 1 + (s + 1) * q * q * q + s * q * q;
+};
+
 /** Screen pose of one ring slot at angle phi (deg) and radial progress r01. */
 export const ringPose = (phi: number, r01: number) => {
   const a = rad(RING.tilt);
@@ -91,7 +116,7 @@ export const ringPose = (phi: number, r01: number) => {
   const p = RING.persp / (RING.persp - z);
   const x = (x0 * Math.cos(ro) - y0 * Math.sin(ro)) * p;
   const y = (x0 * Math.sin(ro) + y0 * Math.cos(ro)) * p;
-  return {x, y: -y, scale: p, z};
+  return {x, y: -y - Y_BIAS, scale: p, z};
 };
 
 /** The block: centre content + tiles bursting onto the angled orbit ring.
@@ -110,12 +135,15 @@ export const Ring3D: React.FC<{
       <div style={{position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 500}}>{children}</div>
       {items.map((item, i) => {
         const t0 = RING.lead + item.delay;
-        // birth: snap most of the radius, ease the rest (the family's birth law)
+        // birth: snap most of the radius, then a back-out — the tile flies PAST its
+        // slot and settles (kinetic, per the reference)
         const raw = lerp(f, [t0, t0 + RING.shoot], [0, 1], EASE.out);
-        const r01 = raw <= 0 ? 0 : RING.jump + (1 - RING.jump) * raw;
-        // the orbit clock runs from frame 0 — arrival hands into rotation, no seam
-        const phi = item.phase + RING.omega * f;
-        const pose = ringPose(phi, Math.min(1, r01));
+        const r01 = raw <= 0 ? 0 : RING.jump + (1 - RING.jump) * backOut(raw);
+        // the orbit clock runs from frame 0, PLUS the kick: the whole formation whips
+        // around fast at launch and gradually calms into the cruise rotation
+        const kp = Math.min(1, f / RING.kickDecay);
+        const phi = item.phase + RING.omega * f + RING.kick * (1 - Math.pow(1 - kp, 2.4));
+        const pose = ringPose(phi, r01);
         if (raw <= 0) return null;
         const opacity = lerp(f, [t0, t0 + 6], [0, 1], EASE.out);
         return (
