@@ -46,7 +46,8 @@ export const SPLIT = {
   tau: 6.5, // …then EXPONENTIAL MOMENTUM: launch ~25px/f decaying asymptotically into
   // the creep — aggressive start, but NO terminal seam, NO stop (ruled: the power
   // curve's hard landing read as a stop)
-  push: 210, // px per side — the gap now hosts a THREE-CARD rail (ruled: cards together)
+  push: 196, // px per side — ruled a touch closer; ink lands at ~±264, still clear
+  // of the ±255 mask edge, and the outward creep only widens it from there
   wordGap: 18, // the phrase's own inter-word space at rest (~0.31em at 58px)
   postCreep: 0.07, // px/f outward — the exponential decays INTO this, seamlessly
   popDelay: 6, // the first card starts rising this far into the split
@@ -148,7 +149,7 @@ export const SplitShowcase: React.FC<{
           whatever the word widths (ruled: the opening is balanced on the centre) */}
       <div style={{position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', whiteSpace: 'nowrap', zIndex: 15}}>
         <div style={{flex: 1, textAlign: 'right', transform: `translateX(${-xS}px)`}}>{left}</div>
-        <div style={{width: SPLIT.wordGap + gapP * SPLIT.push * 0.64, flex: 'none'}} />
+        <div style={{width: SPLIT.wordGap + gapP * SPLIT.push * 0.6, flex: 'none'}} />
         <div style={{flex: 1, textAlign: 'left', transform: `translateX(${xS}px)`}}>{right}</div>
       </div>
 
