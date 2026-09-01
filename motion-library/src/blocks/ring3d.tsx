@@ -54,7 +54,12 @@ export const RING = {
   // the ratio lands at ~3.1 while the front arc still fits the frame.
   tilt: 24, // ring plane, degrees from edge-on
   roll: -6, // screen-space roll of the whole formation
-  radius: 370,
+  // THE AIR (measured: the reference's text half-width is 0.42 of its track's
+  // horizontal semi — the headline breathes inside the ring): the track is an
+  // in-plane ELLIPSE, wider than deep, so the sides clear the text while the
+  // depth amplitude — and with it the size hierarchy — stays at the 370 solve.
+  radiusX: 430, // horizontal semi
+  radiusZ: 370, // depth semi (drives z, y and the front/back ratio)
   persp: 660, // perspective distance: positional front/back scale ratio ~3.1
   omega: 1.5, // deg/frame floor — the cruise the momentum decays TOWARD
   jump: 0.6, // the radius snaps this fraction instantly (birth law)
@@ -103,10 +108,10 @@ const rad = (d: number) => (d * Math.PI) / 180;
  *  every pose. */
 const Y_BIAS = (() => {
   const a = rad(RING.tilt);
-  const zf = RING.radius * Math.cos(a);
+  const zf = RING.radiusZ * Math.cos(a);
   const pf = RING.persp / (RING.persp - zf);
   const pb = RING.persp / (RING.persp + zf);
-  return (RING.radius * Math.sin(a) * (pf - pb)) / 2;
+  return (RING.radiusZ * Math.sin(a) * (pf - pb)) / 2;
 })();
 
 
@@ -115,10 +120,10 @@ const Y_BIAS = (() => {
 export const ringPose = (phi: number, r01: number) => {
   const a = rad(RING.tilt);
   const ro = rad(RING.roll);
-  const r = RING.radius * r01;
-  const x0 = r * Math.cos(rad(phi));
-  const y0 = -r * Math.sin(rad(phi)) * Math.sin(a); // tilt squashes vertically
-  const z = r * Math.sin(rad(phi)) * Math.cos(a); // depth: +z toward the camera
+  const x0 = RING.radiusX * r01 * Math.cos(rad(phi));
+  const rz = RING.radiusZ * r01;
+  const y0 = -rz * Math.sin(rad(phi)) * Math.sin(a); // tilt squashes vertically
+  const z = rz * Math.sin(rad(phi)) * Math.cos(a); // depth: +z toward the camera
   const p = RING.persp / (RING.persp - z);
   const x = (x0 * Math.cos(ro) - y0 * Math.sin(ro)) * p;
   const y = (x0 * Math.sin(ro) + y0 * Math.cos(ro)) * p;

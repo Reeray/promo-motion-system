@@ -41,7 +41,8 @@ export const RING_DEMO_FRAMES = 120; // 2s default: the burst + one momentum-dec
 export const Ring3DDemo: React.FC = () => (
   <div style={{background: '#0b0f17'}}>
     <Ring3D renderItem={(i, item) => <Tile i={i} item={item} />}>
-      <span style={{fontFamily: FONT.sans, fontSize: 64, fontWeight: 700, color: '#fff', letterSpacing: -1}}>Everywhere now.</span>
+      {/* sized to the reference's air: text half-width = 0.42 of the track's horizontal semi */}
+      <span style={{fontFamily: FONT.sans, fontSize: 44, fontWeight: 700, color: '#fff', letterSpacing: -0.7}}>Everywhere now.</span>
     </Ring3D>
   </div>
 );
