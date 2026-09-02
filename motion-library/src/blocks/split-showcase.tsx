@@ -16,11 +16,9 @@ import {EASE, lerp} from '../lib/ease';
  *                 stop, ever (ruled twice: hard landings read as stops).
  *   THE WORD GAP  the phrase carries a real inter-word space BEFORE the split
  *                 (ruled: the halves must never touch); the split widens it.
- *   THE ENTRY     every incoming card POPS UP AT AN ANGLE (−6°, small, slightly
- *                 low) and straightens WHILE its slide accelerates — then the
- *                 slide decelerates into centre on a smootherstep (accelerate →
- *                 decelerate, never a flat eased glide). Ruled from the
- *                 reference's card entries.
+ *   THE ENTRY     only the HERO pops — at an angle (−6°), rising, straightening
+ *                 while the sweep takes hold (ruled). Sliding cards arrive
+ *                 UPRIGHT at rail size: the mask wipe is their entrance.
 
  *   THE SWEEP     the rail stops ONLY at the selected card (ruled): one
  *                 continuous slide — quadratic accel to a ~31px/f peak, then
@@ -65,8 +63,10 @@ export const SPLIT = {
   accelF: 14,
   calmTau: 20,
   floorCreep: 0.3, // px/f after the accel — the settled card keeps drifting (subtly)
-  entryTilt: -6, // an incoming card pops angled at the mask edge and straightens
-  centreEmph: 0.05, // near-uniform rail (ruled: cards ride at the hero-settled size)
+  entryTilt: -6, // THE HERO ALONE pops at an angle (ruled): sliding cards enter
+  // upright - the mask wipe IS their entrance
+  centreEmph: 0.62, // THE SIZE DYNAMIC (ruled, kept): the centre reads full at the
+  // rail-size base; passing cards shrink toward the edges as they transit
   // THE SOLO POP (ruled): only ONE card pops — the waiting rail parks BEYOND the
   // mask edge (first gap 0.85 slots extra), revealed only when the sweep pulls it
   firstGap: 0.85,
@@ -167,17 +167,14 @@ export const SplitShowcase: React.FC<{
           const centredness = Math.max(0, 1 - Math.abs(x) / SPLIT.stepDist);
           // SIZE DYNAMIC: sides read well smaller; the approach GROWS the card
           const emph = 1 - SPLIT.centreEmph * (1 - centredness);
-          // THE ENTRY: card 0 pops in place; later cards pop angled as they cross
-          // the mask edge (x-keyed — the same boundary that reveals them)
-          const entry =
-            i === 0
-              ? lerp(fe, [0, SPLIT.popF], [0, 1], hardOut)
-              : Math.max(0, Math.min(1, (SPLIT.maskEdge + 40 - x) / (0.6 * SPLIT.stepDist)));
-          const tilt = SPLIT.entryTilt * (1 - entry);
-          const rise = (1 - entry) * (i === 0 ? 22 : 12);
-          // card 0 pops toward heroScale; the sweep's progress halves it back to 1
+          // THE ENTRY: only the HERO pops (angled, rising); sliding cards arrive
+          // upright at full rail size — the mask wipe is their entrance
+          const entry = i === 0 ? lerp(fe, [0, SPLIT.popF], [0, 1], hardOut) : 1;
+          const tilt = i === 0 ? SPLIT.entryTilt * (1 - entry) : 0;
+          const rise = i === 0 ? (1 - entry) * 22 : 0;
+          // the hero pops toward heroScale; the sweep's progress eases it to rail size
           const shrink = SPLIT.heroFloor + (1 - SPLIT.heroFloor) * Math.exp(-slots / SPLIT.heroTau);
-          const popScale = i === 0 ? (0.55 + (SPLIT.heroScale - 0.55) * entry) * shrink : 0.9 + 0.1 * entry;
+          const popScale = i === 0 ? (0.55 + (SPLIT.heroScale - 0.55) * entry) * shrink : 1;
           const opacity = i === 0 ? Math.min(1, entry * 1.6) : 1;
           const scale = popScale * emph;
           return (
